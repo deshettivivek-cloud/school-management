@@ -1,0 +1,211 @@
+const supabase = require('../config/supabase');
+
+// Helper: generate admission number
+const generateAdmissionNo = async (academicYear) => {
+  const yearCode = academicYear.replace('-', '');
+  const prefix = `ADM-${yearCode}`;
+
+  const { data } = await supabase
+    .from('students')
+    .select('admission_no')
+    .like('admission_no', `${prefix}%`)
+    .order('admission_no', { ascending: false })
+    .limit(1);
+
+  let seq = 1;
+  if (data && data.length > 0) {
+    const lastSeq = parseInt(data[0].admission_no.split('-').pop(), 10);
+    seq = lastSeq + 1;
+  }
+
+  return `${prefix}-${String(seq).padStart(4, '0')}`;
+};
+
+// @desc    Get all students (with filters)
+// @route   GET /api/students
+// @access  Auth
+exports.getStudents = async (req, res) => {
+  try {
+    const { grade, academicYear, status, search, active } = req.query;
+
+    let query = supabase.from('students').select('*');
+
+    if (grade) query = query.eq('grade', grade);
+    if (academicYear) query = query.eq('academic_year', academicYear);
+    if (status) query = query.eq('admission_status', status);
+    if (active !== undefined) query = query.eq('is_active', active === 'true');
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,admission_no.ilike.%${search}%,parent_name.ilike.%${search}%`);
+    }
+
+    query = query.order('created_at', { ascending: false });
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    res.json({ success: true, count: data.length, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get single student
+// @route   GET /api/students/:id
+// @access  Auth
+exports.getStudent = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ success: false, message: 'Student not found' });
+
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Register new student
+// @route   POST /api/students
+// @access  Auth
+exports.createStudent = async (req, res) => {
+  try {
+    const {
+      name, dob, gender, grade, section, parentName, parentPhone,
+      parentEmail, address, academicYear, admissionDate, photoUrl,
+    } = req.body;
+
+    const admissionNo = await generateAdmissionNo(academicYear);
+
+    const { data, error } = await supabase
+      .from('students')
+      .insert({
+        admission_no: admissionNo,
+        name,
+        dob,
+        gender,
+        grade,
+        section: section || '',
+        parent_name: parentName,
+        parent_phone: parentPhone,
+        parent_email: parentEmail || '',
+        address: address || '',
+        academic_year: academicYear,
+        admission_date: admissionDate || new Date().toISOString().split('T')[0],
+        photo_url: photoUrl || '',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.status(201).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Update student
+// @route   PUT /api/students/:id
+// @access  Auth
+exports.updateStudent = async (req, res) => {
+  try {
+    const {
+      name, dob, gender, grade, section, parentName, parentPhone,
+      parentEmail, address, academicYear, photoUrl,
+    } = req.body;
+
+    const updateData = { updated_at: new Date().toISOString() };
+    if (name !== undefined) updateData.name = name;
+    if (dob !== undefined) updateData.dob = dob;
+    if (gender !== undefined) updateData.gender = gender;
+    if (grade !== undefined) updateData.grade = grade;
+    if (section !== undefined) updateData.section = section;
+    if (parentName !== undefined) updateData.parent_name = parentName;
+    if (parentPhone !== undefined) updateData.parent_phone = parentPhone;
+    if (parentEmail !== undefined) updateData.parent_email = parentEmail;
+    if (address !== undefined) updateData.address = address;
+    if (academicYear !== undefined) updateData.academic_year = academicYear;
+    if (photoUrl !== undefined) updateData.photo_url = photoUrl;
+
+    const { data, error } = await supabase
+      .from('students')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ success: false, message: 'Student not found' });
+
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Update admission status
+// @route   PATCH /api/students/:id/status
+// @access  Admin
+exports.updateAdmissionStatus = async (req, res) => {
+  try {
+    const { admissionStatus } = req.body;
+
+    if (!['pending', 'confirmed'].includes(admissionStatus)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+
+    const { data, error } = await supabase
+      .from('students')
+      .update({ admission_status: admissionStatus, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get student stats (for dashboard)
+// @route   GET /api/students/stats
+// @access  Auth
+exports.getStudentStats = async (req, res) => {
+  try {
+    const { academicYear } = req.query;
+
+    let query = supabase.from('students').select('*').eq('is_active', true);
+    if (academicYear) query = query.eq('academic_year', academicYear);
+
+    const { data: students, error } = await query;
+    if (error) throw error;
+
+    const total = students.length;
+    const pending = students.filter((s) => s.admission_status === 'pending').length;
+    const confirmed = students.filter((s) => s.admission_status === 'confirmed').length;
+
+    // Grade-wise count
+    const gradeMap = {};
+    students.forEach((s) => {
+      gradeMap[s.grade] = (gradeMap[s.grade] || 0) + 1;
+    });
+    const gradeWise = Object.entries(gradeMap)
+      .map(([_id, count]) => ({ _id, count }))
+      .sort((a, b) => a._id.localeCompare(b._id, undefined, { numeric: true }));
+
+    res.json({
+      success: true,
+      data: { total, pending, confirmed, gradeWise },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
