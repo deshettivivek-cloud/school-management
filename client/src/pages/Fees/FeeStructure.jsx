@@ -62,8 +62,9 @@ const FeeStructure = () => {
 
   const openEdit = (structure) => {
     setEditId(structure._id);
-    setForm({ academicYear: structure.academicYear, grade: structure.grade });
-    setFeeHeads(structure.feeHeads.map((h) => ({ name: h.name, amount: h.amount.toString() })));
+    setForm({ academicYear: structure.academic_year || structure.academicYear, grade: structure.grade });
+    const heads = structure.fee_heads || structure.feeHeads || [];
+    setFeeHeads(heads.map((h) => ({ name: h.name, amount: h.amount.toString() })));
     setShowModal(true);
   };
 
@@ -146,7 +147,7 @@ const FeeStructure = () => {
               <div className="card-header">
                 <div>
                   <h3 className="card-title">Class {s.grade}</h3>
-                  <p className="card-subtitle">{s.academicYear}</p>
+                  <p className="card-subtitle">{s.academic_year || s.academicYear}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button className="btn btn-ghost btn-icon" onClick={() => openEdit(s)}>
@@ -158,7 +159,7 @@ const FeeStructure = () => {
                 </div>
               </div>
 
-              {s.feeHeads.map((h, i) => (
+              {(s.fee_heads || s.feeHeads || []).map((h, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>{h.name}</span>
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatCurrency(h.amount)}</span>
@@ -167,7 +168,7 @@ const FeeStructure = () => {
 
               <div className="fee-total">
                 <span className="fee-total-label">Total Standard Fee</span>
-                <span className="fee-total-value">{formatCurrency(s.totalStandardFee)}</span>
+                <span className="fee-total-value">{formatCurrency(s.total_standard_fee || s.totalStandardFee)}</span>
               </div>
             </div>
           ))}
