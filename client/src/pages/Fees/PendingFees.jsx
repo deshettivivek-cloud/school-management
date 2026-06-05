@@ -33,8 +33,8 @@ const PendingFees = () => {
       if (gradeFilter) params.append('grade', gradeFilter);
 
       const res = await api.get(`/fees/pending?${params}`);
-      setRecords(res.data.data);
-      setTotalPending(res.data.totalPending);
+      setRecords(res.data?.data || []);
+      setTotalPending(res.data?.totalPending || 0);
     } catch (error) {
       toast.error('Failed to fetch pending fees');
     } finally {

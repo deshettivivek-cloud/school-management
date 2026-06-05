@@ -29,7 +29,7 @@ const FeeStructure = () => {
   const fetchStructures = async () => {
     try {
       const res = await api.get('/fees/structure');
-      setStructures(res.data.data);
+      setStructures(res.data?.data || []);
     } catch (error) {
       toast.error('Failed to fetch fee structures');
     } finally {
