@@ -40,6 +40,13 @@ app.get('/api/health', (req, res) => {
     database: 'Supabase (PostgreSQL)',
   });
 });
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'School Management API is running',
+    status: 'OK'
+  });
+});
 
 // Error handler
 app.use(errorHandler);
