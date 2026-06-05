@@ -39,25 +39,21 @@ const protect = async (req, res, next) => {
     }
 
     // Fetch the user's profile (role, name)
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized — profile not found',
-      });
-    }
+    // We don't throw 401 if profile is missing, to prevent infinite login loops 
+    // for users who signed up before the database schema was fully executed.
 
     // Attach to request
     req.user = {
       id: user.id,
       email: user.email,
-      name: profile.name,
-      role: profile.role,
+      name: profile?.name || user.email,
+      role: profile?.role || 'staff',
     };
 
     next();
