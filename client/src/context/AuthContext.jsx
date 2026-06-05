@@ -59,7 +59,8 @@ export const AuthProvider = ({ children }) => {
           id: authUser.id,
           email: authUser.email,
           name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email,
-          role: 'staff',
+          role: 'teacher',
+          assigned_classes: [],
         });
         return;
       }
@@ -69,6 +70,7 @@ export const AuthProvider = ({ children }) => {
         email: profile.email,
         name: profile.name,
         role: profile.role,
+        assigned_classes: profile.assigned_classes || [],
       });
     } catch (err) {
       console.error('Profile fetch failed:', err);
@@ -108,7 +110,11 @@ export const AuthProvider = ({ children }) => {
     setSession(null);
   };
 
-  const isAdmin = () => user?.role === 'admin';
+  const hasAccess = (allowedRoles) => {
+    if (!user) return false;
+    if (!Array.isArray(allowedRoles)) return false;
+    return allowedRoles.includes(user.role);
+  };
 
   const value = {
     user,
@@ -117,7 +123,7 @@ export const AuthProvider = ({ children }) => {
     login,
     signInWithGoogle,
     logout,
-    isAdmin,
+    hasAccess,
     isAuthenticated: !!session,
   };
 

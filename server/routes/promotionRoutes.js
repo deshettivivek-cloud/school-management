@@ -4,7 +4,7 @@ const { checkPromotion, promoteStudents } = require('../controllers/promotionCon
 const { protect } = require('../middleware/auth');
 const { roleCheck } = require('../middleware/roleCheck');
 
-router.get('/check/:grade', protect, roleCheck('admin'), checkPromotion);
-router.post('/promote', protect, roleCheck('admin'), promoteStudents);
+router.get('/check/:grade', protect, roleCheck('principal'), checkPromotion);
+router.post('/promote', protect, roleCheck('principal'), promoteStudents);
 
 module.exports = router;

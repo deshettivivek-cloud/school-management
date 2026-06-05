@@ -33,7 +33,7 @@ const Header = ({ title, collapsed, setMobileOpen }) => {
           <div className="header-avatar">{getInitials(user?.name)}</div>
           <div className="header-user-info">
             <span className="header-user-name">{user?.name || 'User'}</span>
-            <span className="header-user-role">{user?.role || 'staff'}</span>
+            <span className="header-user-role">{user?.role || 'teacher'}</span>
           </div>
         </div>
       </div>

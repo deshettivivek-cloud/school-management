@@ -6,6 +6,6 @@ const { roleCheck } = require('../middleware/roleCheck');
 
 router.get('/', protect, getTCs);
 router.get('/:id', protect, getTC);
-router.post('/', protect, roleCheck('admin'), issueTC);
+router.post('/', protect, roleCheck('principal', 'clerk'), issueTC);
 
 module.exports = router;

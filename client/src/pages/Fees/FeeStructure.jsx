@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineSave, HiOutlinePencil, HiOutlineX } from 'react-icons/hi';
+import { useAuth } from '../../context/AuthContext';
 
 const FeeStructure = () => {
+  const { hasAccess } = useAuth();
   const [structures, setStructures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -122,9 +124,11 @@ const FeeStructure = () => {
           <h1>Fee Structure</h1>
           <p>Define fee heads and amounts per grade</p>
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>
-          <HiOutlinePlus /> New Fee Structure
-        </button>
+        {hasAccess(['principal']) && (
+          <button className="btn btn-primary" onClick={openCreate}>
+            <HiOutlinePlus /> New Fee Structure
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -135,9 +139,11 @@ const FeeStructure = () => {
             <div className="empty-state-icon">💰</div>
             <h3 className="empty-state-title">No Fee Structures</h3>
             <p className="empty-state-text">Define fee structures for each grade</p>
-            <button className="btn btn-primary" onClick={openCreate}>
-              <HiOutlinePlus /> Create First
-            </button>
+            {hasAccess(['principal']) && (
+              <button className="btn btn-primary" onClick={openCreate}>
+                <HiOutlinePlus /> Create First
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -149,14 +155,16 @@ const FeeStructure = () => {
                   <h3 className="card-title">Class {s.grade}</h3>
                   <p className="card-subtitle">{s.academic_year || s.academicYear}</p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button className="btn btn-ghost btn-icon" onClick={() => openEdit(s)}>
-                    <HiOutlinePencil />
-                  </button>
-                  <button className="btn btn-ghost btn-icon" style={{ color: 'var(--danger-400)' }} onClick={() => deleteStructure(s._id)}>
-                    <HiOutlineTrash />
-                  </button>
-                </div>
+                {hasAccess(['principal']) && (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn btn-ghost btn-icon" onClick={() => openEdit(s)}>
+                      <HiOutlinePencil />
+                    </button>
+                    <button className="btn btn-ghost btn-icon" style={{ color: 'var(--danger-400)' }} onClick={() => deleteStructure(s._id)}>
+                      <HiOutlineTrash />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {(s.fee_heads || s.feeHeads || []).map((h, i) => (

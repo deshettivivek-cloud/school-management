@@ -6,8 +6,8 @@ const { roleCheck } = require('../middleware/roleCheck');
 
 // No login route — handled by Supabase Auth on the frontend
 router.get('/me', protect, getMe);
-router.get('/users', protect, roleCheck('admin'), getUsers);
-router.post('/register', protect, roleCheck('admin'), register);
-router.patch('/users/:id/role', protect, roleCheck('admin'), updateRole);
+router.get('/users', protect, roleCheck('principal'), getUsers);
+router.post('/register', protect, roleCheck('principal'), register);
+router.patch('/users/:id/role', protect, roleCheck('principal'), updateRole);
 
 module.exports = router;

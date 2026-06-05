@@ -4,8 +4,10 @@ import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlinePlus, HiOutlineSearch, HiOutlineCheckCircle, HiOutlineClock } from 'react-icons/hi';
 import { format } from 'date-fns';
+import { useAuth } from '../../context/AuthContext';
 
 const AdmissionsList = () => {
+  const { hasAccess } = useAuth();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -182,7 +184,7 @@ const AdmissionsList = () => {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        {student.admissionStatus === 'pending' && (
+                        {hasAccess(['principal', 'clerk']) && student.admissionStatus === 'pending' && (
                           <button
                             className="btn btn-success btn-sm"
                             onClick={() => updateStatus(student._id, 'confirmed')}

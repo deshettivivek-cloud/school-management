@@ -5,7 +5,7 @@ const { protect } = require('../middleware/auth');
 const { roleCheck } = require('../middleware/roleCheck');
 
 router.get('/', protect, getSchool);
-router.put('/', protect, roleCheck('admin'), updateSchool);
-router.post('/logo', protect, roleCheck('admin'), uploadLogo);
+router.put('/', protect, roleCheck('principal'), updateSchool);
+router.post('/logo', protect, roleCheck('principal'), uploadLogo);
 
 module.exports = router;

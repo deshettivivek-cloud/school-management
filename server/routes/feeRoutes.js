@@ -20,14 +20,14 @@ const { roleCheck } = require('../middleware/roleCheck');
 
 // Fee Structure routes
 router.get('/structure', protect, getFeeStructures);
-router.post('/structure', protect, roleCheck('admin'), createFeeStructure);
-router.put('/structure/:id', protect, roleCheck('admin'), updateFeeStructure);
-router.delete('/structure/:id', protect, roleCheck('admin'), deleteFeeStructure);
+router.post('/structure', protect, roleCheck('principal'), createFeeStructure);
+router.put('/structure/:id', protect, roleCheck('principal'), updateFeeStructure);
+router.delete('/structure/:id', protect, roleCheck('principal'), deleteFeeStructure);
 
 // Fee Collection routes
 router.get('/collection', protect, getFeeCollections);
 router.get('/collection/:studentId', protect, getStudentFeeCollection);
-router.post('/collection/commit', protect, roleCheck('admin'), commitFee);
+router.post('/collection/commit', protect, roleCheck('principal', 'clerk'), commitFee);
 router.post('/collection/pay', protect, recordPayment);
 
 // Pending fees

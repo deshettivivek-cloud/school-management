@@ -8,9 +8,22 @@ CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL DEFAULT 'User',
   email TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'staff' CHECK (role IN ('admin', 'staff')),
+  role TEXT NOT NULL DEFAULT 'teacher' CHECK (role IN ('principal', 'clerk', 'teacher')),
+  assigned_classes TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Handle schema upgrades for existing databases
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='profiles' AND column_name='assigned_classes') THEN
+    ALTER TABLE profiles ADD COLUMN assigned_classes TEXT[] DEFAULT '{}';
+  END IF;
+  
+  ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+  ALTER TABLE profiles ADD CONSTRAINT profiles_role_check CHECK (role IN ('principal', 'clerk', 'teacher'));
+  ALTER TABLE profiles ALTER COLUMN role SET DEFAULT 'teacher';
+END $$;
 
 -- ── School Config (singleton) ─────────────────────────────────
 CREATE TABLE IF NOT EXISTS school (
@@ -116,7 +129,7 @@ BEGIN
       split_part(NEW.email, '@', 1)
     ),
     NEW.email,
-    'staff'
+    'teacher'
   );
   RETURN NEW;
 END;
@@ -139,35 +152,65 @@ ALTER TABLE fee_structures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fee_collections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transfer_certificates ENABLE ROW LEVEL SECURITY;
 
--- Profiles: users can read all, update own
+-- Security Definer Functions for Role Checks (to avoid infinite recursion)
+CREATE OR REPLACE FUNCTION get_user_role() RETURNS TEXT AS $$
+  SELECT role FROM profiles WHERE id = auth.uid();
+$$ LANGUAGE sql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_teacher_classes() RETURNS TEXT[] AS $$
+  SELECT assigned_classes FROM profiles WHERE id = auth.uid();
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Profiles: users can read all, update own or if principal
 CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "profiles_update_own" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (
+  auth.uid() = id OR get_user_role() = 'principal'
+);
 CREATE POLICY "profiles_insert" ON profiles FOR INSERT WITH CHECK (true);
 
--- School: authenticated can read, authenticated can write (backend checks admin role)
+-- School: authenticated can read, principal can write
 CREATE POLICY "school_select" ON school FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "school_insert" ON school FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "school_update" ON school FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "school_insert" ON school FOR INSERT WITH CHECK (get_user_role() = 'principal');
+CREATE POLICY "school_update" ON school FOR UPDATE USING (get_user_role() = 'principal');
 
--- Students: authenticated full access (backend checks roles)
-CREATE POLICY "students_select" ON students FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "students_insert" ON students FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "students_update" ON students FOR UPDATE USING (auth.role() = 'authenticated');
+-- Students: Principal & Clerk (all), Teacher (assigned classes)
+CREATE POLICY "students_select" ON students FOR SELECT USING (
+  get_user_role() IN ('principal', 'clerk') OR 
+  (get_user_role() = 'teacher' AND grade = ANY(get_teacher_classes()))
+);
+CREATE POLICY "students_insert" ON students FOR INSERT WITH CHECK (
+  get_user_role() IN ('principal', 'clerk') OR 
+  (get_user_role() = 'teacher' AND grade = ANY(get_teacher_classes()))
+);
+CREATE POLICY "students_update" ON students FOR UPDATE USING (
+  get_user_role() IN ('principal', 'clerk') OR 
+  (get_user_role() = 'teacher' AND grade = ANY(get_teacher_classes()))
+);
 
--- Fee structures
+-- Fee structures: read all, write principal
 CREATE POLICY "fee_structures_select" ON fee_structures FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "fee_structures_insert" ON fee_structures FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "fee_structures_update" ON fee_structures FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "fee_structures_delete" ON fee_structures FOR DELETE USING (auth.role() = 'authenticated');
+CREATE POLICY "fee_structures_insert" ON fee_structures FOR INSERT WITH CHECK (get_user_role() = 'principal');
+CREATE POLICY "fee_structures_update" ON fee_structures FOR UPDATE USING (get_user_role() = 'principal');
+CREATE POLICY "fee_structures_delete" ON fee_structures FOR DELETE USING (get_user_role() = 'principal');
 
--- Fee collections
-CREATE POLICY "fee_collections_select" ON fee_collections FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "fee_collections_insert" ON fee_collections FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "fee_collections_update" ON fee_collections FOR UPDATE USING (auth.role() = 'authenticated');
+-- Fee collections: read/write principal and clerk
+CREATE POLICY "fee_collections_select" ON fee_collections FOR SELECT USING (
+  get_user_role() IN ('principal', 'clerk')
+);
+CREATE POLICY "fee_collections_insert" ON fee_collections FOR INSERT WITH CHECK (
+  get_user_role() IN ('principal', 'clerk')
+);
+CREATE POLICY "fee_collections_update" ON fee_collections FOR UPDATE USING (
+  get_user_role() IN ('principal', 'clerk')
+);
 
--- Transfer certificates
-CREATE POLICY "tc_select" ON transfer_certificates FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "tc_insert" ON transfer_certificates FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+-- Transfer certificates: read/write principal and clerk
+CREATE POLICY "tc_select" ON transfer_certificates FOR SELECT USING (
+  get_user_role() IN ('principal', 'clerk')
+);
+CREATE POLICY "tc_insert" ON transfer_certificates FOR INSERT WITH CHECK (
+  get_user_role() IN ('principal', 'clerk')
+);
 
 -- ═══════════════════════════════════════════════════════════════
 -- STORAGE: Create buckets for logos and photos

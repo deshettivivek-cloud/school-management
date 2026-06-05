@@ -12,6 +12,6 @@ router.get('/', protect, getStudents);
 router.get('/:id', protect, getStudent);
 router.post('/', protect, createStudent);
 router.put('/:id', protect, updateStudent);
-router.patch('/:id/status', protect, roleCheck('admin'), updateAdmissionStatus);
+router.patch('/:id/status', protect, roleCheck('principal', 'clerk'), updateAdmissionStatus);
 
 module.exports = router;
