@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
         });
         return;
       }
-
+      setUser({
         id: profile.id,
         email: profile.email,
         name: profile.name,
