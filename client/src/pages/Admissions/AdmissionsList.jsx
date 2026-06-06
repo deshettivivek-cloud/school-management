@@ -145,15 +145,15 @@ const AdmissionsList = () => {
               </thead>
               <tbody>
                 {students.map((student) => (
-                  <tr key={student._id}>
+                  <tr key={student.id}>
                     <td style={{ fontWeight: 600, color: 'var(--primary-400)' }}>
-                      {student.admissionNo}
+                      {student.admission_no || student.admissionNo}
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {student.photo ? (
+                        {student.photo_url || student.photo ? (
                           <img
-                            src={student.photo}
+                            src={student.photo_url || student.photo}
                             alt=""
                             style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
                           />
@@ -173,27 +173,27 @@ const AdmissionsList = () => {
                       </div>
                     </td>
                     <td>Class {student.grade}{student.section ? `-${student.section}` : ''}</td>
-                    <td>{student.parentName}</td>
-                    <td>{student.parentPhone}</td>
-                    <td>{student.admissionDate ? format(new Date(student.admissionDate), 'dd MMM yyyy') : '-'}</td>
+                    <td>{student.parent_name || student.parentName}</td>
+                    <td>{student.parent_phone || student.parentPhone}</td>
+                    <td>{(student.admission_date || student.admissionDate) ? format(new Date(student.admission_date || student.admissionDate), 'dd MMM yyyy') : '-'}</td>
                     <td>
-                      <span className={`badge ${student.admissionStatus === 'confirmed' ? 'badge-success' : 'badge-warning'}`}>
-                        {student.admissionStatus === 'confirmed' ? <HiOutlineCheckCircle /> : <HiOutlineClock />}
-                        {student.admissionStatus}
+                      <span className={`badge ${(student.admission_status || student.admissionStatus) === 'confirmed' ? 'badge-success' : 'badge-warning'}`}>
+                        {(student.admission_status || student.admissionStatus) === 'confirmed' ? <HiOutlineCheckCircle /> : <HiOutlineClock />}
+                        {student.admission_status || student.admissionStatus}
                       </span>
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        {hasAccess(['principal', 'clerk']) && student.admissionStatus === 'pending' && (
+                        {hasAccess(['principal', 'clerk']) && (student.admission_status || student.admissionStatus) === 'pending' && (
                           <button
                             className="btn btn-success btn-sm"
-                            onClick={() => updateStatus(student._id, 'confirmed')}
+                            onClick={() => updateStatus(student.id || student._id, 'confirmed')}
                           >
                             Confirm
                           </button>
                         )}
                         <Link
-                          to={`/admissions/edit/${student._id}`}
+                          to={`/admissions/edit/${student.id || student._id}`}
                           className="btn btn-secondary btn-sm"
                         >
                           Edit
