@@ -80,15 +80,16 @@ exports.createStudent = async (req, res) => {
     const {
       name, dob, gender, grade, section, parentName, parentPhone,
       parentEmail, address, academicYear, admissionDate, photoUrl,
+      admissionNo, aadharNo
     } = req.body;
 
-    const admissionNo = await generateAdmissionNo(req.user.schoolId, academicYear);
+    const finalAdmissionNo = admissionNo || await generateAdmissionNo(req.user.schoolId, academicYear);
 
     const { data, error } = await supabase
       .from('students')
       .insert({
         school_id: req.user.schoolId,
-        admission_no: admissionNo,
+        admission_no: finalAdmissionNo,
         name,
         dob,
         gender,
@@ -101,6 +102,7 @@ exports.createStudent = async (req, res) => {
         academic_year: academicYear,
         admission_date: admissionDate || new Date().toISOString().split('T')[0],
         photo_url: photoUrl || '',
+        aadhar_no: aadharNo || null
       })
       .select()
       .single();
@@ -120,7 +122,8 @@ exports.updateStudent = async (req, res) => {
   try {
     const {
       name, dob, gender, grade, section, parentName, parentPhone,
-      parentEmail, address, academicYear, photoUrl,
+      parentEmail, address, academicYear, admissionDate, photoUrl,
+      admissionNo, aadharNo
     } = req.body;
 
     const updateData = { updated_at: new Date().toISOString() };
@@ -134,7 +137,10 @@ exports.updateStudent = async (req, res) => {
     if (parentEmail !== undefined) updateData.parent_email = parentEmail;
     if (address !== undefined) updateData.address = address;
     if (academicYear !== undefined) updateData.academic_year = academicYear;
+    if (admissionDate !== undefined) updateData.admission_date = admissionDate;
     if (photoUrl !== undefined) updateData.photo_url = photoUrl;
+    if (admissionNo !== undefined) updateData.admission_no = admissionNo;
+    if (aadharNo !== undefined) updateData.aadhar_no = aadharNo;
 
     const { data, error } = await supabase
       .from('students')

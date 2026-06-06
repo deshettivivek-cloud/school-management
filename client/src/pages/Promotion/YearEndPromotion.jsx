@@ -21,10 +21,10 @@ const YearEndPromotion = () => {
   const fetchSchoolYear = async () => {
     try {
       const res = await api.get('/schools');
-      if (res.data.data?.academicYear) {
-        setAcademicYear(res.data.data.academicYear);
+      if (res.data.data?.academic_year) {
+        setAcademicYear(res.data.data.academic_year);
         // Auto-generate next year
-        const parts = res.data.data.academicYear.split('-');
+        const parts = res.data.data.academic_year.split('-');
         if (parts.length === 2) {
           const next = `${parseInt(parts[0]) + 1}-${parseInt(parts[1]) + 1}`;
           setNewAcademicYear(next);

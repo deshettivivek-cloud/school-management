@@ -21,7 +21,7 @@ const PendingFees = () => {
   const fetchSchoolYear = async () => {
     try {
       const res = await api.get('/schools');
-      if (res.data.data?.academicYear) setAcademicYear(res.data.data.academicYear);
+      if (res.data.data?.academic_year) setAcademicYear(res.data.data.academic_year);
     } catch (err) { /* ignore */ }
   };
 

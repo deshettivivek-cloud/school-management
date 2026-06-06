@@ -47,6 +47,7 @@ CREATE TABLE students (
   name TEXT NOT NULL,
   dob DATE NOT NULL,
   gender TEXT NOT NULL CHECK (gender IN ('male', 'female', 'other')),
+  aadhar_no TEXT,
   photo_url TEXT DEFAULT '',
   grade TEXT NOT NULL,
   section TEXT DEFAULT '',

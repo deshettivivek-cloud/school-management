@@ -14,6 +14,7 @@ const AdmissionForm = () => {
     name: '', dob: '', gender: 'male', grade: '', section: '',
     parentName: '', parentPhone: '', parentEmail: '', address: '',
     academicYear: '', admissionDate: new Date().toISOString().split('T')[0],
+    admissionNo: '', aadharNo: ''
   });
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
@@ -28,8 +29,8 @@ const AdmissionForm = () => {
   const fetchSchoolYear = async () => {
     try {
       const res = await api.get('/schools');
-      if (res.data.data?.academicYear) {
-        setForm((prev) => ({ ...prev, academicYear: res.data.data.academicYear }));
+      if (res.data.data?.academic_year) {
+        setForm((prev) => ({ ...prev, academicYear: res.data.data.academic_year }));
       }
     } catch (err) { /* ignore */ }
   };
@@ -43,8 +44,9 @@ const AdmissionForm = () => {
         name: s.name, dob: s.dob?.split('T')[0] || '', gender: s.gender,
         grade: s.grade, section: s.section || '', parentName: s.parentName,
         parentPhone: s.parentPhone, parentEmail: s.parentEmail || '',
-        address: s.address || '', academicYear: s.academicYear,
+        address: s.address || '', academicYear: s.academicYear || s.academic_year || '',
         admissionDate: s.admissionDate?.split('T')[0] || (s.admission_date ? s.admission_date.split('T')[0] : ''),
+        admissionNo: s.admission_no || '', aadharNo: s.aadhar_no || ''
       });
       if (s.photo_url || s.photoUrl) setPhotoPreview(s.photo_url || s.photoUrl);
     } catch (error) {
@@ -156,12 +158,23 @@ const AdmissionForm = () => {
 
           <div className="form-row">
             <div className="form-group">
+              <label className="form-label">Admission No</label>
+              <input id="student-admission" type="text" className="form-input" name="admissionNo" value={form.admissionNo} onChange={handleChange} placeholder="Auto-generated if empty" />
+            </div>
+            <div className="form-group">
               <label className="form-label">Full Name *</label>
               <input id="student-name" type="text" className="form-input" name="name" value={form.name} onChange={handleChange} placeholder="Student full name" />
             </div>
+          </div>
+
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label">Date of Birth *</label>
               <input id="student-dob" type="date" className="form-input" name="dob" value={form.dob} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Aadhar Number</label>
+              <input id="student-aadhar" type="text" className="form-input" name="aadharNo" value={form.aadharNo} onChange={handleChange} placeholder="12-digit Aadhar number" />
             </div>
           </div>
 
