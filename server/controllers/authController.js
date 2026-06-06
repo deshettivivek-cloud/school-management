@@ -68,11 +68,11 @@ exports.register = async (req, res) => {
 
     if (authError) throw authError;
 
-    // Update role in profiles table (trigger creates profile with 'staff' by default)
-    if (role === 'admin') {
+    // Update role in profiles table (trigger creates profile with 'clerk' by default)
+    if (role === 'principal') {
       const { error: roleError } = await supabase
         .from('profiles')
-        .update({ role: 'admin', name })
+        .update({ role: 'principal', name })
         .eq('id', authData.user.id);
 
       if (roleError) throw roleError;
@@ -84,7 +84,7 @@ exports.register = async (req, res) => {
         id: authData.user.id,
         name,
         email,
-        role: role || 'staff',
+        role: role || 'clerk',
       },
     });
   } catch (error) {
@@ -99,10 +99,10 @@ exports.updateRole = async (req, res) => {
   try {
     const { role } = req.body;
 
-    if (!['admin', 'staff'].includes(role)) {
+    if (!['principal', 'clerk', 'teacher'].includes(role)) {
       return res.status(400).json({
         success: false,
-        message: 'Role must be "admin" or "staff"',
+        message: 'Role must be "principal", "clerk" or "teacher"',
       });
     }
 

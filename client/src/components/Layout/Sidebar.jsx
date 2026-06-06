@@ -20,24 +20,24 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
   const location = useLocation();
 
   const navItems = [
-    { section: 'Main', roles: ['admin', 'staff'] },
-    { path: '/', icon: HiOutlineHome, label: 'Dashboard', roles: ['admin', 'staff'] },
-    { path: '/school-setup', icon: HiOutlineCog, label: 'School Setup', roles: ['admin'] },
-    { path: '/role-management', icon: HiOutlineUsers, label: 'Role Management', roles: ['admin'] },
+    { section: 'Main', roles: ['principal', 'clerk'] },
+    { path: '/', icon: HiOutlineHome, label: 'Dashboard', roles: ['principal', 'clerk'] },
+    { path: '/school-setup', icon: HiOutlineCog, label: 'School Setup', roles: ['principal'] },
+    { path: '/role-management', icon: HiOutlineUsers, label: 'Role Management', roles: ['principal'] },
 
-    { section: 'Students', roles: ['admin', 'staff'] },
-    { path: '/admissions', icon: HiOutlineUsers, label: 'Admissions', roles: ['admin', 'staff'] },
-    { path: '/admissions/new', icon: HiOutlineUserAdd, label: 'New Admission', roles: ['admin', 'staff'] },
+    { section: 'Students', roles: ['principal', 'clerk'] },
+    { path: '/admissions', icon: HiOutlineUsers, label: 'Admissions', roles: ['principal', 'clerk'] },
+    { path: '/admissions/new', icon: HiOutlineUserAdd, label: 'New Admission', roles: ['principal', 'clerk'] },
 
-    { section: 'Fees', roles: ['admin', 'staff'] },
-    { path: '/fees/structure', icon: HiOutlineClipboardList, label: 'Fee Structure', roles: ['admin', 'staff'] },
-    { path: '/fees/collection', icon: HiOutlineCurrencyRupee, label: 'Fee Collection', roles: ['admin', 'staff'] },
-    { path: '/fees/pending', icon: HiOutlineDocumentText, label: 'Pending Fees', roles: ['admin', 'staff'] },
+    { section: 'Fees', roles: ['principal', 'clerk'] },
+    { path: '/fees/structure', icon: HiOutlineClipboardList, label: 'Fee Structure', roles: ['principal', 'clerk'] },
+    { path: '/fees/collection', icon: HiOutlineCurrencyRupee, label: 'Fee Collection', roles: ['principal', 'clerk'] },
+    { path: '/fees/pending', icon: HiOutlineDocumentText, label: 'Pending Fees', roles: ['principal', 'clerk'] },
 
-    { section: 'Academic', roles: ['admin', 'staff'] },
-    { path: '/promotion', icon: HiOutlineArrowUp, label: 'Promotion', roles: ['admin'] },
-    { path: '/tc/issue', icon: HiOutlineAcademicCap, label: 'Issue TC', roles: ['admin', 'staff'] },
-    { path: '/tc/register', icon: HiOutlineDocumentText, label: 'TC Register', roles: ['admin', 'staff'] },
+    { section: 'Academic', roles: ['principal', 'clerk'] },
+    { path: '/promotion', icon: HiOutlineArrowUp, label: 'Promotion', roles: ['principal'] },
+    { path: '/tc/issue', icon: HiOutlineAcademicCap, label: 'Issue TC', roles: ['principal', 'clerk'] },
+    { path: '/tc/register', icon: HiOutlineDocumentText, label: 'TC Register', roles: ['principal', 'clerk'] },
   ];
 
   const isActive = (path) => {

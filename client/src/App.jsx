@@ -68,15 +68,15 @@ function App() {
         {/* All authenticated users */}
         <Route path="/" element={<Dashboard />} />
 
-        {/* Admin Only */}
-        <Route element={<ProtectedRoute allowedRoles={['admin']}><Outlet /></ProtectedRoute>}>
+        {/* Principal Only */}
+        <Route element={<ProtectedRoute allowedRoles={['principal']}><Outlet /></ProtectedRoute>}>
           <Route path="/school-setup" element={<SchoolSetup />} />
           <Route path="/promotion" element={<YearEndPromotion />} />
           <Route path="/role-management" element={<RoleManagement />} />
         </Route>
 
-        {/* Admin and Staff */}
-        <Route element={<ProtectedRoute allowedRoles={['admin', 'staff']}><Outlet /></ProtectedRoute>}>
+        {/* Principal and Clerk */}
+        <Route element={<ProtectedRoute allowedRoles={['principal', 'clerk']}><Outlet /></ProtectedRoute>}>
           <Route path="/admissions" element={<AdmissionsList />} />
           <Route path="/admissions/new" element={<AdmissionForm />} />
           <Route path="/admissions/edit/:id" element={<AdmissionForm />} />
