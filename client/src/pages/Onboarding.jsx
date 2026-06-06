@@ -10,6 +10,12 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('create');
   
+  useEffect(() => {
+    if (user?.schoolId) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
+  
   // Create Form State
   const [schoolName, setSchoolName] = useState('');
   const [academicYear, setAcademicYear] = useState('2024-2025');
@@ -66,14 +72,14 @@ const Onboarding = () => {
             style={{ flex: 1 }}
             onClick={() => setActiveTab('create')}
           >
-            Create School
+            Create New School
           </button>
           <button 
             className={`btn ${activeTab === 'join' ? 'btn-primary' : 'btn-outline'}`}
             style={{ flex: 1 }}
             onClick={() => setActiveTab('join')}
           >
-            Join School
+            Join Existing School
           </button>
         </div>
 

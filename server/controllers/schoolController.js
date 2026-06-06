@@ -39,11 +39,16 @@ exports.registerSchool = async (req, res) => {
 
     if (schoolErr) throw schoolErr;
 
-    // Update the user's profile to link to this school AND make them a principal
+    // Update or recreate the user's profile to link to this school AND make them a principal
     const { error: profileErr } = await supabase
       .from('profiles')
-      .update({ school_id: school.id, role: 'principal' })
-      .eq('id', req.user.id);
+      .upsert({ 
+        id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        school_id: school.id, 
+        role: 'principal' 
+      });
 
     if (profileErr) throw profileErr;
 
@@ -76,11 +81,16 @@ exports.joinSchool = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Invalid Join Code. School not found.' });
     }
 
-    // Update the user's profile to link to this school (default role is teacher)
+    // Update or recreate the user's profile to link to this school
     const { error: profileErr } = await supabase
       .from('profiles')
-      .update({ school_id: school.id })
-      .eq('id', req.user.id);
+      .upsert({ 
+        id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        school_id: school.id,
+        role: req.user.role || 'teacher'
+      });
 
     if (profileErr) throw profileErr;
 
