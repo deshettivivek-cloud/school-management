@@ -16,27 +16,28 @@ import {
 } from 'react-icons/hi';
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
-  const { logout, user } = useAuth();
+  const { logout, hasAccess } = useAuth();
   const location = useLocation();
 
   const navItems = [
-    { section: 'Main' },
-    { path: '/', icon: HiOutlineHome, label: 'Dashboard' },
-    { path: '/school-setup', icon: HiOutlineCog, label: 'School Setup' },
+    { section: 'Main', roles: ['admin', 'staff'] },
+    { path: '/', icon: HiOutlineHome, label: 'Dashboard', roles: ['admin', 'staff'] },
+    { path: '/school-setup', icon: HiOutlineCog, label: 'School Setup', roles: ['admin'] },
+    { path: '/role-management', icon: HiOutlineUsers, label: 'Role Management', roles: ['admin'] },
 
-    { section: 'Students' },
-    { path: '/admissions', icon: HiOutlineUsers, label: 'Admissions' },
-    { path: '/admissions/new', icon: HiOutlineUserAdd, label: 'New Admission' },
+    { section: 'Students', roles: ['admin', 'staff'] },
+    { path: '/admissions', icon: HiOutlineUsers, label: 'Admissions', roles: ['admin', 'staff'] },
+    { path: '/admissions/new', icon: HiOutlineUserAdd, label: 'New Admission', roles: ['admin', 'staff'] },
 
-    { section: 'Fees' },
-    { path: '/fees/structure', icon: HiOutlineClipboardList, label: 'Fee Structure' },
-    { path: '/fees/collection', icon: HiOutlineCurrencyRupee, label: 'Fee Collection' },
-    { path: '/fees/pending', icon: HiOutlineDocumentText, label: 'Pending Fees' },
+    { section: 'Fees', roles: ['admin', 'staff'] },
+    { path: '/fees/structure', icon: HiOutlineClipboardList, label: 'Fee Structure', roles: ['admin', 'staff'] },
+    { path: '/fees/collection', icon: HiOutlineCurrencyRupee, label: 'Fee Collection', roles: ['admin', 'staff'] },
+    { path: '/fees/pending', icon: HiOutlineDocumentText, label: 'Pending Fees', roles: ['admin', 'staff'] },
 
-    { section: 'Academic' },
-    { path: '/promotion', icon: HiOutlineArrowUp, label: 'Promotion' },
-    { path: '/tc/issue', icon: HiOutlineAcademicCap, label: 'Issue TC' },
-    { path: '/tc/register', icon: HiOutlineDocumentText, label: 'TC Register' },
+    { section: 'Academic', roles: ['admin', 'staff'] },
+    { path: '/promotion', icon: HiOutlineArrowUp, label: 'Promotion', roles: ['admin'] },
+    { path: '/tc/issue', icon: HiOutlineAcademicCap, label: 'Issue TC', roles: ['admin', 'staff'] },
+    { path: '/tc/register', icon: HiOutlineDocumentText, label: 'TC Register', roles: ['admin', 'staff'] },
   ];
 
   const isActive = (path) => {
@@ -68,6 +69,8 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
 
         <nav className="sidebar-nav">
           {navItems.map((item, idx) => {
+            if (item.roles && !hasAccess(item.roles)) return null;
+
             if (item.section) {
               return !collapsed ? (
                 <div key={idx} className="nav-section-label">
