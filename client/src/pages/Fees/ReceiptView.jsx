@@ -20,7 +20,7 @@ const ReceiptView = () => {
     try {
       const [receiptRes, schoolRes] = await Promise.all([
         api.get(`/fees/receipt/${collectionId}/${paymentId}`),
-        api.get('/school'),
+        api.get('/schools'),
       ]);
       setData(receiptRes.data.data);
       setSchool(schoolRes.data.data);

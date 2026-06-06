@@ -25,7 +25,7 @@ const FeeCollection = () => {
 
   const fetchSchoolYear = async () => {
     try {
-      const res = await api.get('/school');
+      const res = await api.get('/schools');
       if (res.data.data?.academicYear) setAcademicYear(res.data.data.academicYear);
     } catch (err) { /* ignore */ }
   };

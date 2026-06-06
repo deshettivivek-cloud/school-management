@@ -27,7 +27,7 @@ const AdmissionForm = () => {
 
   const fetchSchoolYear = async () => {
     try {
-      const res = await api.get('/school');
+      const res = await api.get('/schools');
       if (res.data.data?.academicYear) {
         setForm((prev) => ({ ...prev, academicYear: res.data.data.academicYear }));
       }
