@@ -50,16 +50,16 @@ const FeeCollection = () => {
 
     try {
       const [feeRes, structRes] = await Promise.all([
-        api.get(`/fees/collection/${student._id}?academicYear=${academicYear}`),
+        api.get(`/fees/collection/${student.id}?academicYear=${academicYear}`),
         api.get(`/fees/structure?academicYear=${academicYear}&grade=${student.grade}`),
       ]);
       setFeeRecord(feeRes.data.data);
       setFeeStructure(structRes.data.data?.[0] || null);
 
       if (!feeRes.data.data && structRes.data.data?.[0]) {
-        setCommittedFee(structRes.data.data[0].totalStandardFee.toString());
+        setCommittedFee((structRes.data.data[0].total_standard_fee || structRes.data.data[0].totalStandardFee || 0).toString());
       } else if (feeRes.data.data) {
-        setCommittedFee(feeRes.data.data.committedFee.toString());
+        setCommittedFee((feeRes.data.data.committed_fee || feeRes.data.data.committedFee || 0).toString());
       }
     } catch (error) {
       console.error(error);
@@ -73,7 +73,7 @@ const FeeCollection = () => {
     }
     try {
       const res = await api.post('/fees/collection/commit', {
-        studentId: selectedStudent._id,
+        studentId: selectedStudent.id,
         academicYear,
         committedFee: parseFloat(committedFee),
       });
@@ -92,7 +92,7 @@ const FeeCollection = () => {
     }
     try {
       const res = await api.post('/fees/collection/pay', {
-        studentId: selectedStudent._id,
+        studentId: selectedStudent.id,
         academicYear,
         amount: parseFloat(payForm.amount),
         mode: payForm.mode,
@@ -106,7 +106,7 @@ const FeeCollection = () => {
       // Navigate to receipt
       const payment = res.data.data.payment;
       if (payment) {
-        navigate(`/fees/receipt/${res.data.data.collection._id}/${payment._id}`);
+        navigate(`/fees/receipt/${res.data.data.collection.id}/${payment._id}`);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Payment failed');
@@ -153,7 +153,7 @@ const FeeCollection = () => {
           <div style={{ marginTop: '1rem', maxHeight: 250, overflowY: 'auto' }}>
             {students.map((s) => (
               <div
-                key={s._id}
+                key={s.id}
                 style={{
                   padding: '0.75rem', borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--border-color)', marginBottom: '0.5rem',
@@ -166,12 +166,12 @@ const FeeCollection = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <div>
                     <strong style={{ color: 'var(--text-primary)' }}>{s.name}</strong>
-                    <span style={{ color: 'var(--text-muted)', marginLeft: '0.75rem', fontSize: '0.85rem' }}>{s.admissionNo}</span>
+                    <span style={{ color: 'var(--text-muted)', marginLeft: '0.75rem', fontSize: '0.85rem' }}>{s.admission_no || s.admissionNo}</span>
                   </div>
                   <span className="badge badge-primary">Class {s.grade}</span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  Parent: {s.parentName} • {s.parentPhone}
+                  Parent: {s.parent_name || s.parentName} • {s.parent_phone || s.parentPhone}
                 </div>
               </div>
             ))}
@@ -186,7 +186,7 @@ const FeeCollection = () => {
             <div>
               <h3 className="card-title">{selectedStudent.name}</h3>
               <p className="card-subtitle">
-                {selectedStudent.admissionNo} • Class {selectedStudent.grade} • {academicYear}
+                {selectedStudent.admission_no || selectedStudent.admissionNo} • Class {selectedStudent.grade} • {academicYear}
               </p>
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -208,13 +208,13 @@ const FeeCollection = () => {
                 <div className="stat-card primary" style={{ padding: '1rem' }}>
                   <div className="stat-info">
                     <div className="stat-label">Committed Fee</div>
-                    <div className="stat-value" style={{ fontSize: '1.35rem' }}>{formatCurrency(feeRecord.committedFee)}</div>
+                    <div className="stat-value" style={{ fontSize: '1.35rem' }}>{formatCurrency(feeRecord.committed_fee || feeRecord.committedFee)}</div>
                   </div>
                 </div>
                 <div className="stat-card success" style={{ padding: '1rem' }}>
                   <div className="stat-info">
                     <div className="stat-label">Total Paid</div>
-                    <div className="stat-value" style={{ fontSize: '1.35rem' }}>{formatCurrency(feeRecord.totalPaid)}</div>
+                    <div className="stat-value" style={{ fontSize: '1.35rem' }}>{formatCurrency(feeRecord.total_paid || feeRecord.totalPaid)}</div>
                   </div>
                 </div>
                 <div className="stat-card warning" style={{ padding: '1rem' }}>
@@ -230,10 +230,10 @@ const FeeCollection = () => {
 
               {feeStructure && (
                 <div style={{ marginBottom: '1.5rem', padding: '0.75rem', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  Standard Fee for Class {selectedStudent.grade}: {formatCurrency(feeStructure.totalStandardFee)}
-                  {feeRecord.committedFee < feeStructure.totalStandardFee && (
+                  Standard Fee for Class {selectedStudent.grade}: {formatCurrency(feeStructure.total_standard_fee || feeStructure.totalStandardFee)}
+                  {(feeRecord.committed_fee || feeRecord.committedFee) < (feeStructure.total_standard_fee || feeStructure.totalStandardFee) && (
                     <span style={{ color: 'var(--warning-400)', marginLeft: '0.5rem' }}>
-                      (Discount: {formatCurrency(feeStructure.totalStandardFee - feeRecord.committedFee)})
+                      (Discount: {formatCurrency((feeStructure.total_standard_fee || feeStructure.totalStandardFee) - (feeRecord.committed_fee || feeRecord.committedFee))})
                     </span>
                   )}
                 </div>
@@ -265,7 +265,7 @@ const FeeCollection = () => {
                           <td>
                             <button
                               className="btn btn-ghost btn-sm"
-                              onClick={() => navigate(`/fees/receipt/${feeRecord._id}/${p._id}`)}
+                              onClick={() => navigate(`/fees/receipt/${feeRecord.id}/${p._id}`)}
                             >
                               <HiOutlineReceiptRefund /> Receipt
                             </button>
@@ -298,7 +298,7 @@ const FeeCollection = () => {
             <div className="modal-body">
               {feeStructure && (
                 <p className="form-help" style={{ marginBottom: '1rem' }}>
-                  Standard fee for Class {selectedStudent.grade}: {formatCurrency(feeStructure.totalStandardFee)}
+                  Standard fee for Class {selectedStudent.grade}: {formatCurrency(feeStructure.total_standard_fee || feeStructure.totalStandardFee)}
                 </p>
               )}
               <div className="form-group">

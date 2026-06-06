@@ -99,8 +99,8 @@ const ReceiptView = () => {
           <div className="receipt">
             {/* Header */}
             <div className="receipt-header">
-              {school?.logo && (
-                <img src={school.logo} alt="Logo" style={{ width: 60, height: 60, objectFit: 'contain' }} />
+              {(school?.logo_url || school?.logo) && (
+                <img src={school.logo_url || school.logo} alt="Logo" style={{ width: 60, height: 60, objectFit: 'contain' }} />
               )}
               <div>
                 <div className="receipt-school-name">{school?.name || 'School'}</div>
@@ -120,9 +120,9 @@ const ReceiptView = () => {
               <div><strong>Receipt No:</strong> {payment.receiptNo}</div>
               <div><strong>Date:</strong> {format(new Date(payment.date), 'dd MMM yyyy')}</div>
               <div><strong>Student:</strong> {student?.name}</div>
-              <div><strong>Admission No:</strong> {student?.admissionNo}</div>
+              <div><strong>Admission No:</strong> {student?.admission_no || student?.admissionNo}</div>
               <div><strong>Class:</strong> {student?.grade}{student?.section ? `-${student.section}` : ''}</div>
-              <div><strong>Parent:</strong> {student?.parentName}</div>
+              <div><strong>Parent:</strong> {student?.parent_name || student?.parentName}</div>
             </div>
 
             <hr style={{ border: 'none', borderTop: '1px solid #ddd', margin: '1rem 0' }} />
