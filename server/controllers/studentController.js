@@ -1,13 +1,14 @@
 const supabase = require('../config/supabase');
 
 // Helper: generate admission number
-const generateAdmissionNo = async (academicYear) => {
+const generateAdmissionNo = async (schoolId, academicYear) => {
   const yearCode = academicYear.replace('-', '');
   const prefix = `ADM-${yearCode}`;
 
   const { data } = await supabase
     .from('students')
     .select('admission_no')
+    .eq('school_id', schoolId)
     .like('admission_no', `${prefix}%`)
     .order('admission_no', { ascending: false })
     .limit(1);
@@ -28,7 +29,7 @@ exports.getStudents = async (req, res) => {
   try {
     const { grade, academicYear, status, search, active } = req.query;
 
-    let query = supabase.from('students').select('*');
+    let query = supabase.from('students').select('*').eq('school_id', req.user.schoolId);
 
     if (grade) query = query.eq('grade', grade);
     if (academicYear) query = query.eq('academic_year', academicYear);
@@ -59,6 +60,7 @@ exports.getStudent = async (req, res) => {
       .from('students')
       .select('*')
       .eq('id', req.params.id)
+      .eq('school_id', req.user.schoolId)
       .single();
 
     if (error) throw error;
@@ -80,11 +82,12 @@ exports.createStudent = async (req, res) => {
       parentEmail, address, academicYear, admissionDate, photoUrl,
     } = req.body;
 
-    const admissionNo = await generateAdmissionNo(academicYear);
+    const admissionNo = await generateAdmissionNo(req.user.schoolId, academicYear);
 
     const { data, error } = await supabase
       .from('students')
       .insert({
+        school_id: req.user.schoolId,
         admission_no: admissionNo,
         name,
         dob,
@@ -137,6 +140,7 @@ exports.updateStudent = async (req, res) => {
       .from('students')
       .update(updateData)
       .eq('id', req.params.id)
+      .eq('school_id', req.user.schoolId)
       .select()
       .single();
 
@@ -164,6 +168,7 @@ exports.updateAdmissionStatus = async (req, res) => {
       .from('students')
       .update({ admission_status: admissionStatus, updated_at: new Date().toISOString() })
       .eq('id', req.params.id)
+      .eq('school_id', req.user.schoolId)
       .select()
       .single();
 
@@ -182,7 +187,7 @@ exports.getStudentStats = async (req, res) => {
   try {
     const { academicYear } = req.query;
 
-    let query = supabase.from('students').select('*').eq('is_active', true);
+    let query = supabase.from('students').select('*').eq('is_active', true).eq('school_id', req.user.schoolId);
     if (academicYear) query = query.eq('academic_year', academicYear);
 
     const { data: students, error } = await query;

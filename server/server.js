@@ -26,7 +26,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/school', schoolRoutes);
+app.use('/api/schools', schoolRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/fees', feeRoutes);
 app.use('/api/promotion', promotionRoutes);

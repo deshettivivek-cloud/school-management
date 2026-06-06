@@ -7,7 +7,7 @@ exports.getFeeStructures = async (req, res) => {
   try {
     const { academicYear, grade } = req.query;
 
-    let query = supabase.from('fee_structures').select('*');
+    let query = supabase.from('fee_structures').select('*').eq('school_id', req.user.schoolId);
     if (academicYear) query = query.eq('academic_year', academicYear);
     if (grade) query = query.eq('grade', grade);
     query = query.order('grade', { ascending: true });
@@ -32,6 +32,7 @@ exports.createFeeStructure = async (req, res) => {
     const { data: existing } = await supabase
       .from('fee_structures')
       .select('id')
+      .eq('school_id', req.user.schoolId)
       .eq('academic_year', academicYear)
       .eq('grade', grade)
       .maybeSingle();
@@ -48,6 +49,7 @@ exports.createFeeStructure = async (req, res) => {
     const { data, error } = await supabase
       .from('fee_structures')
       .insert({
+        school_id: req.user.schoolId,
         academic_year: academicYear,
         grade,
         fee_heads: feeHeads,
@@ -77,6 +79,7 @@ exports.updateFeeStructure = async (req, res) => {
       .from('fee_structures')
       .update({ fee_heads: feeHeads, total_standard_fee: totalStandardFee })
       .eq('id', req.params.id)
+      .eq('school_id', req.user.schoolId)
       .select()
       .single();
 
@@ -96,7 +99,8 @@ exports.deleteFeeStructure = async (req, res) => {
     const { error } = await supabase
       .from('fee_structures')
       .delete()
-      .eq('id', req.params.id);
+      .eq('id', req.params.id)
+      .eq('school_id', req.user.schoolId);
 
     if (error) throw error;
 

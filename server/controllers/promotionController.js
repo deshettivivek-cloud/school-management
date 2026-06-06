@@ -15,6 +15,7 @@ exports.checkPromotion = async (req, res) => {
     const { data: students, error } = await supabase
       .from('students')
       .select('*')
+      .eq('school_id', req.user.schoolId)
       .eq('grade', grade)
       .eq('academic_year', academicYear)
       .eq('is_active', true)
@@ -27,6 +28,7 @@ exports.checkPromotion = async (req, res) => {
     const { data: feeRecords } = await supabase
       .from('fee_collections')
       .select('*')
+      .eq('school_id', req.user.schoolId)
       .in('student_id', studentIds.length > 0 ? studentIds : ['none'])
       .eq('academic_year', academicYear);
 
@@ -80,6 +82,7 @@ exports.promoteStudents = async (req, res) => {
     let query = supabase
       .from('students')
       .select('*')
+      .eq('school_id', req.user.schoolId)
       .eq('grade', fromGrade)
       .eq('academic_year', academicYear)
       .eq('is_active', true);
@@ -101,6 +104,7 @@ exports.promoteStudents = async (req, res) => {
       const { data: pendingFees } = await supabase
         .from('fee_collections')
         .select('*, students(name, admission_no)')
+        .eq('school_id', req.user.schoolId)
         .in('student_id', ids)
         .eq('academic_year', academicYear)
         .in('status', ['pending', 'partial', 'overdue']);
@@ -129,6 +133,7 @@ exports.promoteStudents = async (req, res) => {
         academic_year: newAcademicYear,
         updated_at: new Date().toISOString(),
       })
+      .eq('school_id', req.user.schoolId)
       .in('id', ids);
 
     if (updateErr) throw updateErr;

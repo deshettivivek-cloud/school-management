@@ -53,8 +53,18 @@ const protect = async (req, res, next) => {
       id: user.id,
       email: user.email,
       name: profile?.name || user.email,
-      role: profile?.role || 'staff',
+      role: profile?.role || 'teacher', // fallback to 'teacher' instead of 'staff' based on schema
+      schoolId: profile?.school_id || null,
     };
+
+    // Protect multi-tenant routes from users without a school
+    const isSchoolRoute = req.originalUrl.startsWith('/api/schools/register') || req.originalUrl.startsWith('/api/schools/join');
+    if (!req.user.schoolId && !isSchoolRoute && req.originalUrl !== '/api/auth/me') {
+      return res.status(403).json({
+        success: false,
+        message: 'You must create or join a school first',
+      });
+    }
 
     next();
   } catch (error) {

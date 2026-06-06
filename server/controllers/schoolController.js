@@ -1,122 +1,168 @@
 const supabase = require('../config/supabase');
+const crypto = require('crypto');
 
-// @desc    Get school info
-// @route   GET /api/school
+// Helper to generate a random 6-character join code
+const generateJoinCode = () => {
+  return crypto.randomBytes(3).toString('hex').toUpperCase();
+};
+
+// @desc    Register a new school (Tenant)
+// @route   POST /api/schools/register
+// @access  Auth (Without School)
+exports.registerSchool = async (req, res) => {
+  try {
+    const { name, academicYear } = req.body;
+    
+    if (!name || !academicYear) {
+      return res.status(400).json({ success: false, message: 'Name and Academic Year are required' });
+    }
+
+    // Generate unique join code
+    let joinCode = generateJoinCode();
+    let isUnique = false;
+    while (!isUnique) {
+      const { data } = await supabase.from('schools').select('id').eq('join_code', joinCode).maybeSingle();
+      if (!data) isUnique = true;
+      else joinCode = generateJoinCode();
+    }
+
+    // Create the school
+    const { data: school, error: schoolErr } = await supabase
+      .from('schools')
+      .insert({
+        name,
+        academic_year: academicYear,
+        join_code: joinCode,
+      })
+      .select()
+      .single();
+
+    if (schoolErr) throw schoolErr;
+
+    // Update the user's profile to link to this school AND make them a principal
+    const { error: profileErr } = await supabase
+      .from('profiles')
+      .update({ school_id: school.id, role: 'principal' })
+      .eq('id', req.user.id);
+
+    if (profileErr) throw profileErr;
+
+    res.status(201).json({ success: true, data: school, message: 'School created successfully!' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Join an existing school using a Join Code
+// @route   POST /api/schools/join
+// @access  Auth (Without School)
+exports.joinSchool = async (req, res) => {
+  try {
+    const { joinCode } = req.body;
+
+    if (!joinCode) {
+      return res.status(400).json({ success: false, message: 'Join Code is required' });
+    }
+
+    // Find school by join code
+    const { data: school, error: schoolErr } = await supabase
+      .from('schools')
+      .select('*')
+      .eq('join_code', joinCode.toUpperCase())
+      .maybeSingle();
+
+    if (schoolErr) throw schoolErr;
+    if (!school) {
+      return res.status(404).json({ success: false, message: 'Invalid Join Code. School not found.' });
+    }
+
+    // Update the user's profile to link to this school (default role is teacher)
+    const { error: profileErr } = await supabase
+      .from('profiles')
+      .update({ school_id: school.id })
+      .eq('id', req.user.id);
+
+    if (profileErr) throw profileErr;
+
+    res.json({ success: true, data: school, message: 'Successfully joined the school!' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get school info for current user
+// @route   GET /api/schools
 // @access  Auth
 exports.getSchool = async (req, res) => {
   try {
+    if (!req.user.schoolId) {
+      return res.json({ success: true, data: null, message: 'No school configured' });
+    }
+
     const { data, error } = await supabase
-      .from('school')
+      .from('schools')
       .select('*')
-      .limit(1)
-      .maybeSingle();
+      .eq('id', req.user.schoolId)
+      .single();
 
     if (error) throw error;
 
     res.json({
       success: true,
       data: data || null,
-      message: data ? undefined : 'No school configured yet',
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Create or update school info
-// @route   PUT /api/school
-// @access  Admin
+// @desc    Update school info
+// @route   PUT /api/schools
+// @access  Principal
 exports.updateSchool = async (req, res) => {
   try {
-    const { name, address, phone, email, academicYear, academicYearStart, academicYearEnd } =
-      req.body;
+    if (!req.user.schoolId) return res.status(400).json({ success: false, message: 'No school configured' });
 
-    // Check if school exists
-    const { data: existing } = await supabase
-      .from('school')
-      .select('id')
-      .limit(1)
-      .maybeSingle();
+    const { name, address, phone, email, academicYear, academicYearStart, academicYearEnd } = req.body;
 
-    let result;
+    const updateData = { updated_at: new Date().toISOString() };
+    if (name !== undefined) updateData.name = name;
+    if (address !== undefined) updateData.address = address;
+    if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
+    if (academicYear !== undefined) updateData.academic_year = academicYear;
+    if (academicYearStart !== undefined) updateData.academic_year_start = academicYearStart;
+    if (academicYearEnd !== undefined) updateData.academic_year_end = academicYearEnd;
 
-    if (existing) {
-      // Update
-      const updateData = { updated_at: new Date().toISOString() };
-      if (name !== undefined) updateData.name = name;
-      if (address !== undefined) updateData.address = address;
-      if (phone !== undefined) updateData.phone = phone;
-      if (email !== undefined) updateData.email = email;
-      if (academicYear !== undefined) updateData.academic_year = academicYear;
-      if (academicYearStart !== undefined) updateData.academic_year_start = academicYearStart;
-      if (academicYearEnd !== undefined) updateData.academic_year_end = academicYearEnd;
+    const { data, error } = await supabase
+      .from('schools')
+      .update(updateData)
+      .eq('id', req.user.schoolId)
+      .select()
+      .single();
 
-      const { data, error } = await supabase
-        .from('school')
-        .update(updateData)
-        .eq('id', existing.id)
-        .select()
-        .single();
+    if (error) throw error;
 
-      if (error) throw error;
-      result = data;
-    } else {
-      // Create
-      const { data, error } = await supabase
-        .from('school')
-        .insert({
-          name,
-          address: address || '',
-          phone: phone || '',
-          email: email || '',
-          academic_year: academicYear,
-          academic_year_start: academicYearStart || null,
-          academic_year_end: academicYearEnd || null,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      result = data;
-    }
-
-    res.json({ success: true, data: result });
+    res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Update school logo URL (after frontend uploads to Supabase Storage)
-// @route   POST /api/school/logo
-// @access  Admin
+// @desc    Update school logo URL
+// @route   POST /api/schools/logo
+// @access  Principal
 exports.uploadLogo = async (req, res) => {
   try {
+    if (!req.user.schoolId) return res.status(400).json({ success: false, message: 'No school configured' });
+
     const { logoUrl } = req.body;
-
-    if (!logoUrl) {
-      return res.status(400).json({
-        success: false,
-        message: 'logoUrl is required',
-      });
-    }
-
-    const { data: existing } = await supabase
-      .from('school')
-      .select('id')
-      .limit(1)
-      .maybeSingle();
-
-    if (!existing) {
-      return res.status(404).json({
-        success: false,
-        message: 'Please configure school details first',
-      });
-    }
+    if (!logoUrl) return res.status(400).json({ success: false, message: 'logoUrl is required' });
 
     const { data, error } = await supabase
-      .from('school')
+      .from('schools')
       .update({ logo_url: logoUrl, updated_at: new Date().toISOString() })
-      .eq('id', existing.id)
+      .eq('id', req.user.schoolId)
       .select()
       .single();
 

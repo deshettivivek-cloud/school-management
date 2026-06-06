@@ -8,6 +8,7 @@ const generateReceiptNo = async (academicYear) => {
   const { data: collections } = await supabase
     .from('fee_collections')
     .select('payments')
+    .eq('school_id', schoolId)
     .eq('academic_year', academicYear);
 
   let maxSeq = 0;
@@ -48,7 +49,8 @@ exports.getFeeCollections = async (req, res) => {
 
     let query = supabase
       .from('fee_collections')
-      .select('*, students!inner(name, admission_no, grade, section, parent_name, parent_phone)');
+      .select('*, students!inner(name, admission_no, grade, section, parent_name, parent_phone)')
+      .eq('school_id', req.user.schoolId);
 
     if (academicYear) query = query.eq('academic_year', academicYear);
     if (status) query = query.eq('status', status);
@@ -82,7 +84,8 @@ exports.getStudentFeeCollection = async (req, res) => {
     let query = supabase
       .from('fee_collections')
       .select('*, students(name, admission_no, grade, section, parent_name, parent_phone, photo_url)')
-      .eq('student_id', req.params.studentId);
+      .eq('student_id', req.params.studentId)
+      .eq('school_id', req.user.schoolId);
 
     if (academicYear) query = query.eq('academic_year', academicYear);
 
@@ -114,6 +117,7 @@ exports.commitFee = async (req, res) => {
       .from('students')
       .select('id')
       .eq('id', studentId)
+      .eq('school_id', req.user.schoolId)
       .single();
 
     if (sErr || !student) {
@@ -125,6 +129,7 @@ exports.commitFee = async (req, res) => {
       .from('fee_collections')
       .select('*')
       .eq('student_id', studentId)
+      .eq('school_id', req.user.schoolId)
       .eq('academic_year', academicYear)
       .maybeSingle();
 
@@ -153,6 +158,7 @@ exports.commitFee = async (req, res) => {
       const { data, error } = await supabase
         .from('fee_collections')
         .insert({
+          school_id: req.user.schoolId,
           student_id: studentId,
           academic_year: academicYear,
           committed_fee: committedFee,
@@ -190,6 +196,7 @@ exports.recordPayment = async (req, res) => {
       .from('fee_collections')
       .select('*')
       .eq('student_id', studentId)
+      .eq('school_id', req.user.schoolId)
       .eq('academic_year', academicYear)
       .single();
 
@@ -201,7 +208,7 @@ exports.recordPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Fee already fully paid' });
     }
 
-    const receiptNo = await generateReceiptNo(academicYear);
+    const receiptNo = await generateReceiptNo(req.user.schoolId, academicYear);
 
     const newPayment = {
       _id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -251,7 +258,8 @@ exports.getPendingFees = async (req, res) => {
     let query = supabase
       .from('fee_collections')
       .select('*, students!inner(name, admission_no, grade, section, parent_name, parent_phone)')
-      .in('status', ['pending', 'partial', 'overdue']);
+      .in('status', ['pending', 'partial', 'overdue'])
+      .eq('school_id', req.user.schoolId);
 
     if (academicYear) query = query.eq('academic_year', academicYear);
     if (grade) query = query.eq('students.grade', grade);
@@ -282,7 +290,7 @@ exports.getFeeStats = async (req, res) => {
   try {
     const { academicYear } = req.query;
 
-    let query = supabase.from('fee_collections').select('*');
+    let query = supabase.from('fee_collections').select('*').eq('school_id', req.user.schoolId);
     if (academicYear) query = query.eq('academic_year', academicYear);
 
     const { data: collections, error } = await query;
@@ -319,6 +327,7 @@ exports.getReceipt = async (req, res) => {
       .from('fee_collections')
       .select('*, students(name, admission_no, grade, section, parent_name, parent_phone, photo_url)')
       .eq('id', req.params.collectionId)
+      .eq('school_id', req.user.schoolId)
       .single();
 
     if (error || !collection) {

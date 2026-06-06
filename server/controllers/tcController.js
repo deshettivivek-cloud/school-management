@@ -9,7 +9,8 @@ exports.getTCs = async (req, res) => {
 
     let query = supabase
       .from('transfer_certificates')
-      .select('*, students(name, admission_no, grade, section, parent_name), profiles:issued_by(name)')
+      .select('*, students!inner(name, admission_no, grade, section, parent_name), profiles:issued_by(name)')
+      .eq('school_id', req.user.schoolId)
       .order('issued_date', { ascending: false });
 
     const { data, error } = await query;
@@ -49,6 +50,7 @@ exports.getTC = async (req, res) => {
       .from('transfer_certificates')
       .select('*, students(name, admission_no, grade, section, dob, gender, parent_name, parent_phone, address, admission_date, academic_year), profiles:issued_by(name)')
       .eq('id', req.params.id)
+      .eq('school_id', req.user.schoolId)
       .single();
 
     if (error) throw error;
@@ -80,6 +82,7 @@ exports.issueTC = async (req, res) => {
       .from('students')
       .select('*')
       .eq('id', studentId)
+      .eq('school_id', req.user.schoolId)
       .single();
 
     if (sErr || !student) {
@@ -95,6 +98,7 @@ exports.issueTC = async (req, res) => {
       .from('transfer_certificates')
       .select('id')
       .eq('student_id', studentId)
+      .eq('school_id', req.user.schoolId)
       .maybeSingle();
 
     if (existingTC) {
@@ -105,7 +109,8 @@ exports.issueTC = async (req, res) => {
     const year = new Date().getFullYear();
     const { count } = await supabase
       .from('transfer_certificates')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('school_id', req.user.schoolId);
 
     const tcNumber = `TC-${year}-${String((count || 0) + 1).padStart(4, '0')}`;
 
@@ -113,6 +118,7 @@ exports.issueTC = async (req, res) => {
     const { data: tc, error: tcErr } = await supabase
       .from('transfer_certificates')
       .insert({
+        school_id: req.user.schoolId,
         student_id: studentId,
         tc_number: tcNumber,
         date_of_leaving: dateOfLeaving,
@@ -130,7 +136,8 @@ exports.issueTC = async (req, res) => {
     await supabase
       .from('students')
       .update({ is_active: false, updated_at: new Date().toISOString() })
-      .eq('id', studentId);
+      .eq('id', studentId)
+      .eq('school_id', req.user.schoolId);
 
     res.status(201).json({
       success: true,

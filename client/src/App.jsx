@@ -15,6 +15,7 @@ import IssueTc from './pages/TC/IssueTc';
 import TcRegister from './pages/TC/TcRegister';
 import Unauthorized from './pages/Unauthorized';
 import RoleManagement from './pages/Admin/RoleManagement';
+import Onboarding from './pages/Onboarding';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, loading, hasAccess } = useAuth();
@@ -38,6 +39,14 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+const RequireSchool = ({ children }) => {
+  const { user } = useAuth();
+  if (user && !user.schoolId) {
+    return <Navigate to="/onboarding" replace />;
+  }
+  return children;
+};
+
 function App() {
   const { isAuthenticated, loading } = useAuth();
 
@@ -58,10 +67,18 @@ function App() {
 
       <Route path="/unauthorized" element={<Unauthorized />} />
 
+      <Route path="/onboarding" element={
+        <ProtectedRoute>
+          <Onboarding />
+        </ProtectedRoute>
+      } />
+
       <Route
         element={
           <ProtectedRoute>
-            <Layout />
+            <RequireSchool>
+              <Layout />
+            </RequireSchool>
           </ProtectedRoute>
         }
       >

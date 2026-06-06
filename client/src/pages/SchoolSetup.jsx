@@ -25,7 +25,7 @@ const SchoolSetup = () => {
 
   const fetchSchool = async () => {
     try {
-      const res = await api.get('/school');
+      const res = await api.get('/schools');
       if (res.data.data) {
         const s = res.data.data;
         setForm({
@@ -35,9 +35,10 @@ const SchoolSetup = () => {
           email: s.email || '',
           academicYear: s.academicYear || '',
           academicYearStart: s.academicYearStart ? s.academicYearStart.split('T')[0] : '',
-          academicYearEnd: s.academicYearEnd ? s.academicYearEnd.split('T')[0] : '',
+          academicYearEnd: s.academic_year_end ? s.academic_year_end.split('T')[0] : '',
+          joinCode: s.join_code || '',
         });
-        if (s.logo) setLogoPreview(s.logo);
+        if (s.logo_url || s.logo) setLogoPreview(s.logo_url || s.logo);
       }
     } catch (error) {
       console.error('Error fetching school:', error);
@@ -67,7 +68,7 @@ const SchoolSetup = () => {
 
     setSaving(true);
     try {
-      await api.put('/school', form);
+      await api.put('/schools', form);
 
       if (logo) {
         const fileExt = logo.name.split('.').pop();
@@ -83,7 +84,7 @@ const SchoolSetup = () => {
           .from('logos')
           .getPublicUrl(fileName);
           
-        await api.post('/school/logo', { logoUrl: data.publicUrl });
+        await api.post('/schools/logo', { logoUrl: data.publicUrl });
       }
 
       toast.success('School settings saved! 🎉');
@@ -108,6 +109,13 @@ const SchoolSetup = () => {
       </div>
 
       <div className="card" style={{ maxWidth: 800 }}>
+        {form.joinCode && (
+          <div style={{ marginBottom: '2rem', padding: '1rem', background: 'var(--primary-50)', border: '1px solid var(--primary-200)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+            <h3 style={{ color: 'var(--primary-700)', marginBottom: '0.5rem', fontSize: '1rem' }}>School Join Code</h3>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '2px', color: 'var(--primary-900)' }}>{form.joinCode}</div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--primary-600)', marginTop: '0.5rem' }}>Share this code with your teachers to let them join your school.</p>
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           {/* Logo Upload */}
           <div className="form-group" style={{ textAlign: 'center', marginBottom: '2rem' }}>

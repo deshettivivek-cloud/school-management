@@ -30,6 +30,7 @@ exports.getUsers = async (req, res) => {
     const { data: users, error } = await supabase
       .from('profiles')
       .select('*')
+      .eq('school_id', req.user.schoolId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -68,14 +69,18 @@ exports.register = async (req, res) => {
 
     if (authError) throw authError;
 
-    // Update role in profiles table (trigger creates profile with 'clerk' by default)
-    if (role === 'principal') {
+    if (role) {
       const { error: roleError } = await supabase
         .from('profiles')
-        .update({ role: 'principal', name })
+        .update({ role, name, school_id: req.user.schoolId })
         .eq('id', authData.user.id);
 
       if (roleError) throw roleError;
+    } else {
+      await supabase
+        .from('profiles')
+        .update({ name, school_id: req.user.schoolId })
+        .eq('id', authData.user.id);
     }
 
     res.status(201).json({
@@ -110,6 +115,7 @@ exports.updateRole = async (req, res) => {
       .from('profiles')
       .update({ role })
       .eq('id', req.params.id)
+      .eq('school_id', req.user.schoolId)
       .select()
       .single();
 
