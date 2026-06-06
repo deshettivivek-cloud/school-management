@@ -1,7 +1,7 @@
 const supabase = require('../config/supabase');
 
 // Helper: generate receipt number
-const generateReceiptNo = async (academicYear) => {
+const generateReceiptNo = async (schoolId, academicYear) => {
   const yearCode = academicYear.replace('-', '');
   const prefix = `REC-${yearCode}`;
 
