@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Login';
@@ -68,15 +68,15 @@ function App() {
         {/* All authenticated users */}
         <Route path="/" element={<Dashboard />} />
 
-        {/* Principal Only */}
-        <Route element={<ProtectedRoute allowedRoles={['principal']}><Outlet /></ProtectedRoute>}>
+        {/* Admin Only */}
+        <Route element={<ProtectedRoute allowedRoles={['admin']}><Outlet /></ProtectedRoute>}>
           <Route path="/school-setup" element={<SchoolSetup />} />
           <Route path="/promotion" element={<YearEndPromotion />} />
           <Route path="/role-management" element={<RoleManagement />} />
         </Route>
 
-        {/* Principal and Clerk */}
-        <Route element={<ProtectedRoute allowedRoles={['principal', 'clerk']}><Outlet /></ProtectedRoute>}>
+        {/* Admin and Staff */}
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'staff']}><Outlet /></ProtectedRoute>}>
           <Route path="/admissions" element={<AdmissionsList />} />
           <Route path="/admissions/new" element={<AdmissionForm />} />
           <Route path="/admissions/edit/:id" element={<AdmissionForm />} />

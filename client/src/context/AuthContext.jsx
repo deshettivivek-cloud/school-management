@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
           id: authUser.id,
           email: authUser.email,
           name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email,
-          role: 'teacher',
+          role: 'staff',
           assigned_classes: [],
         });
         return;
