@@ -85,7 +85,8 @@ function App() {
         }
       >
         {/* All authenticated staff */}
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<SchoolBlog />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admissions" element={<AdmissionsList />} />
         <Route path="/admissions/new" element={<AdmissionForm />} />
         <Route path="/admissions/edit/:id" element={<AdmissionForm />} />
@@ -96,7 +97,6 @@ function App() {
         <Route path="/fees/receipt/:collectionId/:paymentId" element={<ReceiptView />} />
         <Route path="/tc/issue" element={<IssueTc />} />
         <Route path="/tc/register" element={<TcRegister />} />
-        <Route path="/blog" element={<SchoolBlog />} />
 
         {/* Principal Only */}
         <Route element={<ProtectedRoute allowedRoles={['principal']}><Outlet /></ProtectedRoute>}>

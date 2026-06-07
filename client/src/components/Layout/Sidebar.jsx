@@ -24,7 +24,8 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
 
   const navItems = [
     { section: 'Main', roles: allStaff },
-    { path: '/', icon: HiOutlineHome, label: 'Dashboard', roles: allStaff },
+    { path: '/', icon: HiOutlinePencilAlt, label: 'School Blog', roles: allStaff },
+    { path: '/dashboard', icon: HiOutlineHome, label: 'Dashboard', roles: allStaff },
     { path: '/school-setup', icon: HiOutlineCog, label: 'School Setup', roles: ['principal'] },
     { path: '/role-management', icon: HiOutlineUsers, label: 'Role Management', roles: ['principal'] },
 
@@ -41,9 +42,6 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
     { path: '/promotion', icon: HiOutlineArrowUp, label: 'Promotion', roles: ['principal'] },
     { path: '/tc/issue', icon: HiOutlineAcademicCap, label: 'Issue TC', roles: allStaff },
     { path: '/tc/register', icon: HiOutlineDocumentText, label: 'TC Register', roles: allStaff },
-
-    { section: 'School', roles: allStaff },
-    { path: '/blog', icon: HiOutlinePencilAlt, label: 'School Blog', roles: allStaff },
   ];
 
   const isActive = (path) => {

@@ -61,139 +61,157 @@ const VirtualAdmissionForm = () => {
             body {
               font-family: 'Inter', -apple-system, sans-serif;
               padding: 2rem;
-              color: #1a1a1a;
+              color: #0f172a;
               background: white;
             }
+            .admission-form-container { padding: 0; border: none; max-width: 100%; }
             .admission-form {
-              max-width: 800px;
+              max-width: 100%;
               margin: 0 auto;
             }
             .form-header {
               display: flex;
               align-items: center;
-              gap: 1rem;
-              border-bottom: 3px double #1a1a1a;
+              gap: 1.5rem;
+              border-bottom: 3px solid #0f172a;
               padding-bottom: 1rem;
               margin-bottom: 1.5rem;
             }
             .form-header img {
-              width: 70px;
-              height: 70px;
+              width: 80px;
+              height: 80px;
               object-fit: contain;
             }
-            .school-name {
+            .school-name-print {
               font-family: 'Outfit', sans-serif;
-              font-size: 1.5rem;
+              font-size: 1.8rem;
               font-weight: 800;
               color: #0f172a;
-            }
-            .school-info { font-size: 0.85rem; color: #64748b; }
-            .form-title {
-              text-align: center;
-              font-size: 1.15rem;
-              font-weight: 700;
-              margin: 1.25rem 0;
               text-transform: uppercase;
-              letter-spacing: 0.08em;
-              padding: 0.5rem;
-              background: #f1f5f9;
-              border: 1px solid #e2e8f0;
+              letter-spacing: 0.05em;
             }
-            .info-grid {
+            .school-info-print { font-size: 0.95rem; color: #475569; margin-top: 0.25rem; }
+            .form-title-print {
+              text-align: center;
+              font-size: 1.4rem;
+              font-weight: 800;
+              margin: 1.5rem 0;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
+              padding: 0.75rem;
+              background: #f8fafc;
+              border: 2px solid #0f172a;
+              color: #0f172a;
+            }
+            .info-grid-print {
               display: grid;
               grid-template-columns: 1fr 1fr;
-              gap: 0.6rem;
+              gap: 0.75rem;
               margin-bottom: 1.5rem;
             }
-            .info-item {
+            .info-item-print {
               display: flex;
-              padding: 0.35rem 0;
-              border-bottom: 1px dotted #cbd5e1;
+              padding: 0.4rem 0;
+              border-bottom: 1px dotted #94a3b8;
             }
-            .info-label {
-              font-weight: 600;
-              min-width: 150px;
-              font-size: 0.85rem;
-              color: #475569;
-            }
-            .info-value {
+            .info-label-print {
+              font-weight: 700;
+              min-width: 160px;
               font-size: 0.9rem;
-              color: #0f172a;
-              font-weight: 500;
+              color: #475569;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
             }
-            .photo-box {
-              width: 100px;
-              height: 120px;
-              border: 2px solid #1a1a1a;
+            .info-value-print {
+              font-size: 0.95rem;
+              color: #0f172a;
+              font-weight: 600;
+            }
+            .photo-box-print {
+              width: 120px;
+              height: 150px;
+              border: 2px solid #0f172a;
               float: right;
-              margin-left: 1rem;
+              margin-left: 1.5rem;
+              margin-bottom: 1rem;
               display: flex;
               align-items: center;
               justify-content: center;
-              font-size: 0.7rem;
-              color: #94a3b8;
+              font-size: 0.8rem;
+              color: #64748b;
+              text-transform: uppercase;
+              font-weight: 600;
+              background: #f8fafc;
             }
-            .photo-box img {
+            .photo-box-print img {
               width: 100%;
               height: 100%;
               object-fit: cover;
             }
-            .section-title {
-              font-size: 0.9rem;
-              font-weight: 700;
+            .section-title-print {
+              font-size: 1.1rem;
+              font-weight: 800;
               text-transform: uppercase;
               letter-spacing: 0.05em;
               color: #0f172a;
               border-bottom: 2px solid #0f172a;
-              padding-bottom: 0.25rem;
-              margin: 1.5rem 0 0.75rem;
+              padding-bottom: 0.4rem;
+              margin: 2rem 0 1rem;
             }
-            .fee-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; }
-            .fee-table th {
+            .fee-table-print { width: 100%; border-collapse: collapse; margin: 1rem 0; border: 2px solid #0f172a; }
+            .fee-table-print th {
               background: #f1f5f9;
-              padding: 0.5rem 0.75rem;
-              font-size: 0.75rem;
-              font-weight: 600;
+              padding: 0.75rem 1rem;
+              font-size: 0.85rem;
+              font-weight: 700;
               text-transform: uppercase;
               text-align: left;
-              border: 1px solid #e2e8f0;
-              color: #475569;
+              border: 1px solid #0f172a;
+              color: #0f172a;
             }
-            .fee-table td {
-              padding: 0.5rem 0.75rem;
-              font-size: 0.85rem;
-              border: 1px solid #e2e8f0;
-              color: #334155;
+            .fee-table-print td {
+              padding: 0.75rem 1rem;
+              font-size: 0.95rem;
+              border: 1px solid #0f172a;
+              color: #0f172a;
             }
-            .fee-total td {
-              font-weight: 700;
+            .fee-total-row td {
+              font-weight: 800;
               background: #f8fafc;
               color: #0f172a;
             }
-            .footer {
-              margin-top: 3rem;
+            .footer-signatures {
+              margin-top: 4rem;
               display: flex;
               justify-content: space-between;
-              font-size: 0.85rem;
+              font-size: 0.9rem;
             }
-            .signature-line {
-              border-top: 1px solid #1a1a1a;
-              padding-top: 0.5rem;
-              min-width: 200px;
+            .signature-line-print {
+              border-top: 2px solid #0f172a;
+              padding-top: 0.75rem;
+              min-width: 220px;
               text-align: center;
-              color: #475569;
-              font-size: 0.8rem;
+              color: #0f172a;
+              font-weight: 700;
+              text-transform: uppercase;
+              font-size: 0.85rem;
+              letter-spacing: 0.05em;
             }
-            .declaration {
-              margin-top: 2rem;
-              padding: 0.75rem;
-              border: 1px solid #e2e8f0;
-              font-size: 0.8rem;
-              color: #64748b;
+            .declaration-print {
+              margin-top: 2.5rem;
+              padding: 1rem;
+              border: 2px solid #0f172a;
+              font-size: 0.9rem;
+              color: #0f172a;
               line-height: 1.6;
               background: #fefce8;
+              font-weight: 500;
             }
-            @media print { body { padding: 0.5rem; } }
+            .print-section-footer { display: none !important; }
+            @media print { 
+              body { padding: 0.5rem; } 
+              .page-header { display: none !important; }
+            }
           </style>
         </head>
         <body>
@@ -251,7 +269,7 @@ const VirtualAdmissionForm = () => {
               )}
               <div>
                 <div className="school-name-print">{school?.name || 'School'}</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                <div className="school-info-print">
                   {school?.address && <span>{school.address}</span>}
                   {school?.phone && <span> • {school.phone}</span>}
                   {school?.email && <span> • {school.email}</span>}
