@@ -6,6 +6,7 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineCheckCircle,
 } from 'react-icons/hi';
+import PrintSection from '../components/PrintSection';
 import {
   BarChart,
   Bar,
@@ -71,6 +72,7 @@ const Dashboard = () => {
   ].filter((d) => d.value > 0);
 
   return (
+    <PrintSection title="Dashboard">
     <div className="animate-fade-in">
       <div className="page-header">
         <div className="page-header-info">
@@ -228,6 +230,7 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
+    </PrintSection>
   );
 };
 

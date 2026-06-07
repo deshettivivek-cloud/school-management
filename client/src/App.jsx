@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import SchoolSetup from './pages/SchoolSetup';
 import AdmissionsList from './pages/Admissions/AdmissionsList';
 import AdmissionForm from './pages/Admissions/AdmissionForm';
+import VirtualAdmissionForm from './pages/Admissions/VirtualAdmissionForm';
 import FeeStructure from './pages/Fees/FeeStructure';
 import FeeCollection from './pages/Fees/FeeCollection';
 import PendingFees from './pages/Fees/PendingFees';
@@ -16,6 +17,7 @@ import TcRegister from './pages/TC/TcRegister';
 import Unauthorized from './pages/Unauthorized';
 import RoleManagement from './pages/Admin/RoleManagement';
 import Onboarding from './pages/Onboarding';
+import SchoolBlog from './pages/Blog/SchoolBlog';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, loading, hasAccess } = useAuth();
@@ -82,27 +84,25 @@ function App() {
           </ProtectedRoute>
         }
       >
-        {/* All authenticated users */}
+        {/* All authenticated staff */}
         <Route path="/" element={<Dashboard />} />
+        <Route path="/admissions" element={<AdmissionsList />} />
+        <Route path="/admissions/new" element={<AdmissionForm />} />
+        <Route path="/admissions/edit/:id" element={<AdmissionForm />} />
+        <Route path="/admissions/form/:id" element={<VirtualAdmissionForm />} />
+        <Route path="/fees/structure" element={<FeeStructure />} />
+        <Route path="/fees/collection" element={<FeeCollection />} />
+        <Route path="/fees/pending" element={<PendingFees />} />
+        <Route path="/fees/receipt/:collectionId/:paymentId" element={<ReceiptView />} />
+        <Route path="/tc/issue" element={<IssueTc />} />
+        <Route path="/tc/register" element={<TcRegister />} />
+        <Route path="/blog" element={<SchoolBlog />} />
 
         {/* Principal Only */}
         <Route element={<ProtectedRoute allowedRoles={['principal']}><Outlet /></ProtectedRoute>}>
           <Route path="/school-setup" element={<SchoolSetup />} />
           <Route path="/promotion" element={<YearEndPromotion />} />
           <Route path="/role-management" element={<RoleManagement />} />
-        </Route>
-
-        {/* Principal and Clerk */}
-        <Route element={<ProtectedRoute allowedRoles={['principal', 'clerk']}><Outlet /></ProtectedRoute>}>
-          <Route path="/admissions" element={<AdmissionsList />} />
-          <Route path="/admissions/new" element={<AdmissionForm />} />
-          <Route path="/admissions/edit/:id" element={<AdmissionForm />} />
-          <Route path="/fees/structure" element={<FeeStructure />} />
-          <Route path="/fees/collection" element={<FeeCollection />} />
-          <Route path="/fees/pending" element={<PendingFees />} />
-          <Route path="/fees/receipt/:collectionId/:paymentId" element={<ReceiptView />} />
-          <Route path="/tc/issue" element={<IssueTc />} />
-          <Route path="/tc/register" element={<TcRegister />} />
         </Route>
       </Route>
 

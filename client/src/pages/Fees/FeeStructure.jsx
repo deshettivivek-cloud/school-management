@@ -3,6 +3,7 @@ import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineSave, HiOutlinePencil, HiOutlineX } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
+import PrintSection from '../../components/PrintSection';
 
 const FeeStructure = () => {
   const { hasAccess } = useAuth();
@@ -118,6 +119,7 @@ const FeeStructure = () => {
   const formatCurrency = (amt) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
 
   return (
+    <PrintSection title="Fee Structure">
     <div className="animate-fade-in">
       <div className="page-header">
         <div className="page-header-info">
@@ -242,6 +244,7 @@ const FeeStructure = () => {
         </div>
       )}
     </div>
+    </PrintSection>
   );
 };
 

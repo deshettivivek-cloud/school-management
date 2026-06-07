@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlineSearch, HiOutlineCurrencyRupee, HiOutlineReceiptRefund } from 'react-icons/hi';
 import { format } from 'date-fns';
+import PrintSection from '../../components/PrintSection';
 
 const FeeCollection = () => {
   const navigate = useNavigate();
@@ -121,6 +122,7 @@ const FeeCollection = () => {
   };
 
   return (
+    <PrintSection title="Fee Collection">
     <div className="animate-fade-in">
       <div className="page-header">
         <div className="page-header-info">
@@ -360,6 +362,7 @@ const FeeCollection = () => {
         </div>
       )}
     </div>
+    </PrintSection>
   );
 };
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlineSearch, HiOutlineExclamationCircle } from 'react-icons/hi';
+import PrintSection from '../../components/PrintSection';
 
 const PendingFees = () => {
   const [records, setRecords] = useState([]);
@@ -50,6 +51,7 @@ const PendingFees = () => {
   };
 
   return (
+    <PrintSection title="Pending Fees">
     <div className="animate-fade-in">
       <div className="page-header">
         <div className="page-header-info">
@@ -133,6 +135,7 @@ const PendingFees = () => {
         )}
       </div>
     </div>
+    </PrintSection>
   );
 };
 

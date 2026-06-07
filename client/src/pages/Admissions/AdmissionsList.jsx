@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import { HiOutlinePlus, HiOutlineSearch, HiOutlineCheckCircle, HiOutlineClock } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlineSearch, HiOutlineCheckCircle, HiOutlineClock, HiOutlineDocumentText } from 'react-icons/hi';
 import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
+import PrintSection from '../../components/PrintSection';
 
 const AdmissionsList = () => {
   const { hasAccess } = useAuth();
@@ -64,6 +65,7 @@ const AdmissionsList = () => {
   const grades = [...new Set(students.map((s) => s.grade))].sort();
 
   return (
+    <PrintSection title="Admissions">
     <div className="animate-fade-in">
       <div className="page-header">
         <div className="page-header-info">
@@ -198,6 +200,13 @@ const AdmissionsList = () => {
                         >
                           Edit
                         </Link>
+                        <Link
+                          to={`/admissions/form/${student.id || student._id}`}
+                          className="btn btn-ghost btn-sm"
+                          title="View Admission Form"
+                        >
+                          <HiOutlineDocumentText /> Form
+                        </Link>
                       </div>
                     </td>
                   </tr>
@@ -208,6 +217,7 @@ const AdmissionsList = () => {
         </div>
       </div>
     </div>
+    </PrintSection>
   );
 };
 

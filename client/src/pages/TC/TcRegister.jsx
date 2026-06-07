@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlineSearch, HiOutlinePlus } from 'react-icons/hi';
 import { format } from 'date-fns';
+import PrintSection from '../../components/PrintSection';
 
 const TcRegister = () => {
   const [tcs, setTcs] = useState([]);
@@ -32,6 +33,7 @@ const TcRegister = () => {
   };
 
   return (
+    <PrintSection title="TC Register">
     <div className="animate-fade-in">
       <div className="page-header">
         <div className="page-header-info">
@@ -113,6 +115,7 @@ const TcRegister = () => {
         )}
       </div>
     </div>
+    </PrintSection>
   );
 };
 

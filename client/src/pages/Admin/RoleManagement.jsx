@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import supabase from '../../api/supabase';
 import toast from 'react-hot-toast';
+import PrintSection from '../../components/PrintSection';
 
 const RoleManagement = () => {
   const [users, setUsers] = useState([]);
@@ -64,6 +65,7 @@ const RoleManagement = () => {
   };
 
   return (
+    <PrintSection title="Role Management">
     <div className="animate-fade-in">
       <div className="page-header">
         <div className="page-header-info">
@@ -125,6 +127,7 @@ const RoleManagement = () => {
         </div>
       </div>
     </div>
+    </PrintSection>
   );
 };
 

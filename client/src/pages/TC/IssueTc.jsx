@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlineSearch, HiOutlineSave, HiOutlineArrowLeft } from 'react-icons/hi';
+import PrintSection from '../../components/PrintSection';
 
 const IssueTc = () => {
   const navigate = useNavigate();
@@ -60,6 +61,7 @@ const IssueTc = () => {
   };
 
   return (
+    <PrintSection title="Issue Transfer Certificate">
     <div className="animate-fade-in">
       <div className="page-header">
         <div className="page-header-info">
@@ -193,6 +195,7 @@ const IssueTc = () => {
         )}
       </div>
     </div>
+    </PrintSection>
   );
 };
 
