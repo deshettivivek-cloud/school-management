@@ -596,6 +596,17 @@ input, select, textarea {
   color: var(--text-inverse);
 }
 
+.btn-accent {
+  background: var(--gradient-accent);
+  color: white;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.btn-accent:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+}
+
 .btn-secondary {
   background: var(--bg-tertiary);
   color: var(--text-primary);

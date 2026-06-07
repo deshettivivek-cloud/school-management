@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import PrintSection from '../../components/PrintSection';
+
 import {
   HiOutlinePlus,
   HiOutlinePencil,
@@ -13,6 +13,8 @@ import {
   HiOutlineSave,
   HiOutlineCalendar,
   HiOutlineUser,
+  HiOutlineSparkles,
+  HiOutlineSearch,
 } from 'react-icons/hi';
 import { format } from 'date-fns';
 
@@ -22,10 +24,13 @@ const SchoolBlog = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [viewPost, setViewPost] = useState(null);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ title: '', content: '', coverImageUrl: '' });
   const [saving, setSaving] = useState(false);
+  const [generateTopic, setGenerateTopic] = useState('');
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     fetchPosts();
@@ -61,6 +66,38 @@ const SchoolBlog = () => {
   const openView = (post) => {
     setViewPost(post);
     setShowViewModal(true);
+  };
+
+  // ── Auto-generate blog post ────────────────────────────────
+  const handleGenerate = async () => {
+    if (!generateTopic.trim()) {
+      toast.error('Please enter a topic to search');
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const res = await api.post('/blog/generate', { topic: generateTopic.trim() });
+      const generated = res.data.data;
+
+      // Pre-fill the create form with generated content
+      setForm({
+        title: generated.title,
+        content: generated.content,
+        coverImageUrl: generated.coverImageUrl || '',
+      });
+
+      setShowGenerateModal(false);
+      setGenerateTopic('');
+      setEditId(null);
+      setShowModal(true);
+
+      toast.success(`Blog generated from ${generated.source}! ✨ Review and publish.`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to generate blog post. Try a different topic.');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -100,7 +137,6 @@ const SchoolBlog = () => {
   };
 
   return (
-    <PrintSection title="School Blog">
       <div className="animate-fade-in">
         <div className="page-header">
           <div className="page-header-info">
@@ -108,6 +144,9 @@ const SchoolBlog = () => {
             <p>News, announcements, and updates from your school</p>
           </div>
           <div className="page-header-actions">
+            <button className="btn btn-accent" onClick={() => setShowGenerateModal(true)}>
+              <HiOutlineSparkles /> Auto Generate
+            </button>
             <button className="btn btn-primary" onClick={openCreate}>
               <HiOutlinePlus /> New Post
             </button>
@@ -122,9 +161,14 @@ const SchoolBlog = () => {
               <div className="empty-state-icon">📝</div>
               <h3 className="empty-state-title">No Blog Posts Yet</h3>
               <p className="empty-state-text">Be the first to share news and updates!</p>
-              <button className="btn btn-primary" onClick={openCreate}>
-                <HiOutlinePlus /> Create First Post
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button className="btn btn-accent" onClick={() => setShowGenerateModal(true)}>
+                  <HiOutlineSparkles /> Auto Generate from Topic
+                </button>
+                <button className="btn btn-primary" onClick={openCreate}>
+                  <HiOutlinePlus /> Write Manually
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -172,7 +216,93 @@ const SchoolBlog = () => {
           </div>
         )}
 
-        {/* Create/Edit Modal */}
+        {/* ── Auto Generate Modal ─────────────────────────────── */}
+        {showGenerateModal && (
+          <div className="modal-overlay" onClick={() => setShowGenerateModal(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 550 }}>
+              <div className="modal-header">
+                <h3 className="modal-title">
+                  <HiOutlineSparkles style={{ color: 'var(--accent-400)' }} /> Auto Generate Blog Post
+                </h3>
+                <button className="modal-close" onClick={() => setShowGenerateModal(false)}>
+                  <HiOutlineX />
+                </button>
+              </div>
+              <div className="modal-body">
+                <div style={{
+                  padding: '1rem',
+                  background: 'rgba(139, 92, 246, 0.08)',
+                  border: '1px solid rgba(139, 92, 246, 0.2)',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: '1.25rem',
+                  fontSize: '0.85rem',
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.6,
+                }}>
+                  💡 Enter any topic and we'll search the internet to automatically generate a complete blog post for your school. You can review and edit before publishing.
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Topic / Subject *</label>
+                  <input
+                    id="generate-topic"
+                    className="form-input"
+                    value={generateTopic}
+                    onChange={(e) => setGenerateTopic(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+                    placeholder="e.g., Importance of Reading, Solar System, Republic Day, Healthy Eating..."
+                    autoFocus
+                  />
+                  <p className="form-help">
+                    Try topics like: Science experiments, Indian independence, Mathematics in daily life, Water conservation
+                  </p>
+                </div>
+
+                {generating && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '1rem',
+                    background: 'var(--bg-input)',
+                    borderRadius: 'var(--radius-md)',
+                    marginTop: '1rem',
+                  }}>
+                    <div className="spinner" style={{ width: 24, height: 24 }} />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                        Searching & generating...
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        Finding content about "{generateTopic}"
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowGenerateModal(false)}
+                  disabled={generating}
+                >
+                  Cancel
+                </button>
+                <button
+                  id="generate-blog"
+                  className="btn btn-accent"
+                  onClick={handleGenerate}
+                  disabled={generating || !generateTopic.trim()}
+                >
+                  <HiOutlineSearch /> {generating ? 'Generating...' : 'Search & Generate'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Create/Edit Modal ───────────────────────────────── */}
         {showModal && (
           <div className="modal-overlay" onClick={() => setShowModal(false)}>
             <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 700 }}>
@@ -230,7 +360,7 @@ const SchoolBlog = () => {
           </div>
         )}
 
-        {/* View Post Modal */}
+        {/* ── View Post Modal ─────────────────────────────────── */}
         {showViewModal && viewPost && (
           <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
             <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 750 }}>
@@ -277,7 +407,6 @@ const SchoolBlog = () => {
           </div>
         )}
       </div>
-    </PrintSection>
   );
 };
 
