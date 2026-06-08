@@ -23,25 +23,24 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
   const allStaff = ['principal', 'clerk', 'teacher'];
 
   const navItems = [
-    { section: 'Main', roles: allStaff },
-    { path: '/', icon: HiOutlinePencilAlt, label: 'School Blog', roles: allStaff },
-    { path: '/dashboard', icon: HiOutlineHome, label: 'Dashboard', roles: allStaff },
-    { path: '/school-setup', icon: HiOutlineCog, label: 'School Setup', roles: ['principal'] },
-    { path: '/role-management', icon: HiOutlineUsers, label: 'Role Management', roles: ['principal'] },
+    { section: 'Main' },
+    { path: '/', icon: HiOutlinePencilAlt, label: 'School Blog' },
+    { path: '/dashboard', icon: HiOutlineHome, label: 'Dashboard' },
+    { path: '/school-setup', icon: HiOutlineCog, label: 'School Setup' },
 
-    { section: 'Students', roles: allStaff },
-    { path: '/admissions', icon: HiOutlineUsers, label: 'Admissions', roles: allStaff },
-    { path: '/admissions/new', icon: HiOutlineUserAdd, label: 'New Admission', roles: allStaff },
+    { section: 'Students' },
+    { path: '/admissions', icon: HiOutlineUsers, label: 'Admissions' },
+    { path: '/admissions/new', icon: HiOutlineUserAdd, label: 'New Admission' },
 
-    { section: 'Fees', roles: allStaff },
-    { path: '/fees/structure', icon: HiOutlineClipboardList, label: 'Fee Structure', roles: allStaff },
-    { path: '/fees/collection', icon: HiOutlineCurrencyRupee, label: 'Fee Collection', roles: allStaff },
-    { path: '/fees/pending', icon: HiOutlineDocumentText, label: 'Pending Fees', roles: allStaff },
+    { section: 'Fees' },
+    { path: '/fees/structure', icon: HiOutlineClipboardList, label: 'Fee Structure' },
+    { path: '/fees/collection', icon: HiOutlineCurrencyRupee, label: 'Fee Collection' },
+    { path: '/fees/pending', icon: HiOutlineDocumentText, label: 'Pending Fees' },
 
-    { section: 'Academic', roles: allStaff },
-    { path: '/promotion', icon: HiOutlineArrowUp, label: 'Promotion', roles: ['principal'] },
-    { path: '/tc/issue', icon: HiOutlineAcademicCap, label: 'Issue TC', roles: allStaff },
-    { path: '/tc/register', icon: HiOutlineDocumentText, label: 'TC Register', roles: allStaff },
+    { section: 'Academic' },
+    { path: '/promotion', icon: HiOutlineArrowUp, label: 'Promotion' },
+    { path: '/tc/issue', icon: HiOutlineAcademicCap, label: 'Issue TC' },
+    { path: '/tc/register', icon: HiOutlineDocumentText, label: 'TC Register' },
   ];
 
   const isActive = (path) => {
@@ -73,7 +72,6 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
 
         <nav className="sidebar-nav">
           {navItems.map((item, idx) => {
-            if (item.roles && !hasAccess(item.roles)) return null;
 
             if (item.section) {
               return !collapsed ? (

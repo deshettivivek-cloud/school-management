@@ -99,10 +99,9 @@ function App() {
         <Route path="/tc/register" element={<TcRegister />} />
 
         {/* Principal Only */}
-        <Route element={<ProtectedRoute allowedRoles={['principal']}><Outlet /></ProtectedRoute>}>
+        <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
           <Route path="/school-setup" element={<SchoolSetup />} />
           <Route path="/promotion" element={<YearEndPromotion />} />
-          <Route path="/role-management" element={<RoleManagement />} />
         </Route>
       </Route>
 

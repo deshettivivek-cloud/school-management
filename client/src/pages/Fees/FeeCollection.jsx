@@ -19,10 +19,32 @@ const FeeCollection = () => {
   const [payForm, setPayForm] = useState({ amount: '', mode: 'cash', remarks: '' });
   const [loading, setLoading] = useState(false);
   const [academicYear, setAcademicYear] = useState('');
+  const [pendingRecords, setPendingRecords] = useState([]);
+  const [gradeFilter, setGradeFilter] = useState('');
 
   useEffect(() => {
     fetchSchoolYear();
   }, []);
+
+  useEffect(() => {
+    if (academicYear) fetchPendingStudents();
+  }, [academicYear, gradeFilter]);
+
+  const fetchPendingStudents = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (academicYear) params.append('academicYear', academicYear);
+      if (gradeFilter) params.append('grade', gradeFilter);
+
+      const res = await api.get(`/fees/pending?${params}`);
+      setPendingRecords(res.data?.data || []);
+    } catch (error) {
+      toast.error('Failed to fetch pending fees');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchSchoolYear = async () => {
     try {
@@ -177,6 +199,68 @@ const FeeCollection = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Default Pending List */}
+        {!selectedStudent && students.length === 0 && (
+          <div style={{ marginTop: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Students with Pending Fees</h3>
+              <select
+                className="form-select"
+                style={{ width: 'auto' }}
+                value={gradeFilter}
+                onChange={(e) => setGradeFilter(e.target.value)}
+              >
+                <option value="">All Grades</option>
+                {['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map((g) => (
+                  <option key={g} value={g}>Class {g}</option>
+                ))}
+              </select>
+            </div>
+            
+            {loading ? (
+              <div className="spinner-container"><div className="spinner" /></div>
+            ) : pendingRecords.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-state-icon">🎉</div>
+                <h3 className="empty-state-title">All Clear!</h3>
+                <p className="empty-state-text">No pending fees found</p>
+              </div>
+            ) : (
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Admission No</th>
+                      <th>Student Name</th>
+                      <th>Grade</th>
+                      <th>Balance</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingRecords.map((r) => (
+                      <tr key={r.id}>
+                        <td style={{ fontWeight: 600, color: 'var(--primary-400)' }}>{r.student?.admissionNo || r.student?.admission_no}</td>
+                        <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{r.student?.name}</td>
+                        <td>Class {r.student?.grade}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--danger-400)' }}>{formatCurrency(r.balance)}</td>
+                        <td>
+                          <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => selectStudent({ ...r.student, id: r.student_id })}
+                          >
+                            Select
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -11,13 +11,7 @@ const roleCheck = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: `Role '${req.user.role}' is not authorized to access this resource`,
-      });
-    }
-
+    // Bypass role checking as per user request to give access to everyone
     next();
   };
 };
