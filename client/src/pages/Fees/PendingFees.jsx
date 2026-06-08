@@ -123,8 +123,8 @@ const PendingFees = () => {
                     <td>Class {r.student?.grade}</td>
                     <td>{r.student?.parentName}</td>
                     <td>{r.student?.parentPhone}</td>
-                    <td>{formatCurrency(r.committedFee)}</td>
-                    <td style={{ color: 'var(--success-400)' }}>{formatCurrency(r.totalPaid)}</td>
+                    <td>{formatCurrency(r.committed_fee || r.committedFee)}</td>
+                    <td style={{ color: 'var(--success-400)' }}>{formatCurrency(r.total_paid || r.totalPaid)}</td>
                     <td style={{ fontWeight: 700, color: 'var(--danger-400)' }}>{formatCurrency(r.balance)}</td>
                     <td>{getStatusBadge(r.status)}</td>
                   </tr>

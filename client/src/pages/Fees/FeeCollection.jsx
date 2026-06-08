@@ -236,6 +236,8 @@ const FeeCollection = () => {
                       <th>Admission No</th>
                       <th>Student Name</th>
                       <th>Grade</th>
+                      <th>Negotiated Fee</th>
+                      <th>Paid</th>
                       <th>Balance</th>
                       <th>Action</th>
                     </tr>
@@ -246,6 +248,8 @@ const FeeCollection = () => {
                         <td style={{ fontWeight: 600, color: 'var(--primary-400)' }}>{r.student?.admissionNo || r.student?.admission_no}</td>
                         <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{r.student?.name}</td>
                         <td>Class {r.student?.grade}</td>
+                        <td>{formatCurrency(r.committed_fee || r.committedFee)}</td>
+                        <td style={{ color: 'var(--success-400)' }}>{formatCurrency(r.total_paid || r.totalPaid)}</td>
                         <td style={{ fontWeight: 700, color: 'var(--danger-400)' }}>{formatCurrency(r.balance)}</td>
                         <td>
                           <button
@@ -277,7 +281,7 @@ const FeeCollection = () => {
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button className="btn btn-secondary" onClick={() => setShowCommitModal(true)}>
-                {feeRecord ? 'Update Committed Fee' : 'Set Committed Fee'}
+                {feeRecord ? 'Edit Negotiated Fee' : 'Set Negotiated Fee'}
               </button>
               {feeRecord && feeRecord.status !== 'paid' && (
                 <button className="btn btn-success" onClick={() => setShowPayModal(true)}>
@@ -293,7 +297,7 @@ const FeeCollection = () => {
               <div className="stat-grid" style={{ marginBottom: '1.5rem' }}>
                 <div className="stat-card primary" style={{ padding: '1rem' }}>
                   <div className="stat-info">
-                    <div className="stat-label">Committed Fee</div>
+                    <div className="stat-label">Negotiated Fee</div>
                     <div className="stat-value" style={{ fontSize: '1.35rem' }}>{formatCurrency(feeRecord.committed_fee || feeRecord.committedFee)}</div>
                   </div>
                 </div>
@@ -314,14 +318,9 @@ const FeeCollection = () => {
                 </div>
               </div>
 
-              {feeStructure && (
+              {!feeRecord && feeStructure && (
                 <div style={{ marginBottom: '1.5rem', padding: '0.75rem', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                   Standard Fee for Class {selectedStudent.grade}: {formatCurrency(feeStructure.total_standard_fee || feeStructure.totalStandardFee)}
-                  {(feeRecord.committed_fee || feeRecord.committedFee) < (feeStructure.total_standard_fee || feeStructure.totalStandardFee) && (
-                    <span style={{ color: 'var(--warning-400)', marginLeft: '0.5rem' }}>
-                      (Discount: {formatCurrency((feeStructure.total_standard_fee || feeStructure.totalStandardFee) - (feeRecord.committed_fee || feeRecord.committedFee))})
-                    </span>
-                  )}
                 </div>
               )}
 
@@ -378,7 +377,7 @@ const FeeCollection = () => {
         <div className="modal-overlay" onClick={() => setShowCommitModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 450 }}>
             <div className="modal-header">
-              <h3 className="modal-title">Set Committed Fee</h3>
+              <h3 className="modal-title">Set Negotiated Fee</h3>
               <button className="modal-close" onClick={() => setShowCommitModal(false)}>×</button>
             </div>
             <div className="modal-body">
@@ -388,7 +387,7 @@ const FeeCollection = () => {
                 </p>
               )}
               <div className="form-group">
-                <label className="form-label">Committed / Negotiated Fee (₹)</label>
+                <label className="form-label">Negotiated Fee (₹)</label>
                 <input
                   className="form-input"
                   type="number"
