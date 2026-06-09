@@ -93,6 +93,22 @@ exports.issueTC = async (req, res) => {
       return res.status(400).json({ success: false, message: 'TC already issued — student is inactive' });
     }
 
+    // Check for pending fees
+    const { data: pendingFees, error: feeErr } = await supabase
+      .from('fee_collections')
+      .select('balance')
+      .eq('student_id', studentId)
+      .eq('school_id', req.user.schoolId)
+      .gt('balance', 0);
+
+    if (feeErr) {
+      return res.status(500).json({ success: false, message: 'Error checking pending fees' });
+    }
+
+    if (pendingFees && pendingFees.length > 0) {
+      return res.status(400).json({ success: false, message: 'Cannot issue TC — student has pending fees' });
+    }
+
     // Check existing TC
     const { data: existingTC } = await supabase
       .from('transfer_certificates')

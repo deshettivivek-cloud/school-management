@@ -48,7 +48,7 @@ const IssueTc = () => {
     setSaving(true);
     try {
       await api.post('/tc', {
-        studentId: selectedStudent._id,
+        studentId: selectedStudent.id,
         ...form,
       });
       toast.success('TC issued successfully! 📜');
@@ -95,7 +95,7 @@ const IssueTc = () => {
             <div style={{ marginTop: '0.75rem', maxHeight: 200, overflowY: 'auto' }}>
               {students.map((s) => (
                 <div
-                  key={s._id}
+                  key={s.id}
                   style={{
                     padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)',
                     border: '1px solid var(--border-color)', marginBottom: '0.35rem',
