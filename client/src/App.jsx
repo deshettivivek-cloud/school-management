@@ -7,6 +7,7 @@ import SchoolSetup from './pages/SchoolSetup';
 import AdmissionsList from './pages/Admissions/AdmissionsList';
 import AdmissionForm from './pages/Admissions/AdmissionForm';
 import VirtualAdmissionForm from './pages/Admissions/VirtualAdmissionForm';
+import StudentDirectory from './pages/Students/StudentDirectory';
 import FeeStructure from './pages/Fees/FeeStructure';
 import FeeCollection from './pages/Fees/FeeCollection';
 import PendingFees from './pages/Fees/PendingFees';
@@ -86,6 +87,7 @@ function App() {
       >
         <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/students/directory" element={<StudentDirectory />} />
         <Route path="/admissions" element={<AdmissionsList />} />
         <Route path="/admissions/new" element={<AdmissionForm />} />
         <Route path="/admissions/edit/:id" element={<AdmissionForm />} />

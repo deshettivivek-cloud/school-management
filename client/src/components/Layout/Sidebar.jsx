@@ -4,6 +4,7 @@ import {
   HiOutlineHome,
   HiOutlineAcademicCap,
   HiOutlineUserAdd,
+  HiOutlineUserGroup,
   HiOutlineCurrencyRupee,
   HiOutlineDocumentText,
   HiOutlineClipboardList,
@@ -27,6 +28,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
     { path: '/school-setup', icon: HiOutlineCog, label: 'School Setup' },
 
     { section: 'Students' },
+    { path: '/students/directory', icon: HiOutlineUserGroup, label: 'Directory' },
     { path: '/admissions', icon: HiOutlineUsers, label: 'Admissions' },
     { path: '/admissions/new', icon: HiOutlineUserAdd, label: 'New Admission' },
 
