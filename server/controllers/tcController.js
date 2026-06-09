@@ -9,19 +9,23 @@ exports.getTCs = async (req, res) => {
 
     let query = supabase
       .from('transfer_certificates')
-      .select('*, students!inner(name, admission_no, grade, section, parent_name), profiles:issued_by(name)')
+      .select('*, students!inner(name, admission_no, grade, section, parent_name)')
       .eq('school_id', req.user.schoolId)
       .order('issued_date', { ascending: false });
 
     const { data, error } = await query;
     if (error) throw error;
 
+    const userIds = [...new Set(data.map(tc => tc.issued_by).filter(Boolean))];
+    const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', userIds);
+    const profileMap = {};
+    if (profiles) profiles.forEach(p => profileMap[p.id] = p);
+
     let results = data.map((tc) => ({
       ...tc,
       student: tc.students,
-      issuedBy: tc.profiles,
+      issuedBy: profileMap[tc.issued_by] || { name: 'Admin' },
       students: undefined,
-      profiles: undefined,
     }));
 
     // Client-side search filtering (for name, admission_no, tc_number)
@@ -48,21 +52,26 @@ exports.getTC = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('transfer_certificates')
-      .select('*, students(name, admission_no, grade, section, dob, gender, parent_name, parent_phone, address, admission_date, academic_year), profiles:issued_by(name)')
+      .select('*, students(name, admission_no, grade, section, dob, gender, parent_name, parent_phone, address, admission_date, academic_year)')
       .eq('id', req.params.id)
       .eq('school_id', req.user.schoolId)
       .single();
 
     if (error) throw error;
 
+    let issuedBy = { name: 'Admin' };
+    if (data.issued_by) {
+      const { data: profile } = await supabase.from('profiles').select('name').eq('id', data.issued_by).single();
+      if (profile) issuedBy = profile;
+    }
+
     res.json({
       success: true,
       data: {
         ...data,
         student: data.students,
-        issuedBy: data.profiles,
+        issuedBy,
         students: undefined,
-        profiles: undefined,
       },
     });
   } catch (error) {
@@ -143,7 +152,7 @@ exports.issueTC = async (req, res) => {
         remarks: remarks || '',
         issued_by: req.user.id,
       })
-      .select('*, students(name, admission_no, grade, section, parent_name), profiles:issued_by(name)')
+      .select('*, students(name, admission_no, grade, section, parent_name)')
       .single();
 
     if (tcErr) throw tcErr;
@@ -160,9 +169,8 @@ exports.issueTC = async (req, res) => {
       data: {
         ...tc,
         student: tc.students,
-        issuedBy: tc.profiles,
+        issuedBy: { name: req.user.name },
         students: undefined,
-        profiles: undefined,
       },
     });
   } catch (error) {
