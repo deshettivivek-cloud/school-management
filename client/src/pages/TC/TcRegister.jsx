@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import { HiOutlineSearch, HiOutlinePlus } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlinePlus, HiOutlineEye } from 'react-icons/hi';
 import { format } from 'date-fns';
 import PrintSection from '../../components/PrintSection';
 
@@ -87,16 +87,17 @@ const TcRegister = () => {
                   <th>Conduct</th>
                   <th>Issued By</th>
                   <th>Issued On</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {tcs.map((tc) => (
-                  <tr key={tc._id}>
-                    <td style={{ fontWeight: 600, color: 'var(--primary-400)' }}>{tc.tcNumber}</td>
+                  <tr key={tc.id}>
+                    <td style={{ fontWeight: 600, color: 'var(--primary-400)' }}>{tc.tc_number || tc.tcNumber}</td>
                     <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{tc.student?.name}</td>
-                    <td>{tc.student?.admissionNo}</td>
+                    <td>{tc.student?.admission_no || tc.student?.admissionNo}</td>
                     <td>Class {tc.student?.grade}</td>
-                    <td>{tc.dateOfLeaving ? format(new Date(tc.dateOfLeaving), 'dd MMM yyyy') : '-'}</td>
+                    <td>{(tc.date_of_leaving || tc.dateOfLeaving) ? format(new Date(tc.date_of_leaving || tc.dateOfLeaving), 'dd MMM yyyy') : '-'}</td>
                     <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {tc.reason}
                     </td>
@@ -106,7 +107,12 @@ const TcRegister = () => {
                       </span>
                     </td>
                     <td>{tc.issuedBy?.name}</td>
-                    <td>{tc.issuedDate ? format(new Date(tc.issuedDate), 'dd MMM yyyy') : '-'}</td>
+                    <td>{(tc.issued_date || tc.issuedDate) ? format(new Date(tc.issued_date || tc.issuedDate), 'dd MMM yyyy') : '-'}</td>
+                    <td>
+                      <Link to={`/tc/view/${tc.id}`} className="btn btn-ghost btn-sm" title="View & Print TC">
+                        <HiOutlineEye /> View
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -14,6 +14,7 @@ import ReceiptView from './pages/Fees/ReceiptView';
 import YearEndPromotion from './pages/Promotion/YearEndPromotion';
 import IssueTc from './pages/TC/IssueTc';
 import TcRegister from './pages/TC/TcRegister';
+import TcView from './pages/TC/TcView';
 import Unauthorized from './pages/Unauthorized';
 import RoleManagement from './pages/Admin/RoleManagement';
 import Onboarding from './pages/Onboarding';
@@ -97,6 +98,7 @@ function App() {
         <Route path="/fees/receipt/:collectionId/:paymentId" element={<ReceiptView />} />
         <Route path="/tc/issue" element={<IssueTc />} />
         <Route path="/tc/register" element={<TcRegister />} />
+        <Route path="/tc/view/:id" element={<TcView />} />
 
         {/* Principal Only */}
         <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
