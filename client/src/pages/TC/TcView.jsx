@@ -404,10 +404,6 @@ const TcView = () => {
               </div>
             </div>
 
-            {/* Issued by note */}
-            <div className="tc-note">
-              Issued by: {tc.issuedBy?.name || 'Admin'} | Generated from SchoolMS
-            </div>
           </div>
         </div>
       </div>
