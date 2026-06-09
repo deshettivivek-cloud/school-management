@@ -141,8 +141,8 @@ exports.updateSchool = async (req, res) => {
     if (phone !== undefined) updateData.phone = phone;
     if (email !== undefined) updateData.email = email;
     if (academicYear !== undefined) updateData.academic_year = academicYear;
-    if (academicYearStart !== undefined) updateData.academic_year_start = academicYearStart;
-    if (academicYearEnd !== undefined) updateData.academic_year_end = academicYearEnd;
+    if (academicYearStart !== undefined) updateData.academic_year_start = academicYearStart || null;
+    if (academicYearEnd !== undefined) updateData.academic_year_end = academicYearEnd || null;
 
     const { data, error } = await supabase
       .from('schools')

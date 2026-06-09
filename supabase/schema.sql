@@ -177,3 +177,27 @@ CREATE POLICY "Allow public read for schools" ON schools FOR SELECT USING (true)
 CREATE POLICY "Allow individual read profiles" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Allow insert profiles" ON profiles FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+
+-- ═══════════════════════════════════════════════════════════════
+-- STORAGE BUCKETS (Must be run as superuser or in Supabase SQL editor)
+-- ═══════════════════════════════════════════════════════════════
+
+-- Create the "logos" bucket if it doesn't exist
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('logos', 'logos', true) 
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow public access to read logos
+CREATE POLICY "Public Access" 
+ON storage.objects FOR SELECT 
+USING (bucket_id = 'logos');
+
+-- Allow authenticated users to upload logos
+CREATE POLICY "Auth Uploads" 
+ON storage.objects FOR INSERT 
+WITH CHECK (bucket_id = 'logos' AND auth.role() = 'authenticated');
+
+-- Allow authenticated users to update their own logos
+CREATE POLICY "Auth Updates" 
+ON storage.objects FOR UPDATE 
+USING (bucket_id = 'logos' AND auth.role() = 'authenticated');

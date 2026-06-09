@@ -33,8 +33,8 @@ const SchoolSetup = () => {
           address: s.address || '',
           phone: s.phone || '',
           email: s.email || '',
-          academicYear: s.academicYear || '',
-          academicYearStart: s.academicYearStart ? s.academicYearStart.split('T')[0] : '',
+          academicYear: s.academic_year || '',
+          academicYearStart: s.academic_year_start ? s.academic_year_start.split('T')[0] : '',
           academicYearEnd: s.academic_year_end ? s.academic_year_end.split('T')[0] : '',
           joinCode: s.join_code || '',
         });
@@ -68,28 +68,51 @@ const SchoolSetup = () => {
 
     setSaving(true);
     try {
-      await api.put('/schools', form);
+      // Send only the fields the backend expects (exclude joinCode etc.)
+      const schoolData = {
+        name: form.name,
+        address: form.address,
+        phone: form.phone,
+        email: form.email,
+        academicYear: form.academicYear,
+        academicYearStart: form.academicYearStart,
+        academicYearEnd: form.academicYearEnd,
+      };
+      await api.put('/schools', schoolData);
 
+      // Handle logo upload separately
       if (logo) {
-        const fileExt = logo.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('logos')
-          .upload(fileName, logo);
+        try {
+          const fileExt = logo.name.split('.').pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
           
-        if (uploadError) throw uploadError;
-        
-        const { data } = supabase.storage
-          .from('logos')
-          .getPublicUrl(fileName);
-          
-        await api.post('/schools/logo', { logoUrl: data.publicUrl });
+          const { error: uploadError } = await supabase.storage
+            .from('logos')
+            .upload(fileName, logo);
+            
+          if (uploadError) {
+            console.error('Storage Upload Error:', uploadError);
+            toast.error(`Logo upload failed: ${uploadError.message}. Please create a "logos" storage bucket in Supabase.`);
+          } else {
+            const { data } = supabase.storage
+              .from('logos')
+              .getPublicUrl(fileName);
+              
+            await api.post('/schools/logo', { logoUrl: data.publicUrl });
+            toast.success('School settings & logo saved! 🎉');
+            return;
+          }
+        } catch (logoErr) {
+          console.error('Logo save error:', logoErr);
+          toast.error('School info saved, but logo upload failed: ' + (logoErr.message || 'Unknown error'));
+          return;
+        }
       }
 
       toast.success('School settings saved! 🎉');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save');
+      console.error('Save Settings Error:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to save');
     } finally {
       setSaving(false);
     }
