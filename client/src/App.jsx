@@ -18,7 +18,6 @@ import TcView from './pages/TC/TcView';
 import Unauthorized from './pages/Unauthorized';
 import RoleManagement from './pages/Admin/RoleManagement';
 import Onboarding from './pages/Onboarding';
-import SchoolBlog from './pages/Blog/SchoolBlog';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, loading, hasAccess } = useAuth();
@@ -85,8 +84,7 @@ function App() {
           </ProtectedRoute>
         }
       >
-        {/* All authenticated staff */}
-        <Route path="/" element={<SchoolBlog />} />
+        <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admissions" element={<AdmissionsList />} />
         <Route path="/admissions/new" element={<AdmissionForm />} />

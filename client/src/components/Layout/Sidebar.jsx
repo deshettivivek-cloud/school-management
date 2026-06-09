@@ -13,7 +13,6 @@ import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
   HiOutlineUsers,
-  HiOutlinePencilAlt,
 } from 'react-icons/hi';
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
@@ -24,8 +23,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
 
   const navItems = [
     { section: 'Main' },
-    { path: '/', icon: HiOutlinePencilAlt, label: 'School Blog' },
-    { path: '/dashboard', icon: HiOutlineHome, label: 'Dashboard' },
+    { path: '/', icon: HiOutlineHome, label: 'Dashboard' },
     { path: '/school-setup', icon: HiOutlineCog, label: 'School Setup' },
 
     { section: 'Students' },
