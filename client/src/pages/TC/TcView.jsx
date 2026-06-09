@@ -1,18 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import { useAuth } from '../../context/AuthContext';
-import { HiOutlineArrowLeft, HiOutlinePrinter } from 'react-icons/hi';
+import { HiOutlinePrinter, HiOutlineArrowLeft } from 'react-icons/hi';
 import { format } from 'date-fns';
 
 const TcView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [tc, setTc] = useState(null);
   const [school, setSchool] = useState(null);
   const [loading, setLoading] = useState(true);
+  const formRef = useRef();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,145 +32,187 @@ const TcView = () => {
   }, [id]);
 
   const handlePrint = () => {
-    const printContent = document.getElementById('tc-printable');
-    if (!printContent) return;
+    const content = formRef.current;
+    if (!content) return;
 
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <html>
         <head>
-          <title>Transfer Certificate — ${tc?.tc_number || tc?.tcNumber}</title>
+          <title>Transfer Certificate - ${tc?.student?.name || 'Student'}</title>
           <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-              font-family: 'Inter', 'Times New Roman', serif;
-              color: #1a1a1a;
-              padding: 0;
-              line-height: 1.7;
+              font-family: 'Inter', -apple-system, sans-serif;
+              padding: 2rem;
+              color: #0f172a;
               background: white;
             }
-            .tc-page {
-              max-width: 800px;
+            .tc-form-container { padding: 0; border: none; max-width: 100%; }
+            .tc-form {
+              max-width: 100%;
               margin: 0 auto;
-              padding: 2rem 2.5rem;
             }
-            .tc-header {
-              text-align: center;
-              margin-bottom: 1.5rem;
+            .form-header {
+              display: flex;
+              align-items: center;
+              gap: 1.5rem;
+              border-bottom: 3px solid #0f172a;
               padding-bottom: 1rem;
-              border-bottom: 3px double #1a1a1a;
+              margin-bottom: 1.5rem;
             }
-            .tc-school-name {
+            .form-header img {
+              width: 80px;
+              height: 80px;
+              object-fit: contain;
+            }
+            .school-name-print {
               font-family: 'Outfit', sans-serif;
-              font-size: 1.6rem;
+              font-size: 1.8rem;
+              font-weight: 800;
+              color: #0f172a;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            }
+            .school-info-print { font-size: 0.95rem; color: #475569; margin-top: 0.25rem; }
+            .form-title-print {
+              text-align: center;
+              font-size: 1.4rem;
+              font-weight: 800;
+              margin: 1.5rem 0;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
+              padding: 0.75rem;
+              background: #f8fafc;
+              border: 2px solid #0f172a;
+              color: #0f172a;
+            }
+            .tc-meta-row {
+              display: flex;
+              justify-content: space-between;
+              font-size: 0.95rem;
+              font-weight: 700;
+              margin-bottom: 1.5rem;
+              padding-bottom: 0.75rem;
+              border-bottom: 1px solid #cbd5e1;
+            }
+            .info-grid-print {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 0.75rem;
+              margin-bottom: 1.5rem;
+            }
+            .info-item-print {
+              display: flex;
+              padding: 0.4rem 0;
+              border-bottom: 1px dotted #94a3b8;
+            }
+            .info-item-print.full-width {
+              grid-column: 1 / -1;
+            }
+            .info-label-print {
+              font-weight: 700;
+              min-width: 180px;
+              font-size: 0.9rem;
+              color: #475569;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            }
+            .info-value-print {
+              font-size: 0.95rem;
+              color: #0f172a;
+              font-weight: 600;
+            }
+            .sl-no {
+              display: inline-block;
+              width: 2rem;
+              color: #64748b;
+              font-weight: 600;
+            }
+            .section-title-print {
+              font-size: 1.1rem;
               font-weight: 800;
               text-transform: uppercase;
               letter-spacing: 0.05em;
               color: #0f172a;
-              margin-bottom: 0.25rem;
+              border-bottom: 2px solid #0f172a;
+              padding-bottom: 0.4rem;
+              margin: 2rem 0 1rem;
             }
-            .tc-school-address {
-              font-size: 0.85rem;
-              color: #475569;
-              margin-bottom: 0.5rem;
-            }
-            .tc-title {
-              font-family: 'Outfit', sans-serif;
-              font-size: 1.3rem;
-              font-weight: 700;
-              text-transform: uppercase;
-              letter-spacing: 0.1em;
-              margin-top: 0.75rem;
-              color: #0f172a;
-            }
-            .tc-subtitle {
+            .photo-box-print {
+              width: 120px;
+              height: 150px;
+              border: 2px solid #0f172a;
+              float: right;
+              margin-left: 1.5rem;
+              margin-bottom: 1rem;
+              display: flex;
+              align-items: center;
+              justify-content: center;
               font-size: 0.8rem;
               color: #64748b;
-              margin-top: 0.25rem;
-            }
-            .tc-meta {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 1.5rem;
-              font-size: 0.85rem;
+              text-transform: uppercase;
               font-weight: 600;
-              border-bottom: 1px solid #e2e8f0;
-              padding-bottom: 0.75rem;
+              background: #f8fafc;
             }
-            .tc-body {
-              margin-bottom: 1.5rem;
+            .photo-box-print img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
             }
-            .tc-row {
-              display: flex;
-              border-bottom: 1px solid #f1f5f9;
-              padding: 0.55rem 0;
-              font-size: 0.88rem;
-            }
-            .tc-row:last-child {
-              border-bottom: none;
-            }
-            .tc-label {
-              width: 42%;
-              font-weight: 600;
-              color: #334155;
-              padding-right: 1rem;
-            }
-            .tc-label .sl-no {
-              display: inline-block;
-              width: 2rem;
-              color: #94a3b8;
-            }
-            .tc-value {
-              flex: 1;
+            .declaration-print {
+              margin-top: 2.5rem;
+              padding: 1rem;
+              border: 2px solid #0f172a;
+              font-size: 0.9rem;
               color: #0f172a;
+              line-height: 1.6;
+              background: #fefce8;
               font-weight: 500;
-              border-bottom: 1px dotted #cbd5e1;
-              padding-left: 0.25rem;
             }
-            .tc-footer {
-              margin-top: 3rem;
+            .footer-signatures {
+              margin-top: 4rem;
               display: flex;
               justify-content: space-between;
-              align-items: flex-end;
-              font-size: 0.85rem;
+              font-size: 0.9rem;
             }
-            .tc-footer-col {
+            .signature-line-print {
+              border-top: 2px solid #0f172a;
+              padding-top: 0.75rem;
+              min-width: 200px;
               text-align: center;
+              color: #0f172a;
+              font-weight: 700;
+              text-transform: uppercase;
+              font-size: 0.85rem;
+              letter-spacing: 0.05em;
             }
-            .tc-footer-col .line {
-              border-top: 1px solid #1a1a1a;
-              width: 160px;
-              margin-bottom: 0.25rem;
-            }
-            .tc-footer-col .label {
+            .seal-box {
+              text-align: center;
+              margin-top: 2rem;
+              font-size: 0.85rem;
+              color: #64748b;
               font-weight: 600;
-              color: #475569;
-              font-size: 0.8rem;
             }
             .tc-note {
               margin-top: 2rem;
               padding-top: 1rem;
-              border-top: 1px solid #e2e8f0;
-              font-size: 0.75rem;
-              color: #94a3b8;
+              border-top: 1px solid #cbd5e1;
+              font-size: 0.8rem;
+              color: #64748b;
               text-align: center;
               font-style: italic;
             }
-            .tc-seal {
-              margin-top: 2.5rem;
-              text-align: center;
-              font-size: 0.8rem;
-              color: #64748b;
-            }
-            @media print {
-              body { padding: 0; }
-              .tc-page { padding: 1.5rem; }
+            .print-section-footer { display: none !important; }
+            @media print { 
+              body { padding: 0.5rem; } 
+              .page-header { display: none !important; }
             }
           </style>
         </head>
         <body>
-          ${printContent.innerHTML}
+          ${content.innerHTML}
         </body>
       </html>
     `);
@@ -179,27 +220,19 @@ const TcView = () => {
     setTimeout(() => {
       printWindow.focus();
       printWindow.print();
-    }, 400);
+    }, 300);
   };
 
   if (loading) {
-    return (
-      <div className="spinner-container" style={{ minHeight: '60vh' }}>
-        <div className="spinner" />
-      </div>
-    );
+    return <div className="spinner-container"><div className="spinner" /></div>;
   }
 
   if (!tc) {
     return (
-      <div className="animate-fade-in">
-        <div className="empty-state">
-          <div className="empty-state-icon">📜</div>
-          <h3 className="empty-state-title">TC Not Found</h3>
-          <button className="btn btn-primary" onClick={() => navigate('/tc/register')}>
-            Back to Register
-          </button>
-        </div>
+      <div className="empty-state">
+        <div className="empty-state-icon">📜</div>
+        <h3 className="empty-state-title">TC Not Found</h3>
+        <button className="btn btn-primary" onClick={() => navigate('/tc/register')}>Back to Register</button>
       </div>
     );
   }
@@ -207,147 +240,184 @@ const TcView = () => {
   const student = tc.student || {};
   const fmtDate = (d) => {
     if (!d) return '—';
+    try { return format(new Date(d), 'dd MMM yyyy'); } catch { return d; }
+  };
+  const fmtDateWords = (d) => {
+    if (!d) return '—';
     try { return format(new Date(d), 'dd MMMM yyyy'); } catch { return d; }
   };
-
-  // Build the serial numbered TC fields
-  const tcFields = [
-    { label: 'Name of the Pupil', value: student.name || '—' },
-    { label: "Father's / Mother's Name", value: student.parent_name || student.parentName || '—' },
-    { label: 'Date of Birth (in words)', value: student.dob ? fmtDate(student.dob) : '—' },
-    { label: 'Gender', value: student.gender ? student.gender.charAt(0).toUpperCase() + student.gender.slice(1) : '—' },
-    { label: 'Nationality / Religion / Caste', value: '—' },
-    { label: 'Aadhaar Number', value: student.aadhar_no || student.aadharNo || '—' },
-    { label: 'Admission Number', value: student.admission_no || student.admissionNo || '—' },
-    { label: 'Date of Admission', value: fmtDate(student.admission_date || student.admissionDate) },
-    { label: 'Class in which the pupil was studying', value: student.grade ? `Class ${student.grade}${student.section ? ` — Section ${student.section}` : ''}` : '—' },
-    { label: 'Academic Year', value: student.academic_year || student.academicYear || '—' },
-    { label: 'Date of Leaving the School', value: fmtDate(tc.date_of_leaving || tc.dateOfLeaving) },
-    { label: 'Reason for Leaving', value: tc.reason || '—' },
-    { label: 'Whether the pupil has paid all dues', value: 'Yes' },
-    { label: 'General Conduct', value: tc.conduct || 'Good' },
-    { label: 'Date of issue of Transfer Certificate', value: fmtDate(tc.issued_date || tc.issuedDate) },
-    { label: 'Remarks', value: tc.remarks || 'Nil' },
-  ];
 
   return (
     <div className="animate-fade-in">
       <div className="page-header">
         <div className="page-header-info">
           <h1>Transfer Certificate</h1>
-          <p>TC No: {tc.tc_number || tc.tcNumber}</p>
+          <p>TC for {student.name}</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div className="page-header-actions">
           <button className="btn btn-secondary" onClick={() => navigate('/tc/register')}>
             <HiOutlineArrowLeft /> Back
           </button>
           <button className="btn btn-primary" onClick={handlePrint}>
-            <HiOutlinePrinter /> Print TC
+            <HiOutlinePrinter /> Print Transfer Certificate
           </button>
         </div>
       </div>
 
-      {/* Printable TC */}
-      <div id="tc-printable">
-        <div className="tc-page" style={{
-          maxWidth: 800,
-          margin: '0 auto',
-          background: 'var(--bg-card)',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border-color)',
-          padding: '2rem 2.5rem',
-        }}>
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '3px double var(--text-primary)' }}>
-            {school?.logo_url && (
-              <img src={school.logo_url} alt="School Logo" style={{ height: 60, marginBottom: '0.5rem' }} />
-            )}
-            <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-primary)' }}>
-              {school?.name || 'School Name'}
-            </div>
-            {school?.address && (
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                {school.address}
-                {school.phone ? ` | Phone: ${school.phone}` : ''}
-                {school.email ? ` | Email: ${school.email}` : ''}
-              </div>
-            )}
-            <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.2rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '0.75rem', color: 'var(--text-primary)' }}>
-              Transfer Certificate
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-              (Issued under the provisions of Right to Education Act)
-            </div>
-          </div>
-
-          {/* TC Number & Date */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', fontSize: '0.88rem', fontWeight: 600, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', color: 'var(--text-primary)' }}>
-            <span>TC No: <span style={{ color: 'var(--primary-400)' }}>{tc.tc_number || tc.tcNumber}</span></span>
-            <span>Date: {fmtDate(tc.issued_date || tc.issuedDate)}</span>
-          </div>
-
-          {/* TC Body — Serial Numbered Fields */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            {tcFields.map((field, i) => (
-              <div key={i} style={{
-                display: 'flex',
-                borderBottom: `1px solid ${i === tcFields.length - 1 ? 'transparent' : 'rgba(255,255,255,0.05)'}`,
-                padding: '0.55rem 0',
-                fontSize: '0.88rem',
-              }}>
-                <div style={{ width: '45%', fontWeight: 600, color: 'var(--text-secondary)', paddingRight: '1rem' }}>
-                  <span style={{ display: 'inline-block', width: '2rem', color: 'var(--text-muted)' }}>{i + 1}.</span>
-                  {field.label}
-                </div>
-                <div style={{
-                  flex: 1,
-                  color: 'var(--text-primary)',
-                  fontWeight: 500,
-                  borderBottom: '1px dotted var(--border-color)',
-                  paddingLeft: '0.25rem',
-                }}>
-                  {field.value}
+      <div ref={formRef}>
+        <div className="tc-form-container">
+          <div className="tc-form">
+            {/* Header — same style as admission form */}
+            <div className="form-header">
+              {(school?.logo_url || school?.logo) && (
+                <img src={school.logo_url || school.logo} alt="Logo" style={{ width: 70, height: 70, objectFit: 'contain' }} />
+              )}
+              <div>
+                <div className="school-name-print">{school?.name || 'School'}</div>
+                <div className="school-info-print">
+                  {school?.address && <span>{school.address}</span>}
+                  {school?.phone && <span> • {school.phone}</span>}
+                  {school?.email && <span> • {school.email}</span>}
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Signatures */}
-          <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', fontSize: '0.85rem' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ borderTop: '1px solid var(--text-primary)', width: 160, marginBottom: '0.25rem' }}></div>
-              <div style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Class Teacher</div>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ borderTop: '1px solid var(--text-primary)', width: 160, marginBottom: '0.25rem' }}></div>
-              <div style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Office Clerk</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ borderTop: '1px solid var(--text-primary)', width: 160, marginBottom: '0.25rem' }}></div>
-              <div style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Principal / Head Master</div>
-            </div>
-          </div>
 
-          {/* Seal placeholder */}
-          <div style={{ marginTop: '2.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            ( School Seal )
-          </div>
+            <div className="form-title-print">Transfer Certificate</div>
 
-          {/* Note */}
-          <div style={{
-            marginTop: '2rem',
-            paddingTop: '1rem',
-            borderTop: '1px solid var(--border-color)',
-            fontSize: '0.75rem',
-            color: 'var(--text-muted)',
-            textAlign: 'center',
-            fontStyle: 'italic',
-          }}>
-            Note: This Transfer Certificate should be presented at the time of admission to another school. No duplicate shall be issued.
-            <br />
-            Issued by: {tc.issuedBy?.name || 'Admin'}
+            {/* TC Number & Date */}
+            <div className="tc-meta-row">
+              <span>TC No: {tc.tc_number || tc.tcNumber}</span>
+              <span>Date: {fmtDate(tc.issued_date || tc.issuedDate)}</span>
+            </div>
+
+            {/* Photo + Student Details */}
+            <div style={{ overflow: 'hidden', marginBottom: '1.5rem' }}>
+              <div className="photo-box-print">
+                {(student.photo_url || student.photoUrl) ? (
+                  <img src={student.photo_url || student.photoUrl} alt="Student" />
+                ) : (
+                  <span>Photo</span>
+                )}
+              </div>
+
+              <div className="section-title-print" style={{ marginTop: 0 }}>Student Details</div>
+              <div className="info-grid-print">
+                <div className="info-item-print">
+                  <span className="info-label-print"><span className="sl-no">1.</span>Name of the Pupil:</span>
+                  <span className="info-value-print">{student.name || '—'}</span>
+                </div>
+                <div className="info-item-print">
+                  <span className="info-label-print"><span className="sl-no">2.</span>Admission No:</span>
+                  <span className="info-value-print">{student.admission_no || student.admissionNo || '—'}</span>
+                </div>
+                <div className="info-item-print">
+                  <span className="info-label-print"><span className="sl-no">3.</span>Father / Mother:</span>
+                  <span className="info-value-print">{student.parent_name || student.parentName || '—'}</span>
+                </div>
+                <div className="info-item-print">
+                  <span className="info-label-print"><span className="sl-no">4.</span>Date of Birth:</span>
+                  <span className="info-value-print">{fmtDateWords(student.dob)}</span>
+                </div>
+                <div className="info-item-print">
+                  <span className="info-label-print"><span className="sl-no">5.</span>Gender:</span>
+                  <span className="info-value-print" style={{ textTransform: 'capitalize' }}>{student.gender || '—'}</span>
+                </div>
+                <div className="info-item-print">
+                  <span className="info-label-print"><span className="sl-no">6.</span>Aadhaar No:</span>
+                  <span className="info-value-print">{student.aadhar_no || student.aadharNo || '—'}</span>
+                </div>
+                <div className="info-item-print">
+                  <span className="info-label-print"><span className="sl-no">7.</span>Class / Section:</span>
+                  <span className="info-value-print">Class {student.grade}{student.section ? ` — ${student.section}` : ''}</span>
+                </div>
+                <div className="info-item-print">
+                  <span className="info-label-print"><span className="sl-no">8.</span>Academic Year:</span>
+                  <span className="info-value-print">{student.academic_year || student.academicYear || '—'}</span>
+                </div>
+                <div className="info-item-print">
+                  <span className="info-label-print"><span className="sl-no">9.</span>Date of Admission:</span>
+                  <span className="info-value-print">{fmtDate(student.admission_date || student.admissionDate)}</span>
+                </div>
+                <div className="info-item-print">
+                  <span className="info-label-print"><span className="sl-no">10.</span>Phone No:</span>
+                  <span className="info-value-print">{student.parent_phone || student.parentPhone || '—'}</span>
+                </div>
+                <div className="info-item-print full-width">
+                  <span className="info-label-print"><span className="sl-no">11.</span>Address:</span>
+                  <span className="info-value-print">{student.address || '—'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Transfer Details */}
+            <div className="section-title-print">Transfer Details</div>
+            <div className="info-grid-print">
+              <div className="info-item-print">
+                <span className="info-label-print"><span className="sl-no">12.</span>Date of Leaving:</span>
+                <span className="info-value-print">{fmtDateWords(tc.date_of_leaving || tc.dateOfLeaving)}</span>
+              </div>
+              <div className="info-item-print">
+                <span className="info-label-print"><span className="sl-no">13.</span>General Conduct:</span>
+                <span className="info-value-print">{tc.conduct || 'Good'}</span>
+              </div>
+              <div className="info-item-print full-width">
+                <span className="info-label-print"><span className="sl-no">14.</span>Reason for Leaving:</span>
+                <span className="info-value-print">{tc.reason || '—'}</span>
+              </div>
+              <div className="info-item-print">
+                <span className="info-label-print"><span className="sl-no">15.</span>All Dues Paid:</span>
+                <span className="info-value-print">Yes</span>
+              </div>
+              <div className="info-item-print">
+                <span className="info-label-print"><span className="sl-no">16.</span>Date of Issue:</span>
+                <span className="info-value-print">{fmtDateWords(tc.issued_date || tc.issuedDate)}</span>
+              </div>
+              <div className="info-item-print full-width">
+                <span className="info-label-print"><span className="sl-no">17.</span>Remarks:</span>
+                <span className="info-value-print">{tc.remarks || 'Nil'}</span>
+              </div>
+            </div>
+
+            {/* Declaration */}
+            <div className="declaration-print">
+              <strong>Note:</strong> This Transfer Certificate is issued on the request of the parent/guardian of the above-named pupil.
+              The character and conduct of the pupil has been <strong>{tc.conduct || 'Good'}</strong> during the stay in this school.
+              This Transfer Certificate should be presented at the time of admission to another school. No duplicate shall be issued.
+            </div>
+
+            {/* Signatures */}
+            <div className="footer-signatures">
+              <div style={{ textAlign: 'center' }}>
+                <div className="signature-line-print">
+                  Class Teacher
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div className="signature-line-print">
+                  Office Seal & Stamp
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div className="signature-line-print">
+                  Principal / Head Master
+                </div>
+              </div>
+            </div>
+
+            {/* Issued by note */}
+            <div className="tc-note">
+              Issued by: {tc.issuedBy?.name || 'Admin'} | Generated from SchoolMS
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Print button at bottom */}
+      <div className="print-section-footer">
+        <button className="btn btn-print" onClick={handlePrint}>
+          <HiOutlinePrinter size={18} />
+          Print Transfer Certificate
+        </button>
       </div>
     </div>
   );
