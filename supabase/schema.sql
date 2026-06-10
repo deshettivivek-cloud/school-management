@@ -123,6 +123,23 @@ CREATE TABLE blog_posts (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ── Expenditures ──────────────────────────────────────────────
+CREATE TABLE expenditures (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  amount NUMERIC NOT NULL DEFAULT 0,
+  category TEXT NOT NULL DEFAULT 'other',
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  description TEXT DEFAULT '',
+  payment_mode TEXT DEFAULT 'cash',
+  vendor_name TEXT DEFAULT '',
+  academic_year TEXT DEFAULT '',
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ═══════════════════════════════════════════════════════════════
 -- INDEXES
 -- ═══════════════════════════════════════════════════════════════
@@ -132,6 +149,8 @@ CREATE INDEX idx_students_grade ON students(school_id, grade, academic_year);
 CREATE INDEX idx_fee_collections_school ON fee_collections(school_id);
 CREATE INDEX idx_tc_school ON transfer_certificates(school_id);
 CREATE INDEX idx_blog_school ON blog_posts(school_id);
+CREATE INDEX idx_expenditures_school ON expenditures(school_id);
+CREATE INDEX idx_expenditures_date ON expenditures(school_id, date);
 
 -- ═══════════════════════════════════════════════════════════════
 -- TRIGGER: Auto-create profile when a user signs up
@@ -172,6 +191,7 @@ ALTER TABLE fee_structures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fee_collections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transfer_certificates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenditures ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read for schools" ON schools FOR SELECT USING (true);
 CREATE POLICY "Allow individual read profiles" ON profiles FOR SELECT USING (auth.uid() = id);

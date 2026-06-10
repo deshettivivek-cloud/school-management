@@ -19,6 +19,7 @@ import TcView from './pages/TC/TcView';
 import Unauthorized from './pages/Unauthorized';
 import RoleManagement from './pages/Admin/RoleManagement';
 import Onboarding from './pages/Onboarding';
+import SchoolExpenditure from './pages/Expenditure/SchoolExpenditure';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, loading, hasAccess } = useAuth();
@@ -96,6 +97,7 @@ function App() {
         <Route path="/fees/collection" element={<FeeCollection />} />
         <Route path="/fees/pending" element={<PendingFees />} />
         <Route path="/fees/receipt/:collectionId/:paymentId" element={<ReceiptView />} />
+        <Route path="/expenditure" element={<SchoolExpenditure />} />
         <Route path="/tc/issue" element={<IssueTc />} />
         <Route path="/tc/register" element={<TcRegister />} />
         <Route path="/tc/view/:id" element={<TcView />} />

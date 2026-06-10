@@ -8,6 +8,7 @@ import {
   HiOutlineCurrencyRupee,
   HiOutlineDocumentText,
   HiOutlineClipboardList,
+  HiOutlineCalculator,
   HiOutlineArrowUp,
   HiOutlineCog,
   HiOutlineLogout,
@@ -36,6 +37,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
     { path: '/fees/structure', icon: HiOutlineClipboardList, label: 'Fee Structure' },
     { path: '/fees/collection', icon: HiOutlineCurrencyRupee, label: 'Fee Collection' },
     { path: '/fees/pending', icon: HiOutlineDocumentText, label: 'Pending Fees' },
+    { path: '/expenditure', icon: HiOutlineCalculator, label: 'Expenditure' },
 
     { section: 'Academic' },
     { path: '/promotion', icon: HiOutlineArrowUp, label: 'Promotion' },
