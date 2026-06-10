@@ -123,7 +123,9 @@ const SchoolExpenditure = () => {
       fetchExpenditures();
       fetchStats();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save');
+      console.error('Save error:', error);
+      const backendMessage = error.response?.data?.message;
+      toast.error(backendMessage ? `Error: ${backendMessage}` : `Failed to save: ${error.message}`);
     }
   };
 
