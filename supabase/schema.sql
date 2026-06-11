@@ -53,10 +53,19 @@ CREATE TABLE students (
   photo_url TEXT DEFAULT '',
   grade TEXT NOT NULL,
   section TEXT DEFAULT '',
-  parent_name TEXT NOT NULL,
-  parent_phone TEXT NOT NULL,
+  parent_name TEXT NOT NULL, -- Serves as Primary/Father/Guardian Name
+  mother_name TEXT DEFAULT '',
+  mother_tongue TEXT DEFAULT '',
+  parent_phone TEXT NOT NULL, -- Father's phone
+  mother_phone TEXT DEFAULT '',
+  guardian_phone TEXT DEFAULT '',
   parent_email TEXT DEFAULT '',
-  address TEXT DEFAULT '',
+  address TEXT DEFAULT '', -- Present Address
+  permanent_address TEXT DEFAULT '',
+  father_occupation TEXT DEFAULT '',
+  mother_occupation TEXT DEFAULT '',
+  father_occupation_desc TEXT DEFAULT '',
+  mother_occupation_desc TEXT DEFAULT '',
   admission_date DATE DEFAULT CURRENT_DATE,
   admission_status TEXT DEFAULT 'pending' CHECK (admission_status IN ('pending', 'confirmed')),
   academic_year TEXT NOT NULL,

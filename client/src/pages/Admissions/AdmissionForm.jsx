@@ -14,7 +14,10 @@ const AdmissionForm = () => {
     name: '', dob: '', gender: 'male', grade: '', section: '',
     parentName: '', parentPhone: '', parentEmail: '', address: '',
     academicYear: '', admissionDate: new Date().toISOString().split('T')[0],
-    admissionNo: '', aadharNo: ''
+    admissionNo: '', aadharNo: '',
+    motherName: '', motherTongue: '', motherPhone: '', guardianPhone: '',
+    permanentAddress: '', fatherOccupation: '', motherOccupation: '',
+    fatherOccupationDesc: '', motherOccupationDesc: ''
   });
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
@@ -46,7 +49,12 @@ const AdmissionForm = () => {
         parentPhone: s.parentPhone, parentEmail: s.parentEmail || '',
         address: s.address || '', academicYear: s.academicYear || s.academic_year || '',
         admissionDate: s.admissionDate?.split('T')[0] || (s.admission_date ? s.admission_date.split('T')[0] : ''),
-        admissionNo: s.admission_no || '', aadharNo: s.aadhar_no || ''
+        admissionNo: s.admission_no || '', aadharNo: s.aadhar_no || '',
+        motherName: s.mother_name || '', motherTongue: s.mother_tongue || '',
+        motherPhone: s.mother_phone || '', guardianPhone: s.guardian_phone || '',
+        permanentAddress: s.permanent_address || '', fatherOccupation: s.father_occupation || '',
+        motherOccupation: s.mother_occupation || '', fatherOccupationDesc: s.father_occupation_desc || '',
+        motherOccupationDesc: s.mother_occupation_desc || ''
       });
       if (s.photo_url || s.photoUrl) setPhotoPreview(s.photo_url || s.photoUrl);
     } catch (error) {
@@ -173,6 +181,10 @@ const AdmissionForm = () => {
               <input id="student-dob" type="date" className="form-input" name="dob" value={form.dob} onChange={handleChange} />
             </div>
             <div className="form-group">
+              <label className="form-label">Mother Tongue</label>
+              <input id="student-mtongue" type="text" className="form-input" name="motherTongue" value={form.motherTongue} onChange={handleChange} placeholder="e.g. Hindi, English" />
+            </div>
+            <div className="form-group">
               <label className="form-label">Aadhar Number</label>
               <input id="student-aadhar" type="text" className="form-input" name="aadharNo" value={form.aadharNo} onChange={handleChange} placeholder="12-digit Aadhar number" />
             </div>
@@ -206,36 +218,79 @@ const AdmissionForm = () => {
 
           <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: 'var(--text-secondary)' }}>Parent / Guardian Details</h3>
 
-          <div className="form-row">
+          <div className="form-row-3">
             <div className="form-group">
-              <label className="form-label">Parent/Guardian Name *</label>
-              <input id="parent-name" type="text" className="form-input" name="parentName" value={form.parentName} onChange={handleChange} placeholder="Parent full name" />
+              <label className="form-label">Father/Guardian Name *</label>
+              <input id="parent-name" type="text" className="form-input" name="parentName" value={form.parentName} onChange={handleChange} placeholder="Father's name" />
             </div>
             <div className="form-group">
-              <label className="form-label">Parent Phone *</label>
+              <label className="form-label">Mother Name</label>
+              <input id="mother-name" type="text" className="form-input" name="motherName" value={form.motherName} onChange={handleChange} placeholder="Mother's name" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Father Phone *</label>
               <input id="parent-phone" type="text" className="form-input" name="parentPhone" value={form.parentPhone} onChange={handleChange} placeholder="+91 9876543210" />
             </div>
           </div>
 
-          <div className="form-row">
+          <div className="form-row-3">
+            <div className="form-group">
+              <label className="form-label">Mother Phone</label>
+              <input id="mother-phone" type="text" className="form-input" name="motherPhone" value={form.motherPhone} onChange={handleChange} placeholder="+91 9876543210" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Guardian Phone</label>
+              <input id="guardian-phone" type="text" className="form-input" name="guardianPhone" value={form.guardianPhone} onChange={handleChange} placeholder="+91 9876543210" />
+            </div>
             <div className="form-group">
               <label className="form-label">Parent Email</label>
               <input id="parent-email" type="email" className="form-input" name="parentEmail" value={form.parentEmail} onChange={handleChange} placeholder="parent@email.com" />
             </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Father Occupation</label>
+              <select className="form-select" name="fatherOccupation" value={form.fatherOccupation} onChange={handleChange}>
+                <option value="">Select...</option>
+                <option value="service">Service</option>
+                <option value="profession">Profession</option>
+                <option value="business">Business</option>
+              </select>
+              <input type="text" className="form-input" style={{ marginTop: '0.5rem' }} name="fatherOccupationDesc" value={form.fatherOccupationDesc} onChange={handleChange} placeholder="Brief description..." />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Mother Occupation</label>
+              <select className="form-select" name="motherOccupation" value={form.motherOccupation} onChange={handleChange}>
+                <option value="">Select...</option>
+                <option value="service">Service</option>
+                <option value="profession">Profession</option>
+                <option value="business">Business</option>
+              </select>
+              <input type="text" className="form-input" style={{ marginTop: '0.5rem' }} name="motherOccupationDesc" value={form.motherOccupationDesc} onChange={handleChange} placeholder="Brief description..." />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Present Address</label>
+              <textarea id="student-address" className="form-textarea" name="address" value={form.address} onChange={handleChange} placeholder="Present address" rows={3} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Permanent Address</label>
+              <textarea id="student-permanent-address" className="form-textarea" name="permanentAddress" value={form.permanentAddress} onChange={handleChange} placeholder="Permanent address" rows={3} />
+            </div>
+          </div>
+
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label">Academic Year *</label>
               <input id="student-year" type="text" className="form-input" name="academicYear" value={form.academicYear} onChange={handleChange} placeholder="2024-25" />
             </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Address</label>
-            <textarea id="student-address" className="form-textarea" name="address" value={form.address} onChange={handleChange} placeholder="Full address" rows={3} />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Admission Date</label>
-            <input id="student-admission-date" type="date" className="form-input" name="admissionDate" value={form.admissionDate} onChange={handleChange} style={{ maxWidth: 300 }} />
+            <div className="form-group">
+              <label className="form-label">Admission Date</label>
+              <input id="student-admission-date" type="date" className="form-input" name="admissionDate" value={form.admissionDate} onChange={handleChange} />
+            </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>

@@ -102,7 +102,16 @@ exports.createStudent = async (req, res) => {
         academic_year: academicYear,
         admission_date: admissionDate || new Date().toISOString().split('T')[0],
         photo_url: photoUrl || '',
-        aadhar_no: aadharNo || null
+        aadhar_no: aadharNo || null,
+        mother_name: motherName || '',
+        mother_tongue: motherTongue || '',
+        mother_phone: motherPhone || '',
+        guardian_phone: guardianPhone || '',
+        permanent_address: permanentAddress || '',
+        father_occupation: fatherOccupation || '',
+        mother_occupation: motherOccupation || '',
+        father_occupation_desc: fatherOccupationDesc || '',
+        mother_occupation_desc: motherOccupationDesc || ''
       })
       .select()
       .single();
@@ -123,7 +132,9 @@ exports.updateStudent = async (req, res) => {
     const {
       name, dob, gender, grade, section, parentName, parentPhone,
       parentEmail, address, academicYear, admissionDate, photoUrl,
-      admissionNo, aadharNo
+      admissionNo, aadharNo, motherName, motherTongue, motherPhone,
+      guardianPhone, permanentAddress, fatherOccupation, motherOccupation,
+      fatherOccupationDesc, motherOccupationDesc
     } = req.body;
 
     const updateData = { updated_at: new Date().toISOString() };
@@ -141,6 +152,15 @@ exports.updateStudent = async (req, res) => {
     if (photoUrl !== undefined) updateData.photo_url = photoUrl;
     if (admissionNo !== undefined) updateData.admission_no = admissionNo;
     if (aadharNo !== undefined) updateData.aadhar_no = aadharNo;
+    if (motherName !== undefined) updateData.mother_name = motherName;
+    if (motherTongue !== undefined) updateData.mother_tongue = motherTongue;
+    if (motherPhone !== undefined) updateData.mother_phone = motherPhone;
+    if (guardianPhone !== undefined) updateData.guardian_phone = guardianPhone;
+    if (permanentAddress !== undefined) updateData.permanent_address = permanentAddress;
+    if (fatherOccupation !== undefined) updateData.father_occupation = fatherOccupation;
+    if (motherOccupation !== undefined) updateData.mother_occupation = motherOccupation;
+    if (fatherOccupationDesc !== undefined) updateData.father_occupation_desc = fatherOccupationDesc;
+    if (motherOccupationDesc !== undefined) updateData.mother_occupation_desc = motherOccupationDesc;
 
     const { data, error } = await supabase
       .from('students')

@@ -319,6 +319,10 @@ const VirtualAdmissionForm = () => {
                   <span className="info-value-print">{student.aadhar_no || student.aadharNo || '-'}</span>
                 </div>
                 <div className="info-item-print">
+                  <span className="info-label-print">Mother Tongue:</span>
+                  <span className="info-value-print">{student.mother_tongue || student.motherTongue || '-'}</span>
+                </div>
+                <div className="info-item-print">
                   <span className="info-label-print">Class / Section:</span>
                   <span className="info-value-print">Class {student.grade}{student.section ? `-${student.section}` : ''}</span>
                 </div>
@@ -333,20 +337,42 @@ const VirtualAdmissionForm = () => {
             <div className="section-title-print">Parent / Guardian Details</div>
             <div className="info-grid-print">
               <div className="info-item-print">
-                <span className="info-label-print">Parent Name:</span>
-                <span className="info-value-print">{student.parent_name || student.parentName}</span>
+                <span className="info-label-print">Father/Guardian:</span>
+                <span className="info-value-print">{student.parent_name || student.parentName || '-'}</span>
               </div>
               <div className="info-item-print">
-                <span className="info-label-print">Phone:</span>
-                <span className="info-value-print">{student.parent_phone || student.parentPhone}</span>
+                <span className="info-label-print">Mother Name:</span>
+                <span className="info-value-print">{student.mother_name || student.motherName || '-'}</span>
               </div>
               <div className="info-item-print">
-                <span className="info-label-print">Email:</span>
-                <span className="info-value-print">{student.parent_email || student.parentEmail || '-'}</span>
+                <span className="info-label-print">Father Phone:</span>
+                <span className="info-value-print">{student.parent_phone || student.parentPhone || '-'}</span>
               </div>
               <div className="info-item-print">
-                <span className="info-label-print">Address:</span>
+                <span className="info-label-print">Mother Phone:</span>
+                <span className="info-value-print">{student.mother_phone || student.motherPhone || '-'}</span>
+              </div>
+              <div className="info-item-print">
+                <span className="info-label-print">Father Occupation:</span>
+                <span className="info-value-print" style={{ textTransform: 'capitalize' }}>
+                  {student.father_occupation || student.fatherOccupation || '-'} 
+                  {(student.father_occupation_desc || student.fatherOccupationDesc) && ` (${student.father_occupation_desc || student.fatherOccupationDesc})`}
+                </span>
+              </div>
+              <div className="info-item-print">
+                <span className="info-label-print">Mother Occupation:</span>
+                <span className="info-value-print" style={{ textTransform: 'capitalize' }}>
+                  {student.mother_occupation || student.motherOccupation || '-'}
+                  {(student.mother_occupation_desc || student.motherOccupationDesc) && ` (${student.mother_occupation_desc || student.motherOccupationDesc})`}
+                </span>
+              </div>
+              <div className="info-item-print" style={{ gridColumn: '1 / -1' }}>
+                <span className="info-label-print">Present Address:</span>
                 <span className="info-value-print">{student.address || '-'}</span>
+              </div>
+              <div className="info-item-print" style={{ gridColumn: '1 / -1' }}>
+                <span className="info-label-print">Permanent Address:</span>
+                <span className="info-value-print">{student.permanent_address || student.permanentAddress || '-'}</span>
               </div>
             </div>
 
