@@ -4,6 +4,8 @@
 -- ═══════════════════════════════════════════════════════════════
 
 -- WIPE EXISTING DATA
+DROP TABLE IF EXISTS expenditures CASCADE;
+DROP TABLE IF EXISTS blog_posts CASCADE;
 DROP TABLE IF EXISTS transfer_certificates CASCADE;
 DROP TABLE IF EXISTS fee_collections CASCADE;
 DROP TABLE IF EXISTS fee_structures CASCADE;
@@ -208,16 +210,19 @@ VALUES ('logos', 'logos', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Allow public access to read logos
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
 CREATE POLICY "Public Access" 
 ON storage.objects FOR SELECT 
 USING (bucket_id = 'logos');
 
 -- Allow authenticated users to upload logos
+DROP POLICY IF EXISTS "Auth Uploads" ON storage.objects;
 CREATE POLICY "Auth Uploads" 
 ON storage.objects FOR INSERT 
 WITH CHECK (bucket_id = 'logos' AND auth.role() = 'authenticated');
 
 -- Allow authenticated users to update their own logos
+DROP POLICY IF EXISTS "Auth Updates" ON storage.objects;
 CREATE POLICY "Auth Updates" 
 ON storage.objects FOR UPDATE 
 USING (bucket_id = 'logos' AND auth.role() = 'authenticated');
