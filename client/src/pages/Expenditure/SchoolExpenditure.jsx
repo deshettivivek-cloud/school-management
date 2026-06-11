@@ -55,7 +55,8 @@ const SchoolExpenditure = () => {
       const res = await api.get(`/expenditures?${params}`);
       setExpenditures(res.data.data);
     } catch (error) {
-      toast.error('Failed to fetch expenditures');
+      console.error('Fetch expenditures error:', error);
+      toast.error(`Failed to fetch expenditures: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }
@@ -67,6 +68,7 @@ const SchoolExpenditure = () => {
       setStats(res.data.data);
     } catch (error) {
       console.error('Stats fetch error:', error);
+      toast.error(`Failed to fetch stats: ${error.response?.data?.message || error.message}`);
     }
   };
 
