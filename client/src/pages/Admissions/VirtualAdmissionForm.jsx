@@ -263,21 +263,37 @@ const VirtualAdmissionForm = () => {
         <div className="admission-form-container">
           <div className="admission-form">
             {/* Header */}
-            <div className="form-header">
-              {(school?.logo_url || school?.logo) && (
-                <img src={school.logo_url || school.logo} alt="Logo" style={{ width: 70, height: 70, objectFit: 'contain' }} />
-              )}
-              <div>
-                <div className="school-name-print">{school?.name || 'School'}</div>
-                <div className="school-info-print">
-                  {school?.address && <span>{school.address}</span>}
-                  {school?.phone && <span> • {school.phone}</span>}
-                  {school?.email && <span> • {school.email}</span>}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #000' }}>
+              <div style={{ width: '100px', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {(school?.logo_url || school?.logo) ? (
+                  <img src={school.logo_url || school.logo} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                ) : (
+                  <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#eee', border: '1px solid #ccc' }} />
+                )}
+              </div>
+              
+              <div style={{ flex: 1, textAlign: 'center', padding: '0 1rem' }}>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '4px', margin: 0, textTransform: 'uppercase', color: '#000' }}>
+                  {school?.name || 'YOUR SCHOOL NAME'}
+                </h1>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0.5rem 0', color: '#000' }}>
+                  ( SCHOOL FOR PLAY GROUP TO STD: - VIII )
+                </div>
+                <div style={{ fontSize: '1rem', fontWeight: 600, color: '#000' }}>
+                  ( An ISO Certified Organization 9001-2015 )
+                </div>
+              </div>
+
+              <div style={{ width: '100px', textAlign: 'center' }}>
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#f8cc46', border: '2px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.8rem', marginLeft: 'auto', color: '#000' }}>
+                  ISO 9001<br/>CERTIFIED
                 </div>
               </div>
             </div>
 
-            <div className="form-title-print">Admission Form / Fee Receipt</div>
+            <h2 style={{ textAlign: 'center', textDecoration: 'underline', fontSize: '1.4rem', margin: '1.5rem 0 1rem', color: '#000', textTransform: 'uppercase', fontWeight: 800 }}>
+              APPLICATION FORM FOR ADMISSION
+            </h2>
 
             {/* Photo + Student Info */}
             <div style={{ overflow: 'hidden', marginBottom: '1.5rem' }}>
