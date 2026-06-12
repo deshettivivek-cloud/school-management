@@ -78,19 +78,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Email + Password login
-  const login = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) throw error;
-
-    await fetchProfile(data.user);
-    return data.user;
-  };
-
   // Google OAuth login
   const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -127,7 +114,6 @@ export const AuthProvider = ({ children }) => {
     user,
     session,
     loading,
-    login,
     signInWithGoogle,
     logout,
     hasAccess,
