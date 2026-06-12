@@ -91,18 +91,8 @@ const Dashboard = () => {
     { name: 'Pending', value: feeStats?.pendingCount || 0, color: '#ef4444' },
   ].filter((d) => d.value > 0);
 
-  // Mock Data for new widgets
-  const attendanceData = [
-    { name: 'Mon', rate: 94 }, { name: 'Tue', rate: 96 }, { name: 'Wed', rate: 95 },
-    { name: 'Thu', rate: 98 }, { name: 'Fri', rate: 93 }
-  ];
-
-  const recentActivities = [
-    { id: 1, title: 'New admission: Rahul Sharma', time: '10 mins ago', icon: <UserPlus size={14} />, color: '#6366f1' },
-    { id: 2, title: 'Fee collected: ₹15,000 (Class 10)', time: '1 hour ago', icon: <CreditCard size={14} />, color: '#22c55e' },
-    { id: 3, title: 'Term 1 Exam Schedule published', time: '3 hours ago', icon: <Calendar size={14} />, color: '#8b5cf6' },
-    { id: 4, title: 'Teacher absent: Mrs. Smith', time: '5 hours ago', icon: <AlertCircle size={14} />, color: '#ef4444' }
-  ];
+  const attendanceData = [];
+  const recentActivities = [];
 
   return (
     <PrintSection title="Dashboard">
@@ -221,31 +211,8 @@ const Dashboard = () => {
         <div className="ai-insights">
           <Sparkles className="ai-sparkle" size={24} />
           <h3 className="ai-title"><Zap size={18} /> AI School Insights</h3>
-          <div className="ai-grid">
-            <div className="ai-card">
-              <div className="ai-card-icon" style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80' }}>
-                <TrendingUp size={18} />
-              </div>
-              <div className="ai-card-text">
-                <strong>Grade 10 performance</strong> improved by 8% in the latest mock exams.
-              </div>
-            </div>
-            <div className="ai-card">
-              <div className="ai-card-icon" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}>
-                <CreditCard size={18} />
-              </div>
-              <div className="ai-card-text">
-                <strong>Fee collection rate</strong> is 12% above the monthly target.
-              </div>
-            </div>
-            <div className="ai-card">
-              <div className="ai-card-icon" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#f87171' }}>
-                <AlertCircle size={18} />
-              </div>
-              <div className="ai-card-text">
-                <strong>15 students</strong> have attendance below 75% this month and need attention.
-              </div>
-            </div>
+          <div className="premium-empty" style={{ background: 'transparent', border: 'none', padding: '1rem', marginTop: 0 }}>
+            <p className="premium-empty-text" style={{ margin: 0 }}>Not enough data to generate insights yet.</p>
           </div>
         </div>
 
@@ -361,25 +328,33 @@ const Dashboard = () => {
           {/* 5. Recent Activities */}
           <div className="card">
             <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Recent Activities</h3>
-            <div className="timeline">
-              {recentActivities.map((activity, i) => (
-                <motion.div 
-                  key={activity.id} 
-                  className="timeline-item"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + (i * 0.1) }}
-                >
-                  <div className="timeline-icon" style={{ background: `${activity.color}20`, color: activity.color }}>
-                    {activity.icon}
-                  </div>
-                  <div className="timeline-content">
-                    <div className="timeline-title">{activity.title}</div>
-                    <div className="timeline-time">{activity.time}</div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+            {recentActivities.length > 0 ? (
+              <div className="timeline">
+                {recentActivities.map((activity, i) => (
+                  <motion.div 
+                    key={activity.id} 
+                    className="timeline-item"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + (i * 0.1) }}
+                  >
+                    <div className="timeline-icon" style={{ background: `${activity.color}20`, color: activity.color }}>
+                      {activity.icon}
+                    </div>
+                    <div className="timeline-content">
+                      <div className="timeline-title">{activity.title}</div>
+                      <div className="timeline-time">{activity.time}</div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="premium-empty" style={{ padding: '2rem 1rem' }}>
+                <Clock className="premium-empty-icon" style={{ width: 32, height: 32 }} />
+                <h4 className="premium-empty-title">No Activities</h4>
+                <p className="premium-empty-text">Recent school activities will appear here.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -388,43 +363,20 @@ const Dashboard = () => {
           {/* 8. Student Performance Widget */}
           <div className="card">
             <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Top Performing Students</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {[
-                { name: 'Aarav Patel', grade: 'Class 10', score: '98%', avatar: 'A' },
-                { name: 'Priya Sharma', grade: 'Class 9', score: '96%', avatar: 'P' },
-                { name: 'Rohan Gupta', grade: 'Class 12', score: '95%', avatar: 'R' }
-              ].map((student, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{student.avatar}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{student.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{student.grade}</div>
-                  </div>
-                  <div style={{ fontWeight: 700, color: '#4ade80' }}>{student.score}</div>
-                </div>
-              ))}
+            <div className="premium-empty" style={{ padding: '2rem 1rem' }}>
+              <User className="premium-empty-icon" style={{ width: 32, height: 32 }} />
+              <h4 className="premium-empty-title">No Data</h4>
+              <p className="premium-empty-text">Student performance data will appear here.</p>
             </div>
           </div>
 
           {/* 6. Upcoming Events Widget */}
           <div className="card">
             <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Upcoming Events</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {[
-                { title: 'Term 1 Examinations', date: 'Oct 15 - Oct 25', days: 'In 3 days', color: '#ef4444' },
-                { title: 'Parent-Teacher Meeting', date: 'Nov 2, 2026', days: 'In 21 days', color: '#8b5cf6' },
-                { title: 'Diwali Holidays', date: 'Nov 10 - Nov 14', days: 'Next month', color: '#eab308' }
-              ].map((event, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', padding: '0.75rem', borderLeft: `3px solid ${event.color}`, background: 'rgba(255,255,255,0.02)', borderRadius: '0 var(--radius-md) var(--radius-md) 0' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{event.title}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{event.date}</div>
-                  </div>
-                  <div style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', background: `${event.color}20`, color: event.color, borderRadius: 'var(--radius-sm)', fontWeight: 600 }}>
-                    {event.days}
-                  </div>
-                </div>
-              ))}
+            <div className="premium-empty" style={{ padding: '2rem 1rem' }}>
+              <Calendar className="premium-empty-icon" style={{ width: 32, height: 32 }} />
+              <h4 className="premium-empty-title">No Events</h4>
+              <p className="premium-empty-text">No upcoming events scheduled.</p>
             </div>
           </div>
         </div>
