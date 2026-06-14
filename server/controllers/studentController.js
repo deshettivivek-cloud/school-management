@@ -80,7 +80,9 @@ exports.createStudent = async (req, res) => {
     const {
       name, dob, gender, grade, section, parentName, parentPhone,
       parentEmail, address, academicYear, admissionDate, photoUrl,
-      admissionNo, aadharNo
+      admissionNo, aadharNo, motherName, motherTongue, motherPhone,
+      guardianPhone, permanentAddress, fatherOccupation, motherOccupation,
+      fatherOccupationDesc, motherOccupationDesc
     } = req.body;
 
     const finalAdmissionNo = admissionNo || await generateAdmissionNo(req.user.schoolId, academicYear);
