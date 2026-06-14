@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { motion } from 'framer-motion';
 import {
   Users, CreditCard, AlertCircle, CheckCircle, TrendingUp, UserPlus,
-  BookOpen, Calendar, Clock, DollarSign, ArrowRight, Zap, Sparkles, User, Bell
+  BookOpen, Calendar, Clock, DollarSign, ArrowRight, Zap, Sparkles, User, Bell,
+  FileText
 } from 'lucide-react';
 import PrintSection from '../components/PrintSection';
 import {
@@ -37,6 +39,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [studentStats, setStudentStats] = useState(null);
   const [feeStats, setFeeStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -122,22 +125,6 @@ const Dashboard = () => {
               Here's what's happening at your school today.
             </motion.p>
           </div>
-          
-          <motion.div 
-            className="hero-stats"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <div className="hero-stat">
-              <span className="hero-stat-label">Performance Score</span>
-              <span className="hero-stat-value" style={{ color: '#4ade80' }}>A+</span>
-            </div>
-            <div className="hero-stat">
-              <span className="hero-stat-label">Today's Attendance</span>
-              <span className="hero-stat-value">95.2%</span>
-            </div>
-          </motion.div>
         </div>
 
         {/* 2. KPI Cards */}
@@ -149,7 +136,6 @@ const Dashboard = () => {
                 <div className="kpi-icon" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
                   <Users size={20} />
                 </div>
-                <div className="kpi-trend positive"><TrendingUp size={14} /> +12%</div>
               </div>
               <div className="kpi-value-container">
                 <span className="kpi-value">{studentStats?.total || 0}</span>
@@ -165,7 +151,6 @@ const Dashboard = () => {
                 <div className="kpi-icon" style={{ background: 'linear-gradient(135deg, #22c55e, #10b981)' }}>
                   <DollarSign size={20} />
                 </div>
-                <div className="kpi-trend positive"><TrendingUp size={14} /> +5.4%</div>
               </div>
               <div className="kpi-value-container">
                 <span className="kpi-value">{formatCurrency(feeStats?.totalCollected)}</span>
@@ -181,7 +166,6 @@ const Dashboard = () => {
                 <div className="kpi-icon" style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}>
                   <AlertCircle size={20} />
                 </div>
-                <div className="kpi-trend negative"><TrendingUp size={14} style={{ transform: 'rotate(180deg)' }} /> +2%</div>
               </div>
               <div className="kpi-value-container">
                 <span className="kpi-value">{feeStats?.pendingCount || 0}</span>
@@ -197,24 +181,15 @@ const Dashboard = () => {
                 <div className="kpi-icon" style={{ background: 'linear-gradient(135deg, #a855f7, #d946ef)' }}>
                   <UserPlus size={20} />
                 </div>
-                <div className="kpi-trend positive"><TrendingUp size={14} /> +24</div>
               </div>
               <div className="kpi-value-container">
-                <span className="kpi-value">128</span>
+                <span className="kpi-value">{studentStats?.newAdmissions || 0}</span>
                 <span className="kpi-label">New Admissions (YTD)</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 4. AI Insights Section */}
-        <div className="ai-insights">
-          <Sparkles className="ai-sparkle" size={24} />
-          <h3 className="ai-title"><Zap size={18} /> AI School Insights</h3>
-          <div className="premium-empty" style={{ background: 'transparent', border: 'none', padding: '1rem', marginTop: 0 }}>
-            <p className="premium-empty-text" style={{ margin: 0 }}>Not enough data to generate insights yet.</p>
-          </div>
-        </div>
 
         {/* 3. Analytics Area */}
         <div className="dashboard-grid-2">
@@ -301,82 +276,27 @@ const Dashboard = () => {
         </div>
 
         {/* Bottom Area */}
-        <div className="dashboard-grid-2">
+        <div className="dashboard-grid-1" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
           {/* 7. Quick Actions */}
           <div className="card">
             <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Quick Actions</h3>
-            <div className="quick-actions-grid">
-              <div className="action-card">
+            <div className="quick-actions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+              <div className="action-card" onClick={() => navigate('/admissions/new')} style={{ cursor: 'pointer' }}>
                 <div className="action-icon-wrapper"><UserPlus size={22} /></div>
                 <span className="action-label">Add Student</span>
               </div>
-              <div className="action-card">
+              <div className="action-card" onClick={() => navigate('/fees/collection')} style={{ cursor: 'pointer' }}>
                 <div className="action-icon-wrapper"><CreditCard size={22} /></div>
                 <span className="action-label">Collect Fee</span>
               </div>
-              <div className="action-card">
-                <div className="action-icon-wrapper"><BookOpen size={22} /></div>
-                <span className="action-label">Create Exam</span>
+              <div className="action-card" onClick={() => navigate('/tc/issue')} style={{ cursor: 'pointer' }}>
+                <div className="action-icon-wrapper"><FileText size={22} /></div>
+                <span className="action-label">Issue TC</span>
               </div>
-              <div className="action-card">
-                <div className="action-icon-wrapper"><Bell size={22} /></div>
-                <span className="action-label">Send Alert</span>
+              <div className="action-card" onClick={() => navigate('/students/directory')} style={{ cursor: 'pointer' }}>
+                <div className="action-icon-wrapper"><Users size={22} /></div>
+                <span className="action-label">Directory</span>
               </div>
-            </div>
-          </div>
-
-          {/* 5. Recent Activities */}
-          <div className="card">
-            <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Recent Activities</h3>
-            {recentActivities.length > 0 ? (
-              <div className="timeline">
-                {recentActivities.map((activity, i) => (
-                  <motion.div 
-                    key={activity.id} 
-                    className="timeline-item"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + (i * 0.1) }}
-                  >
-                    <div className="timeline-icon" style={{ background: `${activity.color}20`, color: activity.color }}>
-                      {activity.icon}
-                    </div>
-                    <div className="timeline-content">
-                      <div className="timeline-title">{activity.title}</div>
-                      <div className="timeline-time">{activity.time}</div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="premium-empty" style={{ padding: '2rem 1rem' }}>
-                <Clock className="premium-empty-icon" style={{ width: 32, height: 32 }} />
-                <h4 className="premium-empty-title">No Activities</h4>
-                <p className="premium-empty-text">Recent school activities will appear here.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Additional Widgets Row */}
-        <div className="dashboard-grid-2">
-          {/* 8. Student Performance Widget */}
-          <div className="card">
-            <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Top Performing Students</h3>
-            <div className="premium-empty" style={{ padding: '2rem 1rem' }}>
-              <User className="premium-empty-icon" style={{ width: 32, height: 32 }} />
-              <h4 className="premium-empty-title">No Data</h4>
-              <p className="premium-empty-text">Student performance data will appear here.</p>
-            </div>
-          </div>
-
-          {/* 6. Upcoming Events Widget */}
-          <div className="card">
-            <h3 className="card-title" style={{ marginBottom: '1.5rem' }}>Upcoming Events</h3>
-            <div className="premium-empty" style={{ padding: '2rem 1rem' }}>
-              <Calendar className="premium-empty-icon" style={{ width: 32, height: 32 }} />
-              <h4 className="premium-empty-title">No Events</h4>
-              <p className="premium-empty-text">No upcoming events scheduled.</p>
             </div>
           </div>
         </div>
