@@ -220,6 +220,27 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+
+          {/* New P&L Widget */}
+          <div className="kpi-card" style={{ border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+            <div className="kpi-glow" style={{ '--glow-color': (dailyStats?.profitLoss || 0) >= 0 ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)' }} />
+            <div className="kpi-content">
+              <div className="kpi-header">
+                <div className="kpi-icon" style={{ background: (dailyStats?.profitLoss || 0) >= 0 ? 'linear-gradient(135deg, #22c55e, #10b981)' : 'linear-gradient(135deg, #ef4444, #f97316)' }}>
+                  <TrendingUp size={20} />
+                </div>
+                <div className={`kpi-trend ${(dailyStats?.profitLoss || 0) >= 0 ? 'positive' : 'negative'}`}>
+                  Today
+                </div>
+              </div>
+              <div className="kpi-value-container">
+                <span className="kpi-value" style={{ color: (dailyStats?.profitLoss || 0) >= 0 ? '#22c55e' : '#ef4444' }}>
+                  {(dailyStats?.profitLoss || 0) >= 0 ? '+' : ''}{formatCurrency(dailyStats?.profitLoss)}
+                </span>
+                <span className="kpi-label">Today's Net Profit / Loss</span>
+              </div>
+            </div>
+          </div>
         </div>
 
 
