@@ -10,6 +10,7 @@ router.post('/join', protect, joinSchool);
 
 // School management endpoints
 router.get('/', protect, getSchool);
+router.get('/daily-stats', protect, require('../controllers/schoolController').getDailyStats);
 router.put('/', protect, roleCheck('principal'), updateSchool);
 router.post('/logo', protect, roleCheck('principal'), uploadLogo);
 

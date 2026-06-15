@@ -42,7 +42,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [studentStats, setStudentStats] = useState(null);
   const [feeStats, setFeeStats] = useState(null);
+  const [dailyStats, setDailyStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     fetchStats();
@@ -50,12 +52,14 @@ const Dashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const [studentRes, feeRes] = await Promise.all([
+      const [studentRes, feeRes, dailyRes] = await Promise.all([
         api.get('/students/stats'),
         api.get('/fees/stats'),
+        api.get('/schools/daily-stats')
       ]);
       setStudentStats(studentRes.data.data);
       setFeeStats(feeRes.data.data);
+      setDailyStats(dailyRes.data.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
     } finally {
@@ -127,7 +131,35 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* 2. KPI Cards */}
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+          <button 
+            onClick={() => setActiveTab('overview')}
+            style={{ 
+              background: 'transparent', border: 'none', 
+              color: activeTab === 'overview' ? '#fff' : 'rgba(255,255,255,0.5)', 
+              fontWeight: 600, fontSize: '1rem', cursor: 'pointer',
+              borderBottom: activeTab === 'overview' ? '2px solid var(--primary-500)' : 'none',
+              paddingBottom: '0.5rem'
+            }}>
+            Overview
+          </button>
+          <button 
+            onClick={() => setActiveTab('daily')}
+            style={{ 
+              background: 'transparent', border: 'none', 
+              color: activeTab === 'daily' ? '#fff' : 'rgba(255,255,255,0.5)', 
+              fontWeight: 600, fontSize: '1rem', cursor: 'pointer',
+              borderBottom: activeTab === 'daily' ? '2px solid var(--primary-500)' : 'none',
+              paddingBottom: '0.5rem'
+            }}>
+            Daily Report
+          </button>
+        </div>
+
+        {activeTab === 'overview' ? (
+          <>
+            {/* 2. KPI Cards */}
         <div className="kpi-grid">
           <div className="kpi-card">
             <div className="kpi-glow" style={{ '--glow-color': 'rgba(99, 102, 241, 0.2)' }} />
@@ -300,6 +332,72 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+        </>
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="dashboard-grid-1" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}
+          >
+            <div className="card">
+              <div className="card-header">
+                <div>
+                  <h3 className="card-title">Today's Summary</h3>
+                  <p className="card-subtitle">Financial performance for {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+              </div>
+              
+              <div className="kpi-grid" style={{ marginTop: '1.5rem' }}>
+                <div className="kpi-card">
+                  <div className="kpi-glow" style={{ '--glow-color': 'rgba(34, 197, 94, 0.2)' }} />
+                  <div className="kpi-content">
+                    <div className="kpi-header">
+                      <div className="kpi-icon" style={{ background: 'linear-gradient(135deg, #22c55e, #10b981)' }}>
+                        <DollarSign size={20} />
+                      </div>
+                    </div>
+                    <div className="kpi-value-container">
+                      <span className="kpi-value" style={{ color: '#22c55e' }}>{formatCurrency(dailyStats?.totalCollection)}</span>
+                      <span className="kpi-label">Total Fee Collection</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="kpi-card">
+                  <div className="kpi-glow" style={{ '--glow-color': 'rgba(239, 68, 68, 0.2)' }} />
+                  <div className="kpi-content">
+                    <div className="kpi-header">
+                      <div className="kpi-icon" style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}>
+                        <AlertCircle size={20} />
+                      </div>
+                    </div>
+                    <div className="kpi-value-container">
+                      <span className="kpi-value" style={{ color: '#ef4444' }}>{formatCurrency(dailyStats?.totalExpenditure)}</span>
+                      <span className="kpi-label">Total Expenditures</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="kpi-card">
+                  <div className="kpi-glow" style={{ '--glow-color': 'rgba(99, 102, 241, 0.2)' }} />
+                  <div className="kpi-content">
+                    <div className="kpi-header">
+                      <div className="kpi-icon" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                        <TrendingUp size={20} />
+                      </div>
+                    </div>
+                    <div className="kpi-value-container">
+                      <span className="kpi-value" style={{ color: (dailyStats?.profitLoss || 0) >= 0 ? '#22c55e' : '#ef4444' }}>
+                        {(dailyStats?.profitLoss || 0) >= 0 ? '+' : ''}{formatCurrency(dailyStats?.profitLoss)}
+                      </span>
+                      <span className="kpi-label">Net Profit / Loss</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
       </motion.div>
     </PrintSection>
