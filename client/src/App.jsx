@@ -20,6 +20,7 @@ import Unauthorized from './pages/Unauthorized';
 import RoleManagement from './pages/Admin/RoleManagement';
 import Onboarding from './pages/Onboarding';
 import SchoolExpenditure from './pages/Expenditure/SchoolExpenditure';
+import HallTicket from './pages/Exams/HallTicket';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, loading, hasAccess } = useAuth();
@@ -101,6 +102,7 @@ function App() {
         <Route path="/tc/issue" element={<IssueTc />} />
         <Route path="/tc/register" element={<TcRegister />} />
         <Route path="/tc/view/:id" element={<TcView />} />
+        <Route path="/exams/hall-ticket" element={<HallTicket />} />
 
         {/* Principal Only */}
         <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>

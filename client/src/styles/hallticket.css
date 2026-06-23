@@ -1,0 +1,509 @@
+/* ═══════════════════════════════════════════════════════════════
+   HALL TICKET — Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Config Panel ─────────────────────────────────────────── */
+.ht-config-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.ht-config-card {
+  padding: 1.5rem;
+}
+
+.ht-config-card .card-header {
+  margin-bottom: 1rem;
+}
+
+/* ── Student List ─────────────────────────────────────────── */
+.ht-student-list {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.ht-student-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ht-student-item:hover {
+  border-color: var(--primary-400);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.ht-student-item.selected {
+  border-color: var(--primary-500);
+  background: rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.ht-student-item-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--gradient-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.ht-student-item-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ht-student-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ht-student-item-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ht-student-item-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.ht-student-item-check {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Subject Editor ───────────────────────────────────────── */
+.ht-subjects-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ht-subject-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ht-subject-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ht-subject-row .form-input {
+  flex: 1;
+}
+
+.ht-date-input {
+  max-width: 200px !important;
+  flex: 0 0 200px !important;
+}
+
+.ht-remove-btn {
+  color: var(--danger-400) !important;
+  font-size: 1rem !important;
+  padding: 0.3rem 0.5rem !important;
+}
+
+.ht-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* ── Instruction Editor ───────────────────────────────────── */
+.ht-instructions-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ht-instruction-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.ht-instruction-text {
+  flex: 1;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.ht-add-instruction-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.ht-add-instruction-row .form-input {
+  flex: 1;
+}
+
+/* ── Generate Button ──────────────────────────────────────── */
+.ht-generate-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HALL TICKET PREVIEW (on-screen dark theme)
+   ═══════════════════════════════════════════════════════════════ */
+
+.ht-page {
+  background: white;
+  color: #0f172a;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+}
+
+.ht-border {
+  border: 3px solid #1e3a5f;
+  padding: 2rem;
+  position: relative;
+}
+
+.ht-border::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid #1e3a5f;
+  pointer-events: none;
+}
+
+.ht-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #1e3a5f;
+  margin-bottom: 0.5rem;
+}
+
+.ht-logo {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.ht-logo-placeholder {
+  width: 70px;
+  height: 70px;
+  border: 2px solid #1e3a5f;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+  flex-shrink: 0;
+  background: #f0f4f8;
+}
+
+.ht-school-info {
+  flex: 1;
+  text-align: center;
+}
+
+.ht-school-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1e3a5f;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.ht-school-address {
+  font-size: 0.82rem;
+  color: #475569;
+  margin-top: 0.2rem;
+}
+
+.ht-school-contact {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+.ht-title-row {
+  text-align: center;
+  margin: 0.75rem 0;
+}
+
+.ht-title {
+  display: inline-block;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #1e3a5f;
+  padding: 0.4rem 2rem;
+  border: 2px solid #1e3a5f;
+  background: #edf2f7;
+}
+
+.ht-assessment {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e3a5f;
+  margin: 0.5rem 0 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ht-student-section {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.ht-student-details {
+  flex: 1;
+}
+
+.ht-detail-row {
+  display: flex;
+  padding: 0.4rem 0;
+  border-bottom: 1px dotted #94a3b8;
+  font-size: 0.88rem;
+}
+
+.ht-detail-label {
+  font-weight: 700;
+  min-width: 160px;
+  color: #334155;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+}
+
+.ht-detail-value {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ht-photo-box {
+  width: 110px;
+  height: 130px;
+  border: 2px solid #1e3a5f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+  flex-shrink: 0;
+  background: #f8fafc;
+}
+
+.ht-photo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ht-section-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: white;
+  background: #1e3a5f;
+  padding: 0.4rem 0.75rem;
+  margin: 1rem 0 0.5rem;
+}
+
+/* ── Schedule Table ───────────────────────────────────────── */
+.ht-schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.5rem;
+}
+
+.ht-schedule-table th {
+  background: #edf2f7;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  color: #1e3a5f;
+  border: 1.5px solid #1e3a5f;
+}
+
+.ht-schedule-table td {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  border: 1px solid #94a3b8;
+  color: #0f172a;
+}
+
+.ht-schedule-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+/* ── Instructions ─────────────────────────────────────────── */
+.ht-instructions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0;
+}
+
+.ht-instructions-list li {
+  position: relative;
+  padding: 0.3rem 0 0.3rem 1.25rem;
+  font-size: 0.82rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.ht-instructions-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0.25rem;
+  color: #1e3a5f;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* ── Signatures ───────────────────────────────────────────── */
+.ht-signatures {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2.5rem;
+  padding-top: 0.5rem;
+}
+
+.ht-sig-block {
+  text-align: center;
+  min-width: 140px;
+}
+
+.ht-sig-line {
+  border-top: 1.5px solid #1e3a5f;
+  padding-top: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1e3a5f;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ht-seal-note {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.ht-footer-line {
+  text-align: center;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #cbd5e1;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .ht-subject-row {
+    flex-wrap: wrap;
+  }
+
+  .ht-date-input {
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  .ht-student-section {
+    flex-direction: column;
+  }
+
+  .ht-photo-box {
+    align-self: center;
+  }
+
+  .ht-page {
+    padding: 1rem;
+  }
+
+  .ht-border {
+    padding: 1rem;
+  }
+
+  .ht-signatures {
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .ht-detail-label {
+    min-width: 120px;
+  }
+}
+
+/* ── Print-specific overrides ─────────────────────────────── */
+@media print {
+  .ht-config-panel,
+  .ht-generate-row {
+    display: none !important;
+  }
+}

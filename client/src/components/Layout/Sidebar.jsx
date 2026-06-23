@@ -40,6 +40,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
 
     { section: 'Academic' },
     { path: '/promotion', icon: HiOutlineArrowUp, label: 'Promotion' },
+    { path: '/exams/hall-ticket', icon: HiOutlineClipboardList, label: 'Hall Ticket' },
     { path: '/tc/issue', icon: HiOutlineAcademicCap, label: 'Issue TC' },
     { path: '/tc/register', icon: HiOutlineDocumentText, label: 'TC Register' },
   ];
