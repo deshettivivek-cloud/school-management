@@ -117,12 +117,12 @@ const PendingFees = () => {
               </thead>
               <tbody>
                 {records.map((r) => (
-                  <tr key={r._id}>
-                    <td style={{ fontWeight: 600, color: 'var(--primary-400)' }}>{r.student?.admissionNo}</td>
+                  <tr key={r.id || r._id}>
+                    <td style={{ fontWeight: 600, color: 'var(--primary-400)' }}>{r.student?.admission_no || r.student?.admissionNo}</td>
                     <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{r.student?.name}</td>
                     <td>Class {r.student?.grade}</td>
-                    <td>{r.student?.parentName}</td>
-                    <td>{r.student?.parentPhone}</td>
+                    <td>{r.student?.parent_name || r.student?.parentName}</td>
+                    <td>{r.student?.parent_phone || r.student?.parentPhone}</td>
                     <td>{formatCurrency(r.committed_fee || r.committedFee)}</td>
                     <td style={{ color: 'var(--success-400)' }}>{formatCurrency(r.total_paid || r.totalPaid)}</td>
                     <td style={{ fontWeight: 700, color: 'var(--danger-400)' }}>{formatCurrency(r.balance)}</td>

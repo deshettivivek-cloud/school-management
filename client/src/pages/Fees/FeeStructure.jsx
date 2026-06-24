@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import { HiOutlinePlus, HiOutlineTrash, HiOutlineSave, HiOutlinePencil, HiOutlineX } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlineTrash, HiOutlineSave, HiOutlinePencil, HiOutlineX, HiOutlineUserGroup } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import PrintSection from '../../components/PrintSection';
 
@@ -64,11 +64,20 @@ const FeeStructure = () => {
   };
 
   const openEdit = (structure) => {
-    setEditId(structure._id);
+    setEditId(structure.id || structure._id);
     setForm({ academicYear: structure.academic_year || structure.academicYear, grade: structure.grade });
     const heads = structure.fee_heads || structure.feeHeads || [];
     setFeeHeads(heads.map((h) => ({ name: h.name, amount: h.amount.toString() })));
     setShowModal(true);
+  };
+
+  const applyFeeToStudents = async (structureId) => {
+    try {
+      const res = await api.post(`/fees/structure/${structureId}/apply`);
+      toast.success(res.data.message || 'Fees applied to students!');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to apply fees');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -116,6 +125,7 @@ const FeeStructure = () => {
     }
   };
 
+
   const formatCurrency = (amt) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
 
   return (
@@ -151,7 +161,7 @@ const FeeStructure = () => {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.25rem' }}>
           {structures.map((s) => (
-            <div key={s._id} className="card">
+            <div key={s.id || s._id} className="card">
               <div className="card-header">
                 <div>
                   <h3 className="card-title">Class {s.grade}</h3>
@@ -159,10 +169,10 @@ const FeeStructure = () => {
                 </div>
                 {hasAccess(['principal']) && (
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-ghost btn-icon" onClick={() => openEdit(s)}>
+                    <button className="btn btn-ghost btn-icon" onClick={() => openEdit(s)} title="Edit">
                       <HiOutlinePencil />
                     </button>
-                    <button className="btn btn-ghost btn-icon" style={{ color: 'var(--danger-400)' }} onClick={() => deleteStructure(s._id)}>
+                    <button className="btn btn-ghost btn-icon" style={{ color: 'var(--danger-400)' }} onClick={() => deleteStructure(s.id || s._id)} title="Delete">
                       <HiOutlineTrash />
                     </button>
                   </div>
@@ -180,6 +190,16 @@ const FeeStructure = () => {
                 <span className="fee-total-label">Total Standard Fee</span>
                 <span className="fee-total-value">{formatCurrency(s.total_standard_fee || s.totalStandardFee)}</span>
               </div>
+
+              {hasAccess(['principal', 'clerk']) && (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  style={{ marginTop: '0.75rem', width: '100%' }}
+                  onClick={() => applyFeeToStudents(s.id || s._id)}
+                >
+                  <HiOutlineUserGroup /> Apply Fees to Students
+                </button>
+              )}
             </div>
           ))}
         </div>

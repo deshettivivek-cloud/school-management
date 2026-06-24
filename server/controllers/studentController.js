@@ -120,6 +120,44 @@ exports.createStudent = async (req, res) => {
 
     if (error) throw error;
 
+    // Auto-assign fee if a fee structure exists for the student's grade
+    try {
+      const { data: feeStructure } = await supabase
+        .from('fee_structures')
+        .select('*')
+        .eq('school_id', req.user.schoolId)
+        .eq('academic_year', academicYear)
+        .eq('grade', grade)
+        .maybeSingle();
+
+      if (feeStructure) {
+        // Check if fee collection already exists (should not, but just in case)
+        const { data: existingFee } = await supabase
+          .from('fee_collections')
+          .select('id')
+          .eq('school_id', req.user.schoolId)
+          .eq('student_id', data.id)
+          .eq('academic_year', academicYear)
+          .maybeSingle();
+
+        if (!existingFee) {
+          await supabase.from('fee_collections').insert({
+            school_id: req.user.schoolId,
+            student_id: data.id,
+            academic_year: academicYear,
+            committed_fee: feeStructure.total_standard_fee,
+            fee_breakdown: feeStructure.fee_heads || [],
+            payments: [],
+            total_paid: 0,
+            balance: feeStructure.total_standard_fee,
+            status: 'pending',
+          });
+        }
+      }
+    } catch (feeErr) {
+      console.error('Auto-assign fee on admission (non-fatal):', feeErr.message);
+    }
+
     res.status(201).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
