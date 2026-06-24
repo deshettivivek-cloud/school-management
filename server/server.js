@@ -13,6 +13,7 @@ const promotionRoutes = require('./routes/promotionRoutes');
 const tcRoutes = require('./routes/tcRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const expenditureRoutes = require('./routes/expenditureRoutes');
+const teacherRoutes = require('./routes/teacherRoutes');
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/promotion', promotionRoutes);
 app.use('/api/tc', tcRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/expenditures', expenditureRoutes);
+app.use('/api/teachers', teacherRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -21,6 +21,7 @@ import RoleManagement from './pages/Admin/RoleManagement';
 import Onboarding from './pages/Onboarding';
 import SchoolExpenditure from './pages/Expenditure/SchoolExpenditure';
 import HallTicket from './pages/Exams/HallTicket';
+import TeachersDashboard from './pages/Teachers/TeachersDashboard';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, loading, hasAccess } = useAuth();
@@ -103,6 +104,7 @@ function App() {
         <Route path="/tc/register" element={<TcRegister />} />
         <Route path="/tc/view/:id" element={<TcView />} />
         <Route path="/exams/hall-ticket" element={<HallTicket />} />
+        <Route path="/teachers" element={<TeachersDashboard />} />
 
         {/* Principal Only */}
         <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>

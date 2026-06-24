@@ -32,6 +32,9 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
     { path: '/admissions', icon: HiOutlineUsers, label: 'Admissions' },
     { path: '/admissions/new', icon: HiOutlineUserAdd, label: 'New Admission' },
 
+    { section: 'Staff' },
+    { path: '/teachers', icon: HiOutlineAcademicCap, label: 'Teachers' },
+
     { section: 'Fees' },
     { path: '/fees/structure', icon: HiOutlineClipboardList, label: 'Fee Structure' },
     { path: '/fees/collection', icon: HiOutlineCurrencyRupee, label: 'Fee Collection' },
