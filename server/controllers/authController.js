@@ -197,7 +197,8 @@ exports.superAdminLogin = async (req, res) => {
     let activeProfile = profile;
 
     if (!activeProfile) {
-      if (authData.user.email === 'superadmin@schoolms.com') {
+      // Check if email ends with @classorbit.in or is the designated super admin
+      if (authData.user.email === 'superadmin@classorbit.in' || authData.user.email.endsWith('@classorbit.in')) {
          const { data: newProfile, error: upsertError } = await supabase
           .from('profiles')
           .upsert({
