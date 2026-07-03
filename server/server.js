@@ -62,6 +62,24 @@ app.get('/', (req, res) => {
   });
 });
 
+// Debug endpoint to verify environment variables (temporary)
+app.get('/api/debug-env', (req, res) => {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  res.json({
+    success: true,
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      CLIENT_URL: process.env.CLIENT_URL,
+      SUPABASE_URL: process.env.SUPABASE_URL,
+      SERVICE_KEY_PREFIX: serviceKey.substring(0, 15),
+      SERVICE_KEY_SUFFIX: serviceKey.substring(serviceKey.length - 10),
+      KEY_LENGTH: serviceKey.length,
+      IS_ANON_KEY: serviceKey.includes('anon'),
+      IS_SERVICE_KEY: serviceKey.includes('service_role')
+    }
+  });
+});
+
 // Error handler
 app.use(errorHandler);
 
