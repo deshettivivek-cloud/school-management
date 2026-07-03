@@ -7,23 +7,21 @@ const errorHandler = (err, req, res, next) => {
     console.error('❌ Error:', err);
   }
 
-  // Mongoose bad ObjectId
-  if (err.name === 'CastError') {
-    error.message = 'Resource not found';
-    error.statusCode = 404;
-  }
-
-  // Mongoose duplicate key
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    error.message = `Duplicate value for field: ${field}`;
+  // PostgreSQL foreign key violation
+  if (err.code === '23503') {
+    error.message = 'Related resource not found or still in use';
     error.statusCode = 400;
   }
 
-  // Mongoose validation error
-  if (err.name === 'ValidationError') {
-    const messages = Object.values(err.errors).map((val) => val.message);
-    error.message = messages.join(', ');
+  // PostgreSQL unique constraint violation
+  if (err.code === '23505') {
+    error.message = 'A record with this unique value already exists';
+    error.statusCode = 409;
+  }
+
+  // PostgreSQL invalid text representation (e.g., invalid UUID)
+  if (err.code === '22P02') {
+    error.message = 'Invalid resource ID format';
     error.statusCode = 400;
   }
 

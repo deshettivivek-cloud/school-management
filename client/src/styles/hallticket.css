@@ -149,39 +149,6 @@
   background: rgba(239, 68, 68, 0.1) !important;
 }
 
-/* ── Instruction Editor ───────────────────────────────────── */
-.ht-instructions-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.ht-instruction-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.55rem 0.75rem;
-  background: var(--bg-input);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-}
-
-.ht-instruction-text {
-  flex: 1;
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-}
-
-.ht-add-instruction-row {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-.ht-add-instruction-row .form-input {
-  flex: 1;
-}
-
 /* ── Generate Button ──────────────────────────────────────── */
 .ht-generate-row {
   display: flex;
@@ -190,320 +157,310 @@
   padding-top: 0.75rem;
 }
 
+
 /* ═══════════════════════════════════════════════════════════════
-   HALL TICKET PREVIEW (on-screen dark theme)
+   HALL TICKET PREVIEW - Matches Print Layout
    ═══════════════════════════════════════════════════════════════ */
 
 .ht-page {
-  background: white;
+  font-family: 'Inter', sans-serif;
   color: #0f172a;
-  max-width: 800px;
+  background: white;
+  width: 297mm; /* Landscape */
+  min-height: 210mm;
   margin: 0 auto;
-  padding: 2rem;
-  border-radius: var(--radius-lg);
+  padding: 10mm;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-
 .ht-border {
-  border: 3px solid #1e3a5f;
-  padding: 2rem;
+  border: 3px solid #002b5e;
+  border-radius: 12px;
+  padding: 6mm 10mm;
+  width: 100%;
+  max-width: 280mm;
+  background: #fff;
   position: relative;
 }
-
 .ht-border::before {
   content: '';
   position: absolute;
-  inset: 3px;
-  border: 1px solid #1e3a5f;
+  inset: 2px;
+  border: 1px solid #002b5e;
+  border-radius: 9px;
   pointer-events: none;
 }
 
-.ht-header {
+/* Header Section */
+.ht-header-wrapper {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #1e3a5f;
-  margin-bottom: 0.5rem;
+  justify-content: space-between;
+  margin-bottom: 15px;
 }
-
+.ht-logo-col {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 28%;
+}
 .ht-logo {
-  width: 70px;
-  height: 70px;
+  width: 90px;
+  height: 90px;
   object-fit: contain;
-  flex-shrink: 0;
+}
+.ht-school-text {
+  display: flex;
+  flex-direction: column;
+}
+.ht-school-name-main {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #002b5e;
+  line-height: 1.1;
+  letter-spacing: 0.5px;
+}
+.ht-school-name-sub {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #002b5e;
+}
+.ht-tagline {
+  font-size: 0.75rem;
+  color: #002b5e;
+  margin-top: 4px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
-.ht-logo-placeholder {
-  width: 70px;
-  height: 70px;
-  border: 2px solid #1e3a5f;
-  border-radius: 6px;
+.ht-title-col {
+  text-align: center;
+  flex: 1;
+}
+.ht-exam-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #002b5e;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.ht-pill-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
-  color: #64748b;
-  text-transform: uppercase;
-  font-weight: 600;
-  flex-shrink: 0;
-  background: #f0f4f8;
+  gap: 15px;
 }
-
-.ht-school-info {
-  flex: 1;
-  text-align: center;
+.ht-line {
+  height: 2px;
+  width: 50px;
+  background: #002b5e;
+  position: relative;
 }
-
-.ht-school-name {
+.ht-line::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #002b5e;
+  border-radius: 50%;
+  top: -2px;
+}
+.ht-line:first-child::after { right: -3px; }
+.ht-line:last-child::after { left: -3px; }
+.ht-pill {
+  background: #002b5e;
+  color: white;
   font-family: 'Outfit', sans-serif;
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #1e3a5f;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-}
-
-.ht-school-address {
-  font-size: 0.82rem;
-  color: #475569;
-  margin-top: 0.2rem;
-}
-
-.ht-school-contact {
-  font-size: 0.78rem;
-  color: #64748b;
-  margin-top: 0.15rem;
-}
-
-.ht-title-row {
-  text-align: center;
-  margin: 0.75rem 0;
-}
-
-.ht-title {
-  display: inline-block;
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.3rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: #1e3a5f;
-  padding: 0.4rem 2rem;
-  border: 2px solid #1e3a5f;
-  background: #edf2f7;
-}
-
-.ht-assessment {
-  text-align: center;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  color: #1e3a5f;
-  margin: 0.5rem 0 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  padding: 4px 20px;
+  border-radius: 20px;
+  letter-spacing: 2px;
 }
 
-.ht-student-section {
+.ht-photo-col {
+  width: 28%;
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1.25rem;
+  justify-content: flex-end;
 }
-
-.ht-student-details {
-  flex: 1;
-}
-
-.ht-detail-row {
-  display: flex;
-  padding: 0.4rem 0;
-  border-bottom: 1px dotted #94a3b8;
-  font-size: 0.88rem;
-}
-
-.ht-detail-label {
-  font-weight: 700;
-  min-width: 160px;
-  color: #334155;
-  text-transform: uppercase;
-  font-size: 0.78rem;
-  letter-spacing: 0.03em;
-}
-
-.ht-detail-value {
-  font-weight: 600;
-  color: #0f172a;
-}
-
 .ht-photo-box {
-  width: 110px;
-  height: 130px;
-  border: 2px solid #1e3a5f;
+  width: 100px;
+  height: 125px;
+  border: 2px solid #002b5e;
+  border-radius: 4px;
+  background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
-  color: #64748b;
-  text-transform: uppercase;
-  font-weight: 600;
-  flex-shrink: 0;
-  background: #f8fafc;
+  overflow: hidden;
 }
-
 .ht-photo-box img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.ht-section-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: white;
-  background: #1e3a5f;
-  padding: 0.4rem 0.75rem;
-  margin: 1rem 0 0.5rem;
-}
-
-/* ── Schedule Table ───────────────────────────────────────── */
-.ht-schedule-table {
+/* Tables */
+.ht-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 0.5rem;
+  border: 2px solid #002b5e;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 15px;
 }
-
-.ht-schedule-table th {
-  background: #edf2f7;
-  padding: 0.55rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  text-align: left;
-  color: #1e3a5f;
-  border: 1.5px solid #1e3a5f;
+.ht-table th, .ht-table td {
+  border: 1px solid #002b5e;
+  padding: 8px 12px;
 }
-
-.ht-schedule-table td {
-  padding: 0.5rem 0.75rem;
+.ht-table th {
+  background: #002b5e !important;
+  color: white !important;
+  font-weight: 600;
   font-size: 0.85rem;
-  border: 1px solid #94a3b8;
-  color: #0f172a;
+  text-align: center;
+  text-transform: uppercase;
 }
-
-.ht-schedule-table tbody tr:nth-child(even) {
-  background: #f8fafc;
-}
-
-/* ── Instructions ─────────────────────────────────────────── */
-.ht-instructions-list {
-  list-style: none;
-  padding: 0;
-  margin: 0.25rem 0;
-}
-
-.ht-instructions-list li {
-  position: relative;
-  padding: 0.3rem 0 0.3rem 1.25rem;
-  font-size: 0.82rem;
-  color: #334155;
-  line-height: 1.5;
-}
-
-.ht-instructions-list li::before {
-  content: '•';
-  position: absolute;
-  left: 0.25rem;
-  color: #1e3a5f;
+.ht-table td {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  color: #1e293b;
+  text-align: center;
 }
 
-/* ── Signatures ───────────────────────────────────────────── */
-.ht-signatures {
+.ht-student-table th { font-size: 0.8rem; }
+.ht-student-table td { font-size: 1rem; padding: 10px 12px; }
+
+.ht-subject-table th { font-size: 0.8rem; }
+.ht-subject-table td { font-size: 0.85rem; }
+.ht-subject-table td:nth-child(2) { text-align: left; }
+
+/* Footer Box */
+.ht-footer-box {
+  border: 2px solid #002b5e;
+  border-radius: 6px;
+  padding: 12px 20px;
+  margin-top: 10px;
+}
+.ht-footer-flex {
   display: flex;
   justify-content: space-between;
-  margin-top: 2.5rem;
-  padding-top: 0.5rem;
+  align-items: flex-end;
+  margin-bottom: 20px;
 }
 
-.ht-sig-block {
-  text-align: center;
-  min-width: 140px;
+/* Timings */
+.ht-timings {
+  flex: 1;
 }
-
-.ht-sig-line {
-  border-top: 1.5px solid #1e3a5f;
-  padding-top: 0.5rem;
-  font-size: 0.78rem;
+.ht-timing-title {
+  font-weight: 800;
+  color: #002b5e;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ht-timing-row {
+  display: flex;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: #1e3a5f;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+.ht-timing-label { width: 120px; }
+.ht-timing-colon { margin: 0 10px; }
+
+/* Signatures */
+.ht-sig-col {
+  text-align: center;
+  width: 200px;
+}
+.ht-sig-cursive {
+  font-family: 'Caveat', cursive;
+  font-size: 2rem;
+  color: #334155;
+  height: 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 5px;
+}
+.ht-sig-cursive.principal {
+  color: #16a34a;
+  font-size: 2.2rem;
+  font-family: 'Great Vibes', cursive;
+}
+.ht-sig-line {
+  border-top: 2px solid #002b5e;
+  padding-top: 6px;
+  font-weight: 700;
+  color: #002b5e;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+/* Seal */
+.ht-seal-col {
+  text-align: center;
+  width: 150px;
+  display: flex;
+  justify-content: center;
+}
+.ht-seal-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 2px dashed #002b5e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.ht-seal-inner {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 1px solid #002b5e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5rem;
+  color: #002b5e;
+  text-align: center;
+  font-weight: bold;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
 }
 
-.ht-seal-note {
-  text-align: center;
-  margin-top: 1.5rem;
-  font-size: 0.75rem;
-  color: #64748b;
-  font-style: italic;
+/* Footer Bottom */
+.ht-footer-bottom {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid rgba(0, 43, 94, 0.2);
+  padding-top: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #002b5e;
 }
-
-.ht-footer-line {
-  text-align: center;
-  margin-top: 1rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid #cbd5e1;
-  font-size: 0.7rem;
-  color: #94a3b8;
+.ht-issue-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-
-/* ── Responsive ───────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .ht-subject-row {
-    flex-wrap: wrap;
-  }
-
-  .ht-date-input {
-    max-width: 100% !important;
-    flex: 1 1 100% !important;
-  }
-
-  .ht-student-section {
-    flex-direction: column;
-  }
-
-  .ht-photo-box {
-    align-self: center;
-  }
-
-  .ht-page {
-    padding: 1rem;
-  }
-
-  .ht-border {
-    padding: 1rem;
-  }
-
-  .ht-signatures {
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: center;
-  }
-
-  .ht-detail-label {
-    min-width: 120px;
-  }
+.ht-divider-vert {
+  height: 15px;
+  width: 1px;
+  background: #002b5e;
+  margin: 0 20px;
 }
-
-/* ── Print-specific overrides ─────────────────────────────── */
-@media print {
-  .ht-config-panel,
-  .ht-generate-row {
-    display: none !important;
-  }
+.ht-address {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }

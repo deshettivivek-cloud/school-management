@@ -19,6 +19,7 @@ const FeeCollection = () => {
   const [payForm, setPayForm] = useState({ amount: '', mode: 'cash', remarks: '' });
   const [loading, setLoading] = useState(false);
   const [academicYear, setAcademicYear] = useState('');
+  const [inputYear, setInputYear] = useState('');
   const [pendingRecords, setPendingRecords] = useState([]);
   const [gradeFilter, setGradeFilter] = useState('');
 
@@ -49,7 +50,10 @@ const FeeCollection = () => {
   const fetchSchoolYear = async () => {
     try {
       const res = await api.get('/schools');
-      if (res.data.data?.academic_year) setAcademicYear(res.data.data.academic_year);
+      if (res.data.data?.academic_year) {
+        setAcademicYear(res.data.data.academic_year);
+        setInputYear(res.data.data.academic_year);
+      }
     } catch (err) { /* ignore */ }
   };
 
@@ -207,17 +211,34 @@ const FeeCollection = () => {
           <div style={{ marginTop: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Students with Pending Fees</h3>
-              <select
-                className="form-select"
-                style={{ width: 'auto' }}
-                value={gradeFilter}
-                onChange={(e) => setGradeFilter(e.target.value)}
-              >
-                <option value="">All Grades</option>
-                {['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map((g) => (
-                  <option key={g} value={g}>Class {g}</option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    style={{ width: '110px' }}
+                    value={inputYear}
+                    onChange={(e) => setInputYear(e.target.value)}
+                    onBlur={() => setAcademicYear(inputYear)}
+                    onKeyDown={(e) => e.key === 'Enter' && setAcademicYear(inputYear)}
+                    placeholder="Year"
+                  />
+                  <button className="btn btn-secondary" onClick={() => setAcademicYear(inputYear)} title="Apply Filter">
+                    <HiOutlineSearch />
+                  </button>
+                </div>
+                <select
+                  className="form-select"
+                  style={{ width: 'auto' }}
+                  value={gradeFilter}
+                  onChange={(e) => setGradeFilter(e.target.value)}
+                >
+                  <option value="">All Grades</option>
+                  {['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map((g) => (
+                    <option key={g} value={g}>Class {g}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             
             {loading ? (

@@ -14,11 +14,16 @@ const tcRoutes = require('./routes/tcRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const expenditureRoutes = require('./routes/expenditureRoutes');
 const teacherRoutes = require('./routes/teacherRoutes');
+const superAdminRoutes = require('./routes/superAdminRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -29,14 +34,17 @@ if (process.env.NODE_ENV === 'development') {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/schools', schoolRoutes);
-app.use('/api/students', studentRoutes);
-app.use('/api/fees', feeRoutes);
+app.use('/api/schools', require('./routes/schoolRoutes'));
+app.use('/api/students', require('./routes/studentRoutes'));
+app.use('/api/fees', require('./routes/feeRoutes'));
 app.use('/api/promotion', promotionRoutes);
-app.use('/api/tc', tcRoutes);
-app.use('/api/blog', blogRoutes);
-app.use('/api/expenditures', expenditureRoutes);
-app.use('/api/teachers', teacherRoutes);
+app.use('/api/tc', require('./routes/tcRoutes'));
+app.use('/api/blogs', require('./routes/blogRoutes'));
+app.use('/api/expenditures', require('./routes/expenditureRoutes'));
+app.use('/api/teachers', require('./routes/teacherRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/super-admin', superAdminRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

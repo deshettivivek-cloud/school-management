@@ -1,61 +1,131 @@
 import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-
-const GoogleIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 48 48">
-    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-  </svg>
-);
+import { HiOutlineMail, HiOutlineLockClosed, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
 
 const Login = () => {
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const { signInWithGoogle } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
 
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!email || !password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+
+    setLoading(true);
     try {
-      await signInWithGoogle();
-      // Supabase handles redirect to Google consent screen
-      // After OAuth, user is redirected back and onAuthStateChange fires
+      const userData = await signIn(email, password);
+
+      if (userData.mustChangePassword) {
+        toast('Please change your password to continue', { icon: '🔑' });
+        navigate('/change-password', { replace: true });
+      } else {
+        toast.success('Welcome back!');
+        navigate('/dashboard', { replace: true });
+      }
     } catch (error) {
-      toast.error(error.message || 'Google sign-in failed');
-      setGoogleLoading(false);
+      const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card animate-slide-up">
-        <div className="login-logo">🏫</div>
-        <h1 className="login-title">Welcome Back</h1>
-        <p className="login-subtitle">Sign in to your School Management System</p>
+    <div className="auth-page">
+      <div className="auth-bg-effects">
+        <div className="auth-bg-orb auth-bg-orb-1" />
+        <div className="auth-bg-orb auth-bg-orb-2" />
+        <div className="auth-bg-orb auth-bg-orb-3" />
+      </div>
 
-        {/* Google Sign-In Button */}
-        <button
-          id="google-signin"
-          type="button"
-          className="btn-google"
-          onClick={handleGoogleSignIn}
-          disabled={googleLoading}
-        >
-          {googleLoading ? (
-            <>
-              <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
-              Connecting...
-            </>
-          ) : (
-            <>
-              <GoogleIcon />
-              Sign in with Google
-            </>
-          )}
-        </button>
+      <div className="auth-card animate-slide-up">
+        <div className="auth-header">
+          <div className="auth-logo">
+            <span className="auth-logo-icon">🏫</span>
+          </div>
+          <h1 className="auth-title">Welcome Back</h1>
+          <p className="auth-subtitle">Sign in to your School Management System</p>
+        </div>
 
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="login-email">
+              <HiOutlineMail className="auth-label-icon" />
+              Email Address
+            </label>
+            <input
+              id="login-email"
+              type="email"
+              className="auth-input"
+              placeholder="you@school.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              autoFocus
+            />
+          </div>
 
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="login-password">
+              <HiOutlineLockClosed className="auth-label-icon" />
+              Password
+            </label>
+            <div className="auth-input-group">
+              <input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                className="auth-input"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                className="auth-toggle-password"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <HiOutlineEyeOff size={18} /> : <HiOutlineEye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="auth-actions-row">
+            <Link to="/forgot-password" className="auth-link">
+              Forgot password?
+            </Link>
+          </div>
+
+          <button
+            id="login-submit"
+            type="submit"
+            className="auth-btn auth-btn-primary"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <div className="auth-spinner" />
+                Signing in...
+              </>
+            ) : (
+              'Sign In'
+            )}
+          </button>
+        </form>
+
+        <div className="auth-footer" style={{ padding: '0.5rem', border: 'none' }}>
+        </div>
       </div>
     </div>
   );

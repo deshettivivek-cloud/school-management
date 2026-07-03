@@ -55,14 +55,36 @@ const protect = async (req, res, next) => {
       name: profile?.name || user.email,
       role: profile?.role || 'teacher', // fallback to 'teacher' instead of 'staff' based on schema
       schoolId: profile?.school_id || null,
+      mustChangePassword: profile?.must_change_password || false,
+      isSuperAdmin: profile?.role === 'super_admin',
     };
 
+    // If user must change password, only allow specific endpoints
+    if (req.user.mustChangePassword) {
+      const allowedPaths = [
+        '/api/auth/me',
+        '/api/auth/change-password',
+      ];
+      const isAllowed = allowedPaths.some(path => req.originalUrl.startsWith(path));
+      if (!isAllowed) {
+        return res.status(403).json({
+          success: false,
+          message: 'You must change your password before continuing',
+          mustChangePassword: true,
+        });
+      }
+    }
+
+    // Super Admin users don't need a school — skip school check for them
+    if (req.user.isSuperAdmin) {
+      return next();
+    }
+
     // Protect multi-tenant routes from users without a school
-    const isSchoolRoute = req.originalUrl.startsWith('/api/schools/register') || req.originalUrl.startsWith('/api/schools/join');
-    if (!req.user.schoolId && !isSchoolRoute && req.originalUrl !== '/api/auth/me') {
+    if (!req.user.schoolId && req.originalUrl !== '/api/auth/me') {
       return res.status(403).json({
         success: false,
-        message: 'You must create or join a school first',
+        message: 'Your account has not yet been assigned to a school. Please contact your administrator.',
       });
     }
 

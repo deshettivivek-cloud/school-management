@@ -4,11 +4,17 @@
 -- ═══════════════════════════════════════════════════════════════
 
 -- WIPE EXISTING DATA
+DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS expenditures CASCADE;
 DROP TABLE IF EXISTS blog_posts CASCADE;
 DROP TABLE IF EXISTS transfer_certificates CASCADE;
 DROP TABLE IF EXISTS fee_collections CASCADE;
 DROP TABLE IF EXISTS fee_structures CASCADE;
+DROP TABLE IF EXISTS attendance CASCADE;
+DROP TABLE IF EXISTS exam_marks CASCADE;
+DROP TABLE IF EXISTS exams CASCADE;
+DROP TABLE IF EXISTS teachers CASCADE;
+DROP TABLE IF EXISTS staff CASCADE;
 DROP TABLE IF EXISTS students CASCADE;
 DROP TABLE IF EXISTS profiles CASCADE;
 DROP TABLE IF EXISTS schools CASCADE;
@@ -36,8 +42,10 @@ CREATE TABLE profiles (
   school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
   name TEXT NOT NULL DEFAULT 'User',
   email TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'teacher' CHECK (role IN ('principal', 'clerk', 'teacher')),
+  role TEXT NOT NULL DEFAULT 'teacher' CHECK (role IN ('super_admin', 'principal', 'clerk', 'teacher')),
   assigned_classes TEXT[] DEFAULT '{}',
+  must_change_password BOOLEAN DEFAULT FALSE,
+  password_changed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -151,6 +159,91 @@ CREATE TABLE expenditures (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ── Teachers ──────────────────────────────────────────────────
+CREATE TABLE teachers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  employee_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  department TEXT DEFAULT '',
+  email TEXT DEFAULT '',
+  phone TEXT DEFAULT '',
+  joining_date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(school_id, employee_id)
+);
+
+-- ── Staff ───────────────────────────────────────────────────
+CREATE TABLE staff (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  employee_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  department TEXT DEFAULT '',
+  phone TEXT DEFAULT '',
+  joining_date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(school_id, employee_id)
+);
+
+-- ── Exams ───────────────────────────────────────────────────
+CREATE TABLE exams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  term TEXT NOT NULL,
+  academic_year TEXT NOT NULL,
+  start_date DATE,
+  end_date DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(school_id, name, term, academic_year)
+);
+
+-- ── Exam Marks ──────────────────────────────────────────────
+CREATE TABLE exam_marks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  subject TEXT NOT NULL,
+  marks_obtained NUMERIC DEFAULT 0,
+  max_marks NUMERIC DEFAULT 100,
+  grade TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(school_id, exam_id, student_id, subject)
+);
+
+-- ── Attendance ──────────────────────────────────────────────
+CREATE TABLE attendance (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  status TEXT NOT NULL CHECK (status IN ('present', 'absent', 'late', 'half_day')),
+  remarks TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(school_id, student_id, date)
+);
+
+
+-- ── Audit Logs ────────────────────────────────────────────────
+CREATE TABLE audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  resource_id TEXT,
+  old_values JSONB,
+  new_values JSONB,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ═══════════════════════════════════════════════════════════════
 -- INDEXES
 -- ═══════════════════════════════════════════════════════════════
@@ -170,7 +263,7 @@ CREATE INDEX idx_expenditures_date ON expenditures(school_id, date);
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, name, email, role, school_id)
+  INSERT INTO profiles (id, name, email, role, school_id, must_change_password)
   VALUES (
     NEW.id,
     COALESCE(
@@ -179,8 +272,9 @@ BEGIN
       split_part(NEW.email, '@', 1)
     ),
     NEW.email,
-    'teacher',
-    NULL -- They must join or create a school later
+    COALESCE(NEW.raw_user_meta_data->>'role', 'teacher'),
+    NULLIF(NEW.raw_user_meta_data->>'schoolId', '')::uuid,
+    TRUE  -- Must change password on first login
   );
   RETURN NEW;
 END;
@@ -203,11 +297,20 @@ ALTER TABLE fee_collections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transfer_certificates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenditures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE teachers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
+ALTER TABLE exams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE exam_marks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read for schools" ON schools FOR SELECT USING (true);
 CREATE POLICY "Allow individual read profiles" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Allow insert profiles" ON profiles FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Super Admins can read all audit logs" ON audit_logs FOR SELECT USING (true);
+CREATE POLICY "Allow insert audit logs" ON audit_logs FOR INSERT WITH CHECK (true);
 
 -- ═══════════════════════════════════════════════════════════════
 -- STORAGE BUCKETS (Must be run as superuser or in Supabase SQL editor)
@@ -218,20 +321,25 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('logos', 'logos', true) 
 ON CONFLICT (id) DO NOTHING;
 
--- Allow public access to read logos
+-- Create the "photos" bucket if it doesn't exist
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('photos', 'photos', true) 
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow public access to read logos and photos
 DROP POLICY IF EXISTS "Public Access" ON storage.objects;
 CREATE POLICY "Public Access" 
 ON storage.objects FOR SELECT 
-USING (bucket_id = 'logos');
+USING (bucket_id IN ('logos', 'photos'));
 
--- Allow authenticated users to upload logos
+-- Allow authenticated users to upload logos and photos
 DROP POLICY IF EXISTS "Auth Uploads" ON storage.objects;
 CREATE POLICY "Auth Uploads" 
 ON storage.objects FOR INSERT 
-WITH CHECK (bucket_id = 'logos' AND auth.role() = 'authenticated');
+WITH CHECK (bucket_id IN ('logos', 'photos') AND auth.role() = 'authenticated');
 
--- Allow authenticated users to update their own logos
+-- Allow authenticated users to update their own logos and photos
 DROP POLICY IF EXISTS "Auth Updates" ON storage.objects;
 CREATE POLICY "Auth Updates" 
 ON storage.objects FOR UPDATE 
-USING (bucket_id = 'logos' AND auth.role() = 'authenticated');
+USING (bucket_id IN ('logos', 'photos') AND auth.role() = 'authenticated');

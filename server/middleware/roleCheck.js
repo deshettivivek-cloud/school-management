@@ -11,7 +11,13 @@ const roleCheck = (...roles) => {
       });
     }
 
-    // Bypass role checking as per user request to give access to everyone
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Required role(s): ${roles.join(', ')}. Your role: ${req.user.role}`,
+      });
+    }
+
     next();
   };
 };

@@ -10,10 +10,13 @@ const AdmissionForm = () => {
   const navigate = useNavigate();
   const isEdit = !!id;
 
+  const currentYear = new Date().getFullYear();
+  const currentAcademicYear = `${currentYear}-${String(currentYear + 1).slice(2)}`;
+
   const [form, setForm] = useState({
     name: '', dob: '', gender: 'male', grade: '', section: '',
     parentName: '', parentPhone: '', parentEmail: '', address: '',
-    academicYear: '', admissionDate: new Date().toISOString().split('T')[0],
+    academicYear: currentAcademicYear, admissionDate: new Date().toISOString().split('T')[0],
     admissionNo: '', aadharNo: '',
     motherName: '', motherTongue: '', motherPhone: '', guardianPhone: '',
     permanentAddress: '', fatherOccupation: '', motherOccupation: '',
@@ -79,8 +82,16 @@ const AdmissionForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.dob || !form.grade || !form.parentName || !form.parentPhone || !form.academicYear) {
-      toast.error('Please fill all required fields');
+    const missing = [];
+    if (!form.name) missing.push('Full Name');
+    if (!form.dob) missing.push('Date of Birth');
+    if (!form.grade) missing.push('Grade/Class');
+    if (!form.parentName) missing.push('Father/Guardian Name');
+    if (!form.parentPhone) missing.push('Father Phone');
+    if (!form.academicYear) missing.push('Academic Year');
+
+    if (missing.length > 0) {
+      toast.error(`Please fill missing required fields: ${missing.join(', ')}`);
       return;
     }
 
@@ -89,20 +100,17 @@ const AdmissionForm = () => {
       let photoUrl = undefined;
       
       if (photo) {
-        const fileExt = photo.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const formData = new FormData();
+        formData.append('photo', photo);
         
-        const { error: uploadError } = await supabase.storage
-          .from('photos')
-          .upload(fileName, photo);
-          
-        if (uploadError) throw uploadError;
+        const uploadRes = await api.post('/upload/photo', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
         
-        const { data } = supabase.storage
-          .from('photos')
-          .getPublicUrl(fileName);
-          
-        photoUrl = data.publicUrl;
+        if (!uploadRes.data.success) {
+          throw new Error('Upload failed');
+        }
+        photoUrl = uploadRes.data.url;
       }
 
       const payload = { ...form };
@@ -118,7 +126,9 @@ const AdmissionForm = () => {
 
       navigate('/admissions');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save');
+      console.error("Save error:", error);
+      const errMsg = error.message || error.response?.data?.message || 'Failed to save';
+      toast.error(`Error: ${errMsg}`);
     } finally {
       setSaving(false);
     }

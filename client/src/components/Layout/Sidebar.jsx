@@ -16,6 +16,7 @@ import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
   HiOutlineUsers,
+  HiOutlineChartBar,
 } from 'react-icons/hi';
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
@@ -46,6 +47,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
     { path: '/exams/hall-ticket', icon: HiOutlineClipboardList, label: 'Hall Ticket' },
     { path: '/tc/issue', icon: HiOutlineAcademicCap, label: 'Issue TC' },
     { path: '/tc/register', icon: HiOutlineDocumentText, label: 'TC Register' },
+    { path: '/reports', icon: HiOutlineChartBar, label: 'Reports' },
   ];
 
   const isActive = (path) => {

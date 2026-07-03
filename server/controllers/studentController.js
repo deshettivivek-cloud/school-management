@@ -272,9 +272,12 @@ exports.getStudentStats = async (req, res) => {
       .map(([_id, count]) => ({ _id, count }))
       .sort((a, b) => a._id.localeCompare(b._id, undefined, { numeric: true }));
 
+    // For New Admissions (YTD), we count all students since this is scoped by academicYear already
+    const newAdmissions = total;
+
     res.json({
       success: true,
-      data: { total, pending, confirmed, gradeWise },
+      data: { total, pending, confirmed, gradeWise, newAdmissions },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

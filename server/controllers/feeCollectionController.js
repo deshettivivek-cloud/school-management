@@ -266,7 +266,9 @@ exports.getPendingFees = async (req, res) => {
 
     query = query.order('balance', { ascending: false });
 
+    console.log(`[DEBUG getPendingFees] schoolId: ${req.user.schoolId}, academicYear: ${academicYear}, grade: ${grade}`);
     const { data, error } = await query;
+    console.log(`[DEBUG getPendingFees] data length: ${data ? data.length : 0}, error:`, error);
     if (error) throw error;
 
     const shaped = data.map((d) => ({

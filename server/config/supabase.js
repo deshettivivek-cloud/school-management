@@ -16,4 +16,14 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   },
 });
 
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+if (supabaseAnonKey) {
+  supabase.authClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
 module.exports = supabase;

@@ -1,4 +1,349 @@
 const supabase = require('../config/supabase');
+const { logAuditAction } = require('../utils/auditLogger');
+const { z } = require('zod');
+const AuthRateLimiter = require('../services/authRateLimiter');
+
+// Helper to strip HTML tags, script tags, and unexpected special characters
+const sanitizeString = (val) => {
+  if (typeof val !== 'string') return val;
+  return val.replace(/<[^>]*>?/gm, '').replace(/[^\w\s\.\-]/g, '').trim();
+};
+
+const loginSchema = z.object({
+  email: z.string().email().min(5).max(100),
+  password: z.string().min(8).max(100)
+});
+
+const registerSchema = z.object({
+  name: z.string().min(2).max(100).transform(sanitizeString),
+  email: z.string().email().min(5).max(100),
+  password: z.string().min(8).max(100),
+  role: z.enum(['principal', 'clerk', 'teacher']).optional()
+});
+
+const handleValidationError = (error, req, res) => {
+  // Log validation failure server-side for monitoring
+  console.warn(`[AUTH_VALIDATION_FAILURE] Path: ${req.originalUrl} | IP: ${req.ip} | Errors:`, JSON.stringify(error.errors || error.message));
+  
+  // Return generic error message without exposing specific field failures
+  return res.status(400).json({
+    success: false,
+    message: 'Invalid input provided. Please check your details and try again.'
+  });
+};
+
+// @desc    School User login (email/password)
+// @route   POST /api/auth/login
+// @access  Public
+exports.login = async (req, res) => {
+  try {
+    const parseResult = loginSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return handleValidationError(parseResult.error, req, res);
+    }
+    const { email, password } = parseResult.data;
+
+    // Check if account is locked out
+    if (AuthRateLimiter.isLocked(email)) {
+      // Artificially delay to prevent timing attacks, and do not reveal lockout status
+      await AuthRateLimiter.delay(3000);
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect email or password'
+      });
+    }
+
+    // Sign in with Supabase Auth (use authClient if available to avoid service role token issues)
+    const client = supabase.authClient || supabase;
+    const { data: authData, error: authError } = await client.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError) {
+      // Record failed attempt, trigger email on threshold, and apply progressive delay
+      const delayMs = await AuthRateLimiter.incrementAttempt(email);
+      await AuthRateLimiter.delay(delayMs);
+
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect email or password',
+      });
+    }
+
+    // Successful login: clear the tracking record
+    AuthRateLimiter.clearAttempts(email);
+
+    // Fetch user profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', authData.user.id)
+      .maybeSingle();
+
+    let activeProfile = profile;
+
+    if (!activeProfile) {
+      // Auto-fallback: Create the missing profile from auth user data
+      const name = authData.user.user_metadata?.full_name || authData.user.user_metadata?.name || authData.user.email.split('@')[0];
+      
+      const { data: newProfile, error: upsertError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: authData.user.id,
+          email: authData.user.email,
+          name: name,
+          role: 'teacher',
+          must_change_password: true,
+        })
+        .select('*')
+        .single();
+        
+      if (upsertError) {
+        console.error('Failed to auto-create profile:', upsertError);
+        return res.status(500).json({
+          success: false,
+          message: 'Account exists but profile setup failed. Please contact your Super Admin.',
+        });
+      }
+      activeProfile = newProfile;
+    }
+
+    // Block super_admin from logging in through school user portal
+    if (activeProfile.role === 'super_admin') {
+      // The session was created, but we won't return it to the frontend.
+      // The frontend will treat this as a failed login.
+      return res.status(403).json({
+        success: false,
+        message: 'Super Admin accounts must use the admin portal to sign in.',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        session: authData.session,
+        user: {
+          id: activeProfile.id,
+          name: activeProfile.name,
+          email: activeProfile.email,
+          role: activeProfile.role,
+          schoolId: activeProfile.school_id,
+          mustChangePassword: activeProfile.must_change_password || false,
+        },
+      },
+    });
+    await logAuditAction(req, {
+      action: 'LOGIN',
+      resource_type: 'user',
+      resource_id: activeProfile.id,
+      userId: activeProfile.id,
+      schoolId: activeProfile.school_id
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
+  }
+};
+
+// @desc    Super Admin login (email/password)
+// @route   POST /api/auth/super-admin/login
+// @access  Public
+exports.superAdminLogin = async (req, res) => {
+  try {
+    const parseResult = loginSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return handleValidationError(parseResult.error, req, res);
+    }
+    const { email, password } = parseResult.data;
+
+    // Check if account is locked out
+    if (AuthRateLimiter.isLocked(email)) {
+      await AuthRateLimiter.delay(3000);
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect email or password'
+      });
+    }
+
+    // Sign in with Supabase Auth (use authClient if available to avoid service role token issues)
+    const client = supabase.authClient || supabase;
+    const { data: authData, error: authError } = await client.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError) {
+      const delayMs = await AuthRateLimiter.incrementAttempt(email);
+      await AuthRateLimiter.delay(delayMs);
+
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect email or password',
+      });
+    }
+
+    // Successful login: clear the tracking record
+    AuthRateLimiter.clearAttempts(email);
+
+    // Fetch user profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', authData.user.id)
+      .maybeSingle();
+
+    let activeProfile = profile;
+
+    if (!activeProfile) {
+      if (authData.user.email === 'superadmin@schoolms.com') {
+         const { data: newProfile, error: upsertError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            email: authData.user.email,
+            name: 'Super Admin',
+            role: 'super_admin',
+            must_change_password: true,
+          })
+          .select('*')
+          .single();
+
+         if (upsertError) {
+           return res.status(500).json({ success: false, message: 'Failed to auto-create admin profile' });
+         }
+         activeProfile = newProfile;
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to fetch user profile',
+        });
+      }
+    }
+
+    // Only allow super_admin role
+    if (activeProfile.role !== 'super_admin') {
+      // The session was created, but we won't return it to the frontend.
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only Super Admin accounts can log in through this portal.',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        session: authData.session,
+        user: {
+          id: activeProfile.id,
+          name: activeProfile.name,
+          email: activeProfile.email,
+          role: activeProfile.role,
+          mustChangePassword: activeProfile.must_change_password || false,
+        },
+      },
+    });
+    await logAuditAction(req, {
+      action: 'LOGIN',
+      resource_type: 'user',
+      resource_id: activeProfile.id,
+      userId: activeProfile.id
+    });
+
+  } catch (error) {
+    console.error('Super Admin login error:', error);
+    res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
+  }
+};
+
+// @desc    Change password (first login or voluntary)
+// @route   POST /api/auth/change-password
+// @access  Auth
+exports.changePassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters',
+      });
+    }
+
+    // Update password via Supabase Admin API
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+      req.user.id,
+      { password: newPassword }
+    );
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    // Mark password as changed in profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        must_change_password: false,
+        password_changed_at: new Date().toISOString(),
+      })
+      .eq('id', req.user.id);
+
+    if (profileError) {
+      throw profileError;
+    }
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully',
+    });
+
+    await logAuditAction(req, {
+      action: 'CHANGE_PASSWORD',
+      resource_type: 'user',
+      resource_id: req.user.id
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Forgot password — send reset email
+// @route   POST /api/auth/forgot-password
+// @access  Public
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
+
+    // Send password reset email via Supabase
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${req.headers.origin || process.env.CLIENT_URL || 'http://localhost:3000'}/reset-password`,
+    });
+
+    if (error) {
+      // Don't reveal if email exists or not (security)
+      console.error('Forgot password error:', error);
+    }
+
+    // Always return success to prevent email enumeration
+    res.json({
+      success: true,
+      message: 'If that email is registered, you\'ll receive a reset link',
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ success: false, message: 'Failed to process request' });
+  }
+};
 
 // @desc    Get current user profile
 // @route   GET /api/auth/me
@@ -50,14 +395,11 @@ exports.getUsers = async (req, res) => {
 // @access  Admin
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-
-    if (!email || !password || !name) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name, email, and password are required',
-      });
+    const parseResult = registerSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return handleValidationError(parseResult.error, req, res);
     }
+    const { name, email, password, role } = parseResult.data;
 
     // Create user via Supabase Admin API
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -72,15 +414,13 @@ exports.register = async (req, res) => {
     if (role) {
       const { error: roleError } = await supabase
         .from('profiles')
-        .update({ role, name, school_id: req.user.schoolId })
-        .eq('id', authData.user.id);
+        .upsert({ id: authData.user.id, role, name, school_id: req.user.schoolId, email });
 
       if (roleError) throw roleError;
     } else {
       await supabase
         .from('profiles')
-        .update({ name, school_id: req.user.schoolId })
-        .eq('id', authData.user.id);
+        .upsert({ id: authData.user.id, name, school_id: req.user.schoolId, email });
     }
 
     res.status(201).json({
@@ -93,7 +433,8 @@ exports.register = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Registration error:', error.message);
+    res.status(500).json({ success: false, message: 'Registration failed. Please check your details and try again.' });
   }
 };
 

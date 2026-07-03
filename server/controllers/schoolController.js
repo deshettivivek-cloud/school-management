@@ -6,100 +6,7 @@ const generateJoinCode = () => {
   return crypto.randomBytes(3).toString('hex').toUpperCase();
 };
 
-// @desc    Register a new school (Tenant)
-// @route   POST /api/schools/register
-// @access  Auth (Without School)
-exports.registerSchool = async (req, res) => {
-  try {
-    const { name, academicYear } = req.body;
-    
-    if (!name || !academicYear) {
-      return res.status(400).json({ success: false, message: 'Name and Academic Year are required' });
-    }
-
-    // Generate unique join code
-    let joinCode = generateJoinCode();
-    let isUnique = false;
-    while (!isUnique) {
-      const { data } = await supabase.from('schools').select('id').eq('join_code', joinCode).maybeSingle();
-      if (!data) isUnique = true;
-      else joinCode = generateJoinCode();
-    }
-
-    // Create the school
-    const { data: school, error: schoolErr } = await supabase
-      .from('schools')
-      .insert({
-        name,
-        academic_year: academicYear,
-        join_code: joinCode,
-      })
-      .select()
-      .single();
-
-    if (schoolErr) throw schoolErr;
-
-    // Update or recreate the user's profile to link to this school AND make them a principal
-    const { error: profileErr } = await supabase
-      .from('profiles')
-      .upsert({ 
-        id: req.user.id,
-        name: req.user.name,
-        email: req.user.email,
-        school_id: school.id, 
-        role: 'principal' 
-      });
-
-    if (profileErr) throw profileErr;
-
-    res.status(201).json({ success: true, data: school, message: 'School created successfully!' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Join an existing school using a Join Code
-// @route   POST /api/schools/join
-// @access  Auth (Without School)
-exports.joinSchool = async (req, res) => {
-  try {
-    const { joinCode } = req.body;
-
-    if (!joinCode) {
-      return res.status(400).json({ success: false, message: 'Join Code is required' });
-    }
-
-    // Find school by join code
-    const { data: school, error: schoolErr } = await supabase
-      .from('schools')
-      .select('*')
-      .eq('join_code', joinCode.toUpperCase())
-      .maybeSingle();
-
-    if (schoolErr) throw schoolErr;
-    if (!school) {
-      return res.status(404).json({ success: false, message: 'Invalid Join Code. School not found.' });
-    }
-
-    // Update or recreate the user's profile to link to this school
-    const { error: profileErr } = await supabase
-      .from('profiles')
-      .upsert({ 
-        id: req.user.id,
-        name: req.user.name,
-        email: req.user.email,
-        school_id: school.id,
-        role: req.user.role || 'teacher'
-      });
-
-    if (profileErr) throw profileErr;
-
-    res.json({ success: true, data: school, message: 'Successfully joined the school!' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
+// Onboarding methods (register/join) removed - SaaS model is Top-Down via Super Admin
 // @desc    Get school info for current user
 // @route   GET /api/schools
 // @access  Auth
@@ -203,11 +110,12 @@ exports.getDailyStats = async (req, res) => {
       targetDateStr = new Date().toISOString().split('T')[0];
     }
 
-    // 1. Fetch fees
+    // 1. Fetch fees (optimized: only fetch collections updated on or after target date)
     const { data: collections, error: feeErr } = await supabase
       .from('fee_collections')
       .select('payments')
-      .eq('school_id', req.user.schoolId);
+      .eq('school_id', req.user.schoolId)
+      .gte('updated_at', targetDateStr);
     
     if (feeErr) throw feeErr;
 
@@ -225,11 +133,16 @@ exports.getDailyStats = async (req, res) => {
     }
 
     // 2. Fetch expenditures
+    const targetDateObj = new Date(targetDateStr);
+    targetDateObj.setDate(targetDateObj.getDate() + 1);
+    const nextDateStr = targetDateObj.toISOString().split('T')[0];
+
     const { data: expenditures, error: expErr } = await supabase
       .from('expenditures')
       .select('amount, date')
       .eq('school_id', req.user.schoolId)
-      .like('date', `${targetDateStr}%`);
+      .gte('date', targetDateStr)
+      .lt('date', nextDateStr);
 
     if (expErr) throw expErr;
 

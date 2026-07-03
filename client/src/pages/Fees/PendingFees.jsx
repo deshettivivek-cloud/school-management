@@ -10,6 +10,7 @@ const PendingFees = () => {
   const [gradeFilter, setGradeFilter] = useState('');
   const [totalPending, setTotalPending] = useState(0);
   const [academicYear, setAcademicYear] = useState('');
+  const [inputYear, setInputYear] = useState('');
 
   useEffect(() => {
     fetchSchoolYear();
@@ -22,7 +23,10 @@ const PendingFees = () => {
   const fetchSchoolYear = async () => {
     try {
       const res = await api.get('/schools');
-      if (res.data.data?.academic_year) setAcademicYear(res.data.data.academic_year);
+      if (res.data.data?.academic_year) {
+        setAcademicYear(res.data.data.academic_year);
+        setInputYear(res.data.data.academic_year);
+      }
     } catch (err) { /* ignore */ }
   };
 
@@ -75,7 +79,22 @@ const PendingFees = () => {
       </div>
 
       {/* Filter */}
-      <div className="filter-bar">
+      <div className="filter-bar" style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <input
+            type="text"
+            className="form-input"
+            style={{ width: '130px' }}
+            value={inputYear}
+            onChange={(e) => setInputYear(e.target.value)}
+            onBlur={() => setAcademicYear(inputYear)}
+            onKeyDown={(e) => e.key === 'Enter' && setAcademicYear(inputYear)}
+            placeholder="Academic Year"
+          />
+          <button className="btn btn-secondary" onClick={() => setAcademicYear(inputYear)} title="Apply Filter">
+            <HiOutlineSearch />
+          </button>
+        </div>
         <select
           id="pending-grade-filter"
           className="form-select"
