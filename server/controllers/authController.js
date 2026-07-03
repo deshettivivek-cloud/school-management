@@ -53,8 +53,14 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Sign in with Supabase Auth (use authClient if available to avoid service role token issues)
-    const client = supabase.authClient || supabase;
+    // Sign in with Supabase Auth using a fresh client to avoid mutating the global singleton
+    const { createClient } = require('@supabase/supabase-js');
+    const client = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+    
     const { data: authData, error: authError } = await client.auth.signInWithPassword({
       email,
       password,
@@ -167,8 +173,14 @@ exports.superAdminLogin = async (req, res) => {
       });
     }
 
-    // Sign in with Supabase Auth (use authClient if available to avoid service role token issues)
-    const client = supabase.authClient || supabase;
+    // Sign in with Supabase Auth using a fresh client to avoid mutating the global singleton
+    const { createClient } = require('@supabase/supabase-js');
+    const client = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+    
     const { data: authData, error: authError } = await client.auth.signInWithPassword({
       email,
       password,
