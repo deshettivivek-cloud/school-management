@@ -3,8 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { motion } from 'framer-motion';
 import {
-  Search, Bell, Plus, Star, Users, BookOpen, Hash, UserPlus
+  Search, Bell, Plus, Star, Users, BookOpen, Hash, UserPlus, X, Mail, Lock, Eye, EyeOff, ShieldCheck
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/teachers.css';
 
@@ -18,6 +19,16 @@ const TeachersDashboard = () => {
   const [totalDepartments, setTotalDepartments] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  
+  // Add Faculty Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [addForm, setAddForm] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
 
   useEffect(() => {
     fetchTeachers();
@@ -72,6 +83,42 @@ const TeachersDashboard = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+    let pwd = '';
+    for (let i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+    setAddForm({ ...addForm, password: pwd });
+    setShowPassword(true);
+  };
+
+  const handleAddFaculty = async (e) => {
+    e.preventDefault();
+    if (!addForm.name || !addForm.email || !addForm.password) {
+      toast.error('All fields are required');
+      return;
+    }
+    if (addForm.password.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+
+    setAdding(true);
+    try {
+      const res = await api.post('/auth/register', {
+        ...addForm,
+        role: 'teacher'
+      });
+      toast.success(res.data.message || 'Faculty added successfully');
+      setShowAddModal(false);
+      setAddForm({ name: '', email: '', password: '' });
+      fetchTeachers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to add faculty');
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
     <div className="teachers-page">
       {/* Top Bar: Breadcrumb + Search + User */}
@@ -116,14 +163,16 @@ const TeachersDashboard = () => {
             {totalDepartments} department{totalDepartments !== 1 ? 's' : ''}
           </p>
         </div>
-        <button
-          className="teachers-add-btn"
-          onClick={() => navigate('/school-setup')}
-          id="add-faculty-btn"
-        >
-          <Plus size={18} />
-          Add Faculty
-        </button>
+        {user?.role === 'principal' && (
+          <button
+            className="teachers-add-btn"
+            onClick={() => setShowAddModal(true)}
+            id="add-faculty-btn"
+          >
+            <Plus size={18} />
+            Add Faculty
+          </button>
+        )}
       </motion.div>
 
       {/* Teacher Cards Grid */}
@@ -149,10 +198,10 @@ const TeachersDashboard = () => {
                   ? 'No teachers match your search criteria. Try a different search.'
                   : 'Teachers will appear here once they join your school and are assigned the teacher role.'}
               </p>
-              {!search && (
+              {!search && user?.role === 'principal' && (
                 <button
                   className="teachers-add-btn"
-                  onClick={() => navigate('/school-setup')}
+                  onClick={() => setShowAddModal(true)}
                 >
                   <UserPlus size={18} />
                   Invite Teachers
@@ -210,6 +259,90 @@ const TeachersDashboard = () => {
             ))
           )}
         </motion.div>
+      )}
+
+      {/* Add Faculty Modal */}
+      {showAddModal && (
+        <>
+          <div className="modal-overlay" onClick={() => setShowAddModal(false)} />
+          <div className="modal card" style={{ maxWidth: 500 }}>
+            <div className="modal-header">
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <UserPlus size={20} className="icon-blue" />
+                Add New Faculty
+              </h2>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowAddModal(false)}><X size={20} /></button>
+            </div>
+            <form className="modal-body" onSubmit={handleAddFaculty}>
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Enter teacher's name"
+                  value={addForm.name}
+                  onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                  autoFocus
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  <Mail size={14} style={{ verticalAlign: 'middle', marginRight: '0.25rem' }} />
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  className="form-input"
+                  placeholder="teacher@school.com"
+                  value={addForm.email}
+                  onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>
+                    <Lock size={14} style={{ verticalAlign: 'middle', marginRight: '0.25rem' }} />
+                    Temporary Password
+                  </span>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={generatePassword} style={{ fontSize: '0.75rem' }}>
+                    Generate
+                  </button>
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="form-input"
+                    placeholder="Min. 8 characters"
+                    value={addForm.password}
+                    onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
+                    style={{ paddingRight: '2.5rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                  The teacher will be required to change this password on their first login.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowAddModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={adding}>
+                  {adding ? 'Creating Account...' : 'Create Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
       )}
     </div>
   );
