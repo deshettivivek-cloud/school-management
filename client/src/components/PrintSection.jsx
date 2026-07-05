@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { HiOutlinePrinter } from 'react-icons/hi';
+import { Printer } from 'lucide-react';
 
 const PrintSection = ({ children, title = 'Section' }) => {
   const contentRef = useRef();
@@ -99,13 +99,8 @@ const PrintSection = ({ children, title = 'Section' }) => {
         {children}
       </div>
       <div className="print-section-footer no-print">
-        <button
-          id={`print-${title.toLowerCase().replace(/\s+/g, '-')}`}
-          className="btn btn-print"
-          onClick={handlePrint}
-        >
-          <HiOutlinePrinter size={18} />
-          Print This Section
+        <button className="btn btn-secondary btn-icon" onClick={handlePrint} title="Print Page" style={{ marginBottom: '1rem' }}>
+          <Printer size={20} />
         </button>
       </div>
     </div>

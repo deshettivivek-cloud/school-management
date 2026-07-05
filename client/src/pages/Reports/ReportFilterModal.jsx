@@ -2,35 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  HiOutlineX,
-  HiOutlineUserGroup, 
-  HiOutlineCash, 
-  HiOutlineCalendar, 
-  HiOutlineDocumentText, 
-  HiOutlineAcademicCap, 
-  HiOutlineBadgeCheck, 
-  HiOutlineDocumentDuplicate,
-  HiOutlineShieldCheck,
-  HiOutlineChartBar,
-  HiOutlineFilter,
-  HiOutlineRefresh,
-  HiChevronUp,
-  HiOutlineSearch
-} from 'react-icons/hi';
+  X,
+  Users, 
+  DollarSign, 
+  Calendar, 
+  FileText, 
+  GraduationCap, 
+  BadgeCheck, 
+  Files,
+  ShieldCheck,
+  BarChart,
+  Filter,
+  RefreshCcw,
+  ChevronUp,
+  Search
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const ALL_REPORTS = [
-  { id: 'students', title: 'Student Report', icon: HiOutlineUserGroup, roles: ['super_admin', 'principal', 'teacher', 'clerk'] },
-  { id: 'fees', title: 'Fee Report', icon: HiOutlineCash, roles: ['super_admin', 'principal', 'clerk'] },
-  { id: 'attendance', title: 'Attendance Report', icon: HiOutlineCalendar, roles: ['super_admin', 'principal', 'teacher'] },
-  { id: 'exams', title: 'Exam Report', icon: HiOutlineDocumentText, roles: ['super_admin', 'principal', 'teacher'] },
-  { id: 'teachers', title: 'Teacher Report', icon: HiOutlineAcademicCap, roles: ['super_admin', 'principal', 'teacher'] },
-  { id: 'staff', title: 'Staff Report', icon: HiOutlineBadgeCheck, roles: ['super_admin', 'principal', 'clerk'] },
-  { id: 'admissions', title: 'Admission Report', icon: HiOutlineUserGroup, roles: ['super_admin', 'principal', 'clerk'] },
-  { id: 'expenditure', title: 'Expenditure Report', icon: HiOutlineCash, roles: ['super_admin', 'principal', 'clerk'] },
-  { id: 'tc', title: 'TC Report', icon: HiOutlineDocumentDuplicate, roles: ['super_admin', 'principal', 'clerk'] },
-  { id: 'user', title: 'User Report', icon: HiOutlineShieldCheck, roles: ['super_admin'] },
-  { id: 'dashboard', title: 'Dashboard Report', icon: HiOutlineChartBar, roles: ['super_admin', 'principal'] }
+  { id: 'students', title: 'Student Report', icon: Users, roles: ['super_admin', 'principal', 'teacher', 'clerk'] },
+  { id: 'fees', title: 'Fee Report', icon: DollarSign, roles: ['super_admin', 'principal', 'clerk'] },
+  { id: 'attendance', title: 'Attendance Report', icon: Calendar, roles: ['super_admin', 'principal', 'teacher'] },
+  { id: 'exams', title: 'Exam Report', icon: FileText, roles: ['super_admin', 'principal', 'teacher'] },
+  { id: 'teachers', title: 'Teacher Report', icon: GraduationCap, roles: ['super_admin', 'principal', 'teacher'] },
+  { id: 'staff', title: 'Staff Report', icon: BadgeCheck, roles: ['super_admin', 'principal', 'clerk'] },
+  { id: 'admissions', title: 'Admission Report', icon: Users, roles: ['super_admin', 'principal', 'clerk'] },
+  { id: 'expenditure', title: 'Expenditure Report', icon: DollarSign, roles: ['super_admin', 'principal', 'clerk'] },
+  { id: 'tc', title: 'TC Report', icon: Files, roles: ['super_admin', 'principal', 'clerk'] },
+  { id: 'user', title: 'User Report', icon: ShieldCheck, roles: ['super_admin'] },
+  { id: 'dashboard', title: 'Dashboard Report', icon: BarChart, roles: ['super_admin', 'principal'] }
 ];
 
 const COLUMNS_BY_MODULE = {
@@ -208,13 +208,13 @@ const ReportFilterModal = ({
           {/* Header */}
           <div className="filter-modal-header">
             <div className="header-title">
-              <HiOutlineFilter size={24} className="icon-blue" />
+              <Filter size={24} className="icon-blue" />
               <div>
                 <h2>Filters</h2>
                 <p>Apply filters to customize and generate your report</p>
               </div>
             </div>
-            <button className="close-btn btn btn-ghost" onClick={onClose}><HiOutlineX size={20} /></button>
+            <button className="close-btn btn btn-ghost" onClick={onClose}><X size={20} /></button>
           </div>
 
           <div className="filter-modal-body">
@@ -242,7 +242,7 @@ const ReportFilterModal = ({
               <div className="content-header">
                 <h3 className="section-title">APPLY FILTERS</h3>
                 <button className="btn btn-ghost btn-sm hide-filters-btn">
-                  Hide Filters <HiChevronUp size={16} />
+                  Hide Filters <ChevronUp size={16} />
                 </button>
               </div>
 
@@ -323,7 +323,7 @@ const ReportFilterModal = ({
                   <label className="form-label">Search</label>
                   <div className="search-input-wrapper" style={{ position: 'relative' }}>
                     <input type="text" className="form-input" placeholder="Search by name, roll no..." value={localFilters.search || ''} onChange={e => handleChange('search', e.target.value)} style={{ paddingRight: '2rem' }} />
-                    <HiOutlineSearch size={18} style={{ position: 'absolute', right: '10px', top: '10px', color: 'var(--text-muted)' }} />
+                    <Search size={18} style={{ position: 'absolute', right: '10px', top: '10px', color: 'var(--text-muted)' }} />
                   </div>
                 </div>
               </div>
@@ -380,12 +380,12 @@ const ReportFilterModal = ({
           {/* Footer Actions */}
           <div className="filter-modal-footer">
             <button className="btn btn-ghost reset-btn" onClick={handleReset}>
-              <HiOutlineRefresh size={18} /> Reset Filters
+              <RefreshCcw size={18} /> Reset Filters
             </button>
             <div className="footer-right">
               <button className="btn btn-secondary cancel-btn" onClick={onClose}>Cancel</button>
               <button className="btn btn-primary apply-btn" onClick={handleApply}>
-                <HiOutlineFilter size={18} /> Apply Filters
+                <Filter size={18} /> Apply Filters
               </button>
             </div>
           </div>

@@ -2,22 +2,23 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import {
-  HiOutlineHome,
-  HiOutlineAcademicCap,
-  HiOutlineUserAdd,
-  HiOutlineUserGroup,
-  HiOutlineCurrencyRupee,
-  HiOutlineDocumentText,
-  HiOutlineClipboardList,
-  HiOutlineCalculator,
-  HiOutlineArrowUp,
-  HiOutlineCog,
-  HiOutlineLogout,
-  HiOutlineChevronLeft,
-  HiOutlineChevronRight,
-  HiOutlineUsers,
-  HiOutlineChartBar,
-} from 'react-icons/hi';
+  LayoutDashboard,
+  Settings,
+  Users,
+  UserPlus,
+  GraduationCap,
+  ClipboardList,
+  IndianRupee,
+  FileText,
+  Calculator,
+  ArrowUpCircle,
+  FileArchive,
+  BarChart3,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  BookOpen
+} from 'lucide-react';
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
   const { logout, hasAccess } = useAuth();
@@ -25,29 +26,29 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
 
   const navItems = [
     { section: 'Main' },
-    { path: '/', icon: HiOutlineHome, label: 'Dashboard' },
-    { path: '/school-setup', icon: HiOutlineCog, label: 'School Setup' },
+    { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/school-setup', icon: Settings, label: 'School Setup' },
 
     { section: 'Students' },
-    { path: '/students/directory', icon: HiOutlineUserGroup, label: 'Directory' },
-    { path: '/admissions', icon: HiOutlineUsers, label: 'Admissions' },
-    { path: '/admissions/new', icon: HiOutlineUserAdd, label: 'New Admission' },
+    { path: '/students/directory', icon: Users, label: 'Directory' },
+    { path: '/admissions', icon: BookOpen, label: 'Admissions' },
+    { path: '/admissions/new', icon: UserPlus, label: 'New Admission' },
 
     { section: 'Staff' },
-    { path: '/teachers', icon: HiOutlineAcademicCap, label: 'Teachers' },
+    { path: '/teachers', icon: GraduationCap, label: 'Teachers' },
 
     { section: 'Fees' },
-    { path: '/fees/structure', icon: HiOutlineClipboardList, label: 'Fee Structure' },
-    { path: '/fees/collection', icon: HiOutlineCurrencyRupee, label: 'Fee Collection' },
-    { path: '/fees/pending', icon: HiOutlineDocumentText, label: 'Pending Fees' },
-    { path: '/expenditure', icon: HiOutlineCalculator, label: 'Expenditure' },
+    { path: '/fees/structure', icon: ClipboardList, label: 'Fee Structure' },
+    { path: '/fees/collection', icon: IndianRupee, label: 'Fee Collection' },
+    { path: '/fees/pending', icon: FileText, label: 'Pending Fees' },
+    { path: '/expenditure', icon: Calculator, label: 'Expenditure' },
 
     { section: 'Academic' },
-    { path: '/promotion', icon: HiOutlineArrowUp, label: 'Promotion' },
-    { path: '/exams/hall-ticket', icon: HiOutlineClipboardList, label: 'Hall Ticket' },
-    { path: '/tc/issue', icon: HiOutlineAcademicCap, label: 'Issue TC' },
-    { path: '/tc/register', icon: HiOutlineDocumentText, label: 'TC Register' },
-    { path: '/reports', icon: HiOutlineChartBar, label: 'Reports' },
+    { path: '/promotion', icon: ArrowUpCircle, label: 'Promotion' },
+    { path: '/exams/hall-ticket', icon: ClipboardList, label: 'Hall Ticket' },
+    { path: '/tc/issue', icon: GraduationCap, label: 'Issue TC' },
+    { path: '/tc/register', icon: FileArchive, label: 'TC Register' },
+    { path: '/reports', icon: BarChart3, label: 'Reports' },
   ];
 
   const isActive = (path) => {
@@ -65,13 +66,15 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
         />
       )}
 
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`} style={{ background: 'rgba(2, 8, 23, 0.95)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(255, 255, 255, 0.05)' }}>
-        <div className="sidebar-header" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-          <div className="sidebar-logo" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 0 15px rgba(99, 102, 241, 0.4)' }}>🏫</div>
+      <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <BookOpen size={20} />
+          </div>
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="sidebar-title" style={{ background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SchoolMS</div>
-              <div className="sidebar-subtitle" style={{ color: 'var(--primary-400)' }}>Premium Edition</div>
+              <div className="sidebar-title">SchoolMS</div>
+              <div className="sidebar-subtitle">Management System</div>
             </motion.div>
           )}
         </div>
@@ -80,11 +83,11 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
           {navItems.map((item, idx) => {
             if (item.section) {
               return !collapsed ? (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={idx} className="nav-section-label" style={{ color: 'rgba(255, 255, 255, 0.3)' }}>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={idx} className="nav-section-label">
                   {item.section}
                 </motion.div>
               ) : (
-                <div key={idx} style={{ height: '1rem' }} />
+                <div key={idx} style={{ height: '0.75rem' }} />
               );
             }
 
@@ -98,7 +101,6 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
                 className={`nav-item ${active ? 'active' : ''}`}
                 onClick={() => setMobileOpen(false)}
                 title={collapsed ? item.label : ''}
-                style={{ position: 'relative', overflow: 'hidden', border: 'none', background: 'transparent' }}
               >
                 {active && (
                   <motion.div
@@ -106,8 +108,8 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.05))',
-                      borderLeft: '3px solid var(--primary-500)',
+                      background: 'var(--primary-50)',
+                      borderLeft: '3px solid var(--primary-600)',
                       borderRadius: 'var(--radius-md)',
                       zIndex: 0
                     }}
@@ -115,29 +117,54 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
                 )}
-                <span className="nav-item-icon" style={{ zIndex: 1, color: active ? 'var(--primary-400)' : 'inherit' }}>
-                  <Icon />
+                <span className="nav-item-icon" style={{ zIndex: 1, color: active ? 'var(--primary-600)' : 'var(--text-muted)' }}>
+                  <Icon size={18} strokeWidth={active ? 2.5 : 2} />
                 </span>
-                {!collapsed && <span style={{ zIndex: 1, color: active ? '#fff' : 'inherit', fontWeight: active ? 600 : 500 }}>{item.label}</span>}
+                {!collapsed && (
+                  <span style={{ zIndex: 1, color: active ? 'var(--primary-700)' : 'var(--text-secondary)', fontWeight: active ? 600 : 500 }}>
+                    {item.label}
+                  </span>
+                )}
               </NavLink>
             );
           })}
         </nav>
 
-        <div className="sidebar-footer" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-          <button className="logout-btn" onClick={logout} style={{ color: 'var(--text-muted)' }}>
-            <HiOutlineLogout size={20} />
+        <div className="sidebar-footer">
+          <button className="logout-btn" onClick={logout}>
+            <LogOut size={18} />
             {!collapsed && 'Logout'}
           </button>
 
           <button
             className="sidebar-toggle"
             onClick={() => setCollapsed(!collapsed)}
-            style={{ color: 'var(--text-muted)' }}
           >
-            {collapsed ? <HiOutlineChevronRight size={20} /> : <HiOutlineChevronLeft size={20} />}
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
         </div>
+
+        <style>{`
+          .logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: var(--radius-md);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all var(--transition-fast);
+            margin-bottom: 0.5rem;
+          }
+          .logout-btn:hover {
+            background: var(--danger-50);
+            color: var(--danger-600);
+          }
+        `}</style>
       </aside>
     </>
   );

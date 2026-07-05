@@ -42,20 +42,20 @@
 
 .ht-student-item:hover {
   border-color: var(--primary-400);
-  background: rgba(99, 102, 241, 0.06);
+  background: var(--primary-50);
 }
 
 .ht-student-item.selected {
   border-color: var(--primary-500);
-  background: rgba(99, 102, 241, 0.12);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  background: var(--primary-50);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
 .ht-student-item-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--gradient-accent);
+  background: var(--primary-500);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -93,7 +93,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--gradient-primary);
+  background: var(--primary-500);
   color: white;
   display: flex;
   align-items: center;
@@ -120,8 +120,8 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(99, 102, 241, 0.15);
-  color: var(--primary-400);
+  background: var(--primary-50);
+  color: var(--primary-600);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -146,7 +146,7 @@
 }
 
 .ht-remove-btn:hover {
-  background: rgba(239, 68, 68, 0.1) !important;
+  background: var(--danger-50) !important;
 }
 
 /* ── Generate Button ──────────────────────────────────────── */

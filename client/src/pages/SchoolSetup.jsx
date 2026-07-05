@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import supabase from '../api/supabase';
 import toast from 'react-hot-toast';
-import { HiOutlineUpload, HiOutlineSave } from 'react-icons/hi';
+import { UploadCloud, Save } from 'lucide-react';
 
 const SchoolSetup = () => {
   const [form, setForm] = useState({
@@ -139,7 +139,7 @@ const SchoolSetup = () => {
                 width: 120,
                 height: 120,
                 borderRadius: 'var(--radius-lg)',
-                background: logoPreview ? 'transparent' : 'var(--gradient-primary)',
+                background: logoPreview ? 'transparent' : 'var(--primary-50)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -153,7 +153,7 @@ const SchoolSetup = () => {
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <HiOutlineUpload size={32} color="white" />
+                <UploadCloud size={32} style={{ color: 'var(--primary-600)' }} />
               )}
             </div>
             <input
@@ -258,10 +258,19 @@ const SchoolSetup = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-            <button id="school-save" type="submit" className="btn btn-primary" disabled={saving}>
-              <HiOutlineSave />
-              {saving ? 'Saving...' : 'Save Settings'}
+          <div className="form-actions" style={{ marginTop: '2rem' }}>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? (
+                <>
+                  <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  Save Changes
+                </>
+              )}
             </button>
           </div>
         </form>

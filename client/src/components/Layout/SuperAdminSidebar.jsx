@@ -2,18 +2,16 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import {
-  HiOutlineHome,
-  HiOutlineOfficeBuilding,
-  HiOutlineUserGroup,
-  HiOutlineLogout,
-  HiOutlineChevronLeft,
-  HiOutlineChevronRight,
-  HiOutlineShieldCheck,
-  HiOutlineCreditCard,
-  HiOutlineChartBar,
-  HiOutlineCog,
-  HiOutlineClipboardList
-} from 'react-icons/hi';
+  LayoutDashboard,
+  Building2,
+  Users,
+  BarChart3,
+  ClipboardList,
+  ShieldCheck,
+  LogOut,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
 
 const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
   const { logout } = useAuth();
@@ -21,12 +19,12 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
 
   const navItems = [
     { section: 'Platform' },
-    { path: '/super-admin/dashboard', icon: HiOutlineHome, label: 'Dashboard' },
-    { path: '/super-admin/schools', icon: HiOutlineOfficeBuilding, label: 'Schools' },
-    { path: '/super-admin/users', icon: HiOutlineUserGroup, label: 'Users' },
+    { path: '/super-admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/super-admin/schools', icon: Building2, label: 'Schools' },
+    { path: '/super-admin/users', icon: Users, label: 'Users' },
     { section: 'System' },
-    { path: '/super-admin/reports', icon: HiOutlineChartBar, label: 'Reports' },
-    { path: '/super-admin/audit-logs', icon: HiOutlineClipboardList, label: 'Audit Logs' },
+    { path: '/super-admin/reports', icon: BarChart3, label: 'Reports' },
+    { path: '/super-admin/audit-logs', icon: ClipboardList, label: 'Audit Logs' },
   ];
 
   const isActive = (path) => {
@@ -43,15 +41,15 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
         />
       )}
 
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`} style={{ background: 'rgba(2, 8, 23, 0.95)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(245, 158, 11, 0.1)' }}>
-        <div className="sidebar-header" style={{ borderBottom: '1px solid rgba(245, 158, 11, 0.1)' }}>
-          <div className="sidebar-logo" style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)', boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)' }}>
-            <HiOutlineShieldCheck size={20} />
+      <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-logo" style={{ background: 'var(--warning-500)' }}>
+            <ShieldCheck size={20} />
           </div>
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="sidebar-title" style={{ background: 'linear-gradient(to right, #fff, #fbbf24)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SchoolMS</div>
-              <div className="sidebar-subtitle" style={{ color: '#f59e0b' }}>Super Admin</div>
+              <div className="sidebar-title">SchoolMS</div>
+              <div className="sidebar-subtitle" style={{ color: 'var(--warning-600)' }}>Super Admin</div>
             </motion.div>
           )}
         </div>
@@ -60,11 +58,11 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
           {navItems.map((item, idx) => {
             if (item.section) {
               return !collapsed ? (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={idx} className="nav-section-label" style={{ color: 'rgba(245, 158, 11, 0.4)' }}>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={idx} className="nav-section-label">
                   {item.section}
                 </motion.div>
               ) : (
-                <div key={idx} style={{ height: '1rem' }} />
+                <div key={idx} style={{ height: '0.75rem' }} />
               );
             }
 
@@ -78,7 +76,6 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
                 className={`nav-item ${active ? 'active' : ''}`}
                 onClick={() => setMobileOpen(false)}
                 title={collapsed ? item.label : ''}
-                style={{ position: 'relative', overflow: 'hidden', border: 'none', background: 'transparent' }}
               >
                 {active && (
                   <motion.div
@@ -86,8 +83,8 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: 'linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(239, 68, 68, 0.05))',
-                      borderLeft: '3px solid #f59e0b',
+                      background: 'var(--warning-50)',
+                      borderLeft: '3px solid var(--warning-600)',
                       borderRadius: 'var(--radius-md)',
                       zIndex: 0
                     }}
@@ -95,29 +92,54 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
                 )}
-                <span className="nav-item-icon" style={{ zIndex: 1, color: active ? '#f59e0b' : 'inherit' }}>
-                  <Icon />
+                <span className="nav-item-icon" style={{ zIndex: 1, color: active ? 'var(--warning-600)' : 'var(--text-muted)' }}>
+                  <Icon size={18} strokeWidth={active ? 2.5 : 2} />
                 </span>
-                {!collapsed && <span style={{ zIndex: 1, color: active ? '#fff' : 'inherit', fontWeight: active ? 600 : 500 }}>{item.label}</span>}
+                {!collapsed && (
+                  <span style={{ zIndex: 1, color: active ? 'var(--warning-700)' : 'var(--text-secondary)', fontWeight: active ? 600 : 500 }}>
+                    {item.label}
+                  </span>
+                )}
               </NavLink>
             );
           })}
         </nav>
 
-        <div className="sidebar-footer" style={{ borderTop: '1px solid rgba(245, 158, 11, 0.1)' }}>
-          <button className="logout-btn" onClick={logout} style={{ color: 'var(--text-muted)' }}>
-            <HiOutlineLogout size={20} />
+        <div className="sidebar-footer">
+          <button className="logout-btn" onClick={logout}>
+            <LogOut size={18} />
             {!collapsed && 'Logout'}
           </button>
 
           <button
             className="sidebar-toggle"
             onClick={() => setCollapsed(!collapsed)}
-            style={{ color: 'var(--text-muted)' }}
           >
-            {collapsed ? <HiOutlineChevronRight size={20} /> : <HiOutlineChevronLeft size={20} />}
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
         </div>
+
+        <style>{`
+          .logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: var(--radius-md);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all var(--transition-fast);
+            margin-bottom: 0.5rem;
+          }
+          .logout-btn:hover {
+            background: var(--danger-50);
+            color: var(--danger-600);
+          }
+        `}</style>
       </aside>
     </>
   );

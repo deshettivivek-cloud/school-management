@@ -36,7 +36,7 @@ const SuperAdminDashboard = () => {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-          style={{ width: 40, height: 40, border: '3px solid rgba(245, 158, 11, 0.3)', borderTopColor: '#f59e0b', borderRadius: '50%' }}
+          style={{ width: 40, height: 40, border: '3px solid #fef3c7', borderTopColor: '#d97706', borderRadius: '50%' }}
         />
       </div>
     );
@@ -55,19 +55,20 @@ const SuperAdminDashboard = () => {
         borderRadius: 'var(--radius-xl)',
         marginBottom: '2rem',
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(239, 68, 68, 0.05))',
-        border: '1px solid rgba(245, 158, 11, 0.12)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-color)',
+        boxShadow: 'var(--shadow-xs)',
       }}>
         <div style={{
           position: 'absolute', top: -60, right: -60, width: 200, height: 200,
-          background: 'radial-gradient(circle, rgba(245, 158, 11, 0.15), transparent 70%)',
+          background: 'radial-gradient(circle, rgba(245, 158, 11, 0.06), transparent 70%)',
           borderRadius: '50%', pointerEvents: 'none',
         }} />
         <motion.div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
         >
           <HiOutlineShieldCheck size={28} style={{ color: '#f59e0b' }} />
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, background: 'linear-gradient(to right, #fff, #fbbf24)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
             Super Admin Dashboard
           </h1>
         </motion.div>
@@ -80,19 +81,19 @@ const SuperAdminDashboard = () => {
 
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        <motion.div className="card" style={{ cursor: 'pointer', border: '1px solid rgba(245, 158, 11, 0.1)' }}
+        <motion.div className="card" style={{ cursor: 'pointer', border: '1px solid var(--border-color)' }}
           onClick={() => navigate('/super-admin/schools')}
           whileHover={{ scale: 1.02, y: -2 }} transition={{ type: 'spring', stiffness: 400 }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{
               width: 48, height: 48, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'linear-gradient(135deg, #f59e0b, #d97706)', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+              background: '#d97706',
             }}>
               <HiOutlineOfficeBuilding size={22} color="#fff" />
             </div>
             <div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
                 {stats?.totalSchools || 0}
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Total Schools</div>
@@ -100,19 +101,19 @@ const SuperAdminDashboard = () => {
           </div>
         </motion.div>
 
-        <motion.div className="card" style={{ cursor: 'pointer', border: '1px solid rgba(99, 102, 241, 0.1)' }}
+        <motion.div className="card" style={{ cursor: 'pointer', border: '1px solid var(--border-color)' }}
           onClick={() => navigate('/super-admin/users')}
           whileHover={{ scale: 1.02, y: -2 }} transition={{ type: 'spring', stiffness: 400 }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{
               width: 48, height: 48, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)',
+              background: '#2563eb',
             }}>
               <HiOutlineUserGroup size={22} color="#fff" />
             </div>
             <div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
                 {stats?.totalUsers || 0}
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Total Users</div>
@@ -120,18 +121,18 @@ const SuperAdminDashboard = () => {
           </div>
         </motion.div>
 
-        <motion.div className="card" style={{ border: '1px solid rgba(34, 197, 94, 0.1)' }}
+        <motion.div className="card" style={{ border: '1px solid var(--border-color)' }}
           whileHover={{ scale: 1.02, y: -2 }} transition={{ type: 'spring', stiffness: 400 }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{
               width: 48, height: 48, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'linear-gradient(135deg, #22c55e, #10b981)', boxShadow: '0 4px 15px rgba(34, 197, 94, 0.3)',
+              background: '#16a34a',
             }}>
               <HiOutlineAcademicCap size={22} color="#fff" />
             </div>
             <div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
                 {stats?.totalStudents || 0}
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Total Students</div>
@@ -146,12 +147,12 @@ const SuperAdminDashboard = () => {
           <h3 className="card-title" style={{ marginBottom: '1.25rem' }}>Users by Role</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {Object.entries(stats?.roleCounts || {}).map(([role, count]) => (
-              <div key={role} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <div key={role} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)' }}>
                 <span style={{ fontWeight: 600, textTransform: 'capitalize', color: 'var(--text-primary)' }}>{role}</span>
                 <span style={{
                   padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)',
-                  background: role === 'principal' ? 'rgba(99, 102, 241, 0.15)' : role === 'clerk' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(168, 85, 247, 0.15)',
-                  color: role === 'principal' ? '#818cf8' : role === 'clerk' ? '#4ade80' : '#c084fc',
+                  background: role === 'principal' ? '#eff6ff' : role === 'clerk' ? '#f0fdf4' : '#f5f3ff',
+                  color: role === 'principal' ? '#2563eb' : role === 'clerk' ? '#16a34a' : '#7c3aed',
                   fontWeight: 700, fontSize: '0.85rem',
                 }}>{count}</span>
               </div>
@@ -171,12 +172,12 @@ const SuperAdminDashboard = () => {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)',
-                  background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.05)',
+                  background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)',
                   cursor: 'pointer', transition: 'all 0.2s',
                 }}
                 onClick={() => navigate('/super-admin/schools')}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.2)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#fde68a'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
               >
                 <div>
                   <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{school.name}</div>

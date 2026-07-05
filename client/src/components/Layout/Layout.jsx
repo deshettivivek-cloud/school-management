@@ -9,39 +9,22 @@ const Layout = ({ title }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
-  const [schoolLogo, setSchoolLogo] = useState(null);
+  const [schoolData, setSchoolData] = useState(null);
 
   useEffect(() => {
     if (user?.schoolId) {
       api.get('/schools')
         .then(res => {
-          const logo = res.data.data?.logo_url || res.data.data?.logo;
-          if (logo) setSchoolLogo(logo);
+          if (res.data.data) {
+            setSchoolData(res.data.data);
+          }
         })
-        .catch(err => console.error('Failed to fetch school logo:', err));
+        .catch(err => console.error('Failed to fetch school data:', err));
     }
   }, [user]);
 
   return (
-    <div className="app-layout" style={{ position: 'relative' }}>
-      {schoolLogo && (
-        <div 
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: `url(${schoolLogo})`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'center',
-            backgroundSize: '500px',
-            opacity: 0.03,
-            pointerEvents: 'none',
-            zIndex: 0
-          }}
-        />
-      )}
+    <div className="app-layout">
       <Sidebar
         collapsed={collapsed}
         setCollapsed={setCollapsed}
@@ -54,6 +37,7 @@ const Layout = ({ title }) => {
           title={title}
           collapsed={collapsed}
           setMobileOpen={setMobileOpen}
+          schoolData={schoolData}
         />
         <div className="page-content animate-fade-in">
           <Outlet />

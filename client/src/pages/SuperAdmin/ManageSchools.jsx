@@ -193,7 +193,7 @@ const ManageSchools = () => {
                   
                   {/* School Details */}
                   <div>
-                    <h3 style={{ marginBottom: '1rem', color: 'var(--primary-400)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>School Details</h3>
+                    <h3 style={{ marginBottom: '1rem', color: 'var(--primary-600)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>School Details</h3>
                     <div className="form-group">
                       <label className="form-label">School Name *</label>
                       <input className="form-input" type="text" required value={form.schoolName} onChange={e => setForm({...form, schoolName: e.target.value})} />
@@ -250,7 +250,7 @@ const ManageSchools = () => {
 
                   {/* Principal Details */}
                   <div>
-                    <h3 style={{ marginBottom: '1rem', color: '#10b981', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>Principal Details</h3>
+                    <h3 style={{ marginBottom: '1rem', color: '#16a34a', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Principal Details</h3>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>This creates the admin user for the school.</p>
                     <div className="form-group">
                       <label className="form-label">Principal Name *</label>
@@ -287,7 +287,7 @@ const ManageSchools = () => {
                   </div>
                 </div>
 
-                <div className="modal-footer" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
+                <div className="modal-footer" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
                   <button type="button" className="btn btn-ghost" onClick={() => setShowCreateModal(false)} disabled={creating}>Cancel</button>
                   <button type="submit" className="btn btn-primary" disabled={creating}>
                     {creating ? <span className="spinner" style={{ width: 16, height: 16 }} /> : 'Create School'}
@@ -417,8 +417,8 @@ const ManageSchools = () => {
                             <td>
                               <span style={{
                                 padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize',
-                                background: u.role === 'principal' ? 'rgba(99, 102, 241, 0.15)' : u.role === 'clerk' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(168, 85, 247, 0.15)',
-                                color: u.role === 'principal' ? '#818cf8' : u.role === 'clerk' ? '#4ade80' : '#c084fc',
+                                background: u.role === 'principal' ? '#eff6ff' : u.role === 'clerk' ? '#f0fdf4' : '#f5f3ff',
+                                color: u.role === 'principal' ? '#2563eb' : u.role === 'clerk' ? '#16a34a' : '#7c3aed',
                               }}>{u.role}</span>
                             </td>
                           </tr>
@@ -467,7 +467,7 @@ const ManageSchools = () => {
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <code style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#fbbf24', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', letterSpacing: '1px' }}>
+                        <code style={{ background: '#fffbeb', color: '#d97706', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', letterSpacing: '1px', border: '1px solid #fde68a' }}>
                           {school.join_code}
                         </code>
                         <button className="btn btn-ghost" style={{ padding: '0.2rem' }} onClick={() => copyJoinCode(school.join_code)}>
@@ -477,7 +477,7 @@ const ManageSchools = () => {
                     </td>
                     <td>{school.academic_year}</td>
                     <td>
-                      <span style={{ padding: '0.2rem 0.5rem', background: school.status === 'inactive' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)', color: school.status === 'inactive' ? '#f87171' : '#4ade80', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: 600 }}>
+                      <span style={{ padding: '0.2rem 0.5rem', background: school.status === 'inactive' ? '#fef2f2' : '#f0fdf4', color: school.status === 'inactive' ? '#dc2626' : '#16a34a', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: 600 }}>
                         {(school.status || 'active').toUpperCase()}
                       </span>
                     </td>

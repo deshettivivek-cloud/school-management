@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { HiOutlineMail, HiOutlineLockClosed, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
+import { Mail, Lock, Eye, EyeOff, BookOpen } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -49,8 +49,8 @@ const Login = () => {
 
       <div className="auth-card animate-slide-up">
         <div className="auth-header">
-          <div className="auth-logo">
-            <span className="auth-logo-icon">🏫</span>
+          <div className="auth-logo" style={{ background: 'var(--primary-50)', color: 'var(--primary-600)', width: 48, height: 48, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: 'var(--shadow-sm)' }}>
+            <BookOpen size={24} />
           </div>
           <h1 className="auth-title">Welcome Back</h1>
           <p className="auth-subtitle">Sign in to your School Management System</p>
@@ -59,7 +59,7 @@ const Login = () => {
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="auth-field">
             <label className="auth-label" htmlFor="login-email">
-              <HiOutlineMail className="auth-label-icon" />
+              <Mail className="auth-label-icon" size={16} />
               Email Address
             </label>
             <input
@@ -76,7 +76,7 @@ const Login = () => {
 
           <div className="auth-field">
             <label className="auth-label" htmlFor="login-password">
-              <HiOutlineLockClosed className="auth-label-icon" />
+              <Lock className="auth-label-icon" size={16} />
               Password
             </label>
             <div className="auth-input-group">
@@ -96,7 +96,7 @@ const Login = () => {
                 tabIndex={-1}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? <HiOutlineEyeOff size={18} /> : <HiOutlineEye size={18} />}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
