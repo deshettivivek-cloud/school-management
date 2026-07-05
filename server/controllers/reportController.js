@@ -46,15 +46,15 @@ const MODULE_CONFIG = {
     searchColumns: ['name', 'admission_no'],
   },
   expenditure: {
-    table: 'expenditure',
+    table: 'expenditures',
     select: '*',
     defaultSort: 'date',
-    searchColumns: ['title', 'vendor', 'category'],
+    searchColumns: ['title', 'vendor_name', 'category'],
   },
   tc: {
     table: 'transfer_certificates',
     select: '*, students!inner(name, admission_no, grade, parent_name, mother_name, parent_phone)',
-    defaultSort: 'issue_date',
+    defaultSort: 'issued_date',
     searchColumns: ['tc_number', 'students.name'],
   },
   dashboard: {
@@ -128,7 +128,7 @@ exports.generateReport = async (req, res) => {
 
     // Safely apply Academic Year filter
     if (filters.academicYear) {
-      if (['students', 'fee_collections'].includes(config.table)) {
+      if (['students', 'fee_collections', 'expenditures'].includes(config.table)) {
         query = query.eq('academic_year', filters.academicYear);
       } else if (['attendance', 'exam_marks', 'transfer_certificates'].includes(config.table)) {
         query = query.eq('students.academic_year', filters.academicYear);

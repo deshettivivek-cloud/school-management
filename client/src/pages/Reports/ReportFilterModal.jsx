@@ -103,7 +103,7 @@ const COLUMNS_BY_MODULE = {
     { key: 'date', label: 'Date' },
     { key: 'title', label: 'Title' },
     { key: 'category', label: 'Category' },
-    { key: 'vendor', label: 'Vendor' },
+    { key: 'vendor_name', label: 'Vendor' },
     { key: 'amount', label: 'Amount' },
     { key: 'payment_mode', label: 'Payment Mode' }
   ],
@@ -111,9 +111,9 @@ const COLUMNS_BY_MODULE = {
     { key: 'tc_number', label: 'TC Number' },
     { key: 'students.name', label: 'Student Name' },
     { key: 'students.grade', label: 'Class' },
-    { key: 'issue_date', label: 'Issue Date' },
+    { key: 'issued_date', label: 'Issue Date' },
     { key: 'reason', label: 'Reason' },
-    { key: 'status', label: 'Status' }
+    { key: 'conduct', label: 'Conduct' }
   ]
 };
 

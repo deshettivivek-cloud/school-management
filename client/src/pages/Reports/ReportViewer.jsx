@@ -107,7 +107,7 @@ const REPORT_CONFIG = {
       { key: 'date', header: 'Date' },
       { key: 'title', header: 'Title' },
       { key: 'category', header: 'Category' },
-      { key: 'vendor', header: 'Vendor' },
+      { key: 'vendor_name', header: 'Vendor' },
       { key: 'amount', header: 'Amount' },
       { key: 'payment_mode', header: 'Payment Mode' }
     ]
@@ -118,9 +118,9 @@ const REPORT_CONFIG = {
       { key: 'tc_number', header: 'TC Number' },
       { key: 'students.name', header: 'Student Name' },
       { key: 'students.grade', header: 'Class' },
-      { key: 'issue_date', header: 'Issue Date' },
+      { key: 'issued_date', header: 'Issue Date' },
       { key: 'reason', header: 'Reason' },
-      { key: 'status', header: 'Status' }
+      { key: 'conduct', header: 'Conduct' }
     ]
   }
 };
