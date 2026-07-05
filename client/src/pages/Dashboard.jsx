@@ -85,7 +85,7 @@ const Dashboard = () => {
   };
 
   const gradeData = studentStats?.gradeWise?.map((g) => ({
-    name: \`Class \${g._id}\`,
+    name: `Class ${g._id}`,
     students: g.count,
   })) || [];
 
@@ -320,14 +320,14 @@ const Dashboard = () => {
           <div className="widget-card col-span-3 stat-card">
             <div className="stat-card-header">
               <span className="stat-card-label">Net Profit / Loss</span>
-              <div className={\`stat-card-icon \${isProfit ? 'green' : 'red'}\`}>
+              <div className={`stat-card-icon ${isProfit ? 'green' : 'red'}`}>
                 <Activity size={20} />
               </div>
             </div>
             <div className="stat-card-value" style={{ color: isProfit ? 'var(--success-600)' : 'var(--danger-600)' }}>
               {isProfit ? '+' : ''}{formatCurrency(profitLoss)}
             </div>
-            <div className={\`stat-card-trend \${isProfit ? 'positive' : 'negative'}\`}>
+            <div className={`stat-card-trend ${isProfit ? 'positive' : 'negative'}`}>
               <span>Today's Performance</span>
             </div>
           </div>
