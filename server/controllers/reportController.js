@@ -28,16 +28,16 @@ const MODULE_CONFIG = {
     searchColumns: ['students.name'],
   },
   teachers: {
-    table: 'teachers',
+    table: 'employees',
     select: '*',
     defaultSort: 'created_at',
-    searchColumns: ['name', 'employee_id', 'department'],
+    searchColumns: ['name', 'emp_id', 'department'],
   },
   staff: {
-    table: 'staff',
+    table: 'employees',
     select: '*',
     defaultSort: 'created_at',
-    searchColumns: ['name', 'employee_id', 'department'],
+    searchColumns: ['name', 'emp_id', 'department'],
   },
   admissions: {
     table: 'students',
@@ -219,7 +219,7 @@ const getDashboardMetrics = async (req, res) => {
   
   const [students, teachers, fees] = await Promise.all([
     getCount('students'),
-    getCount('teachers'),
+    supabase.from('employees').select('*', { count: 'exact', head: true }).match({ ...matchObj, status: 'Active' }),
     supabase.from('fee_collections').select('committed_fee, total_paid').match(matchObj)
   ]);
 

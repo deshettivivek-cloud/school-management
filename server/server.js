@@ -16,6 +16,8 @@ const expenditureRoutes = require('./routes/expenditureRoutes');
 const teacherRoutes = require('./routes/teacherRoutes');
 const superAdminRoutes = require('./routes/superAdminRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
+const salaryRoutes = require('./routes/salaryRoutes');
 
 const app = express();
 
@@ -45,6 +47,8 @@ app.use('/api/teachers', require('./routes/teacherRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/salary', salaryRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -82,7 +82,7 @@ exports.createStudent = async (req, res) => {
       parentEmail, address, academicYear, admissionDate, photoUrl,
       admissionNo, aadharNo, motherName, motherTongue, motherPhone,
       guardianPhone, permanentAddress, fatherOccupation, motherOccupation,
-      fatherOccupationDesc, motherOccupationDesc
+      fatherOccupationDesc, motherOccupationDesc, penNumber, caste, subCaste
     } = req.body;
 
     const finalAdmissionNo = admissionNo || await generateAdmissionNo(req.user.schoolId, academicYear);
@@ -105,6 +105,9 @@ exports.createStudent = async (req, res) => {
         admission_date: admissionDate || new Date().toISOString().split('T')[0],
         photo_url: photoUrl || '',
         aadhar_no: aadharNo || null,
+        pen_number: penNumber || null,
+        caste: caste || '',
+        sub_caste: subCaste || '',
         mother_name: motherName || '',
         mother_tongue: motherTongue || '',
         mother_phone: motherPhone || '',
@@ -174,7 +177,7 @@ exports.updateStudent = async (req, res) => {
       parentEmail, address, academicYear, admissionDate, photoUrl,
       admissionNo, aadharNo, motherName, motherTongue, motherPhone,
       guardianPhone, permanentAddress, fatherOccupation, motherOccupation,
-      fatherOccupationDesc, motherOccupationDesc
+      fatherOccupationDesc, motherOccupationDesc, penNumber, caste, subCaste
     } = req.body;
 
     const updateData = { updated_at: new Date().toISOString() };
@@ -192,6 +195,9 @@ exports.updateStudent = async (req, res) => {
     if (photoUrl !== undefined) updateData.photo_url = photoUrl;
     if (admissionNo !== undefined) updateData.admission_no = admissionNo;
     if (aadharNo !== undefined) updateData.aadhar_no = aadharNo;
+    if (penNumber !== undefined) updateData.pen_number = penNumber;
+    if (caste !== undefined) updateData.caste = caste;
+    if (subCaste !== undefined) updateData.sub_caste = subCaste;
     if (motherName !== undefined) updateData.mother_name = motherName;
     if (motherTongue !== undefined) updateData.mother_tongue = motherTongue;
     if (motherPhone !== undefined) updateData.mother_phone = motherPhone;

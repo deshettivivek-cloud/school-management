@@ -25,7 +25,15 @@ import Unauthorized from './pages/Unauthorized';
 import RoleManagement from './pages/Admin/RoleManagement';
 import SchoolExpenditure from './pages/Expenditure/SchoolExpenditure';
 import HallTicket from './pages/Exams/HallTicket';
-import TeachersDashboard from './pages/Teachers/TeachersDashboard';
+import EmployeeDashboard from './pages/Employees/EmployeeDashboard';
+import AddEmployee from './pages/Employees/AddEmployee';
+import EmployeeProfile from './pages/Employees/EmployeeProfile';
+import SalaryDashboard from './pages/Salary/SalaryDashboard';
+import SalaryStructure from './pages/Salary/SalaryStructure';
+import MonthlySalary from './pages/Salary/MonthlySalary';
+import SalaryHistory from './pages/Salary/SalaryHistory';
+import SalaryReports from './pages/Salary/SalaryReports';
+import PayslipView from './pages/Salary/PayslipView';
 import SuperAdminDashboard from './pages/SuperAdmin/SuperAdminDashboard';
 import ManageSchools from './pages/SuperAdmin/ManageSchools';
 import ManageUsers from './pages/SuperAdmin/ManageUsers';
@@ -267,7 +275,19 @@ function App() {
         <Route path="/tc/register" element={<TcRegister />} />
         <Route path="/tc/view/:id" element={<TcView />} />
         <Route path="/exams/hall-ticket" element={<HallTicket />} />
-        <Route path="/teachers" element={<TeachersDashboard />} />
+        
+        {/* Employees */}
+        <Route path="/employees" element={<EmployeeDashboard />} />
+        <Route path="/employees/add" element={<AddEmployee />} />
+        <Route path="/employees/:id" element={<EmployeeProfile />} />
+
+        {/* Salary Management */}
+        <Route path="/salary/dashboard" element={<SalaryDashboard />} />
+        <Route path="/salary/structure" element={<SalaryStructure />} />
+        <Route path="/salary/monthly" element={<MonthlySalary />} />
+        <Route path="/salary/history" element={<SalaryHistory />} />
+        <Route path="/salary/reports" element={<SalaryReports />} />
+        <Route path="/salary/slip/:employeeId/:month" element={<PayslipView />} />
         
         {/* Reports */}
         <Route path="/reports" element={<ReportsDashboard />} />

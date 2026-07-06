@@ -17,7 +17,7 @@ const AdmissionForm = () => {
     name: '', dob: '', gender: 'male', grade: '', section: '',
     parentName: '', parentPhone: '', parentEmail: '', address: '',
     academicYear: currentAcademicYear, admissionDate: new Date().toISOString().split('T')[0],
-    admissionNo: '', aadharNo: '',
+    admissionNo: '', aadharNo: '', penNumber: '', caste: '', subCaste: '',
     motherName: '', motherTongue: '', motherPhone: '', guardianPhone: '',
     permanentAddress: '', fatherOccupation: '', motherOccupation: '',
     fatherOccupationDesc: '', motherOccupationDesc: ''
@@ -52,7 +52,8 @@ const AdmissionForm = () => {
         parentPhone: s.parentPhone, parentEmail: s.parentEmail || '',
         address: s.address || '', academicYear: s.academicYear || s.academic_year || '',
         admissionDate: s.admissionDate?.split('T')[0] || (s.admission_date ? s.admission_date.split('T')[0] : ''),
-        admissionNo: s.admission_no || '', aadharNo: s.aadhar_no || '',
+        admissionNo: s.admission_no || '', aadharNo: s.aadhar_no || '', penNumber: s.pen_number || '',
+        caste: s.caste || '', subCaste: s.sub_caste || s.subCaste || '',
         motherName: s.mother_name || '', motherTongue: s.mother_tongue || '',
         motherPhone: s.mother_phone || '', guardianPhone: s.guardian_phone || '',
         permanentAddress: s.permanent_address || '', fatherOccupation: s.father_occupation || '',
@@ -185,7 +186,7 @@ const AdmissionForm = () => {
             </div>
           </div>
 
-          <div className="form-row">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
             <div className="form-group">
               <label className="form-label">Date of Birth *</label>
               <input id="student-dob" type="date" className="form-input" name="dob" value={form.dob} onChange={handleChange} />
@@ -197,6 +198,28 @@ const AdmissionForm = () => {
             <div className="form-group">
               <label className="form-label">Aadhar Number</label>
               <input id="student-aadhar" type="text" className="form-input" name="aadharNo" value={form.aadharNo} onChange={handleChange} placeholder="12-digit Aadhar number" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">PEN Number</label>
+              <input id="student-pen" type="text" className="form-input" name="penNumber" value={form.penNumber} onChange={handleChange} placeholder="PEN Number" />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Caste Category</label>
+              <select className="form-select" name="caste" value={form.caste} onChange={handleChange}>
+                <option value="">Select Category</option>
+                <option value="General">General</option>
+                <option value="OBC">OBC</option>
+                <option value="SC">SC</option>
+                <option value="ST">ST</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Sub Caste</label>
+              <input type="text" className="form-input" name="subCaste" value={form.subCaste} onChange={handleChange} placeholder="Sub caste details" />
             </div>
           </div>
 

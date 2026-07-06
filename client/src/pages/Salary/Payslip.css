@@ -1,0 +1,212 @@
+:root {
+  --payslip-primary: #295F48; /* Dark green theme */
+  --payslip-text-dark: #1a1a1a;
+  --payslip-text-muted: #555555;
+  --payslip-border-light: #e0e0e0;
+  --payslip-bg-light: #f4f8f6;
+  --payslip-white: #ffffff;
+}
+
+.payslip-container {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  background-color: #e5e5e5;
+  min-height: 100vh;
+}
+
+.payslip-page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 15mm;
+  background: var(--payslip-white);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  position: relative;
+  font-family: 'Inter', sans-serif;
+  color: var(--payslip-text-dark);
+  font-size: 9.5pt;
+  line-height: 1.5;
+}
+
+@media print {
+  .payslip-container {
+    background: var(--payslip-white);
+    padding: 0;
+  }
+  .payslip-page {
+    box-shadow: none;
+    width: 100%;
+    min-height: 100vh;
+    padding: 10mm 15mm;
+    margin: 0;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}
+
+.flex { display: flex; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+
+/* Header */
+.payslip-header { margin-bottom: 10px; }
+.payslip-logo {
+  width: 60px;
+  height: 60px;
+  background-color: var(--payslip-primary);
+  color: var(--payslip-white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  margin-right: 15px;
+  letter-spacing: 1px;
+}
+.payslip-info h1 {
+  color: var(--payslip-primary);
+  font-size: 22px;
+  margin-bottom: 0px;
+  font-weight: 700;
+  margin-top: 0;
+  font-family: serif;
+}
+.payslip-info p {
+  color: var(--payslip-text-muted);
+  font-size: 9pt;
+  margin: 0;
+}
+.payslip-title { text-align: right; }
+.payslip-title h2 {
+  font-size: 16px;
+  color: var(--payslip-text-dark);
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 2px;
+  margin-top: 0;
+}
+.payslip-title p {
+  font-size: 10pt;
+  color: var(--payslip-text-muted);
+  margin: 0;
+}
+.payslip-divider {
+  height: 2px;
+  background-color: var(--payslip-primary);
+  margin: 15px 0 20px 0;
+}
+
+/* Details Section */
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 40px;
+  margin-bottom: 25px;
+}
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+.detail-label {
+  color: var(--payslip-text-muted);
+}
+.detail-value {
+  font-weight: 600;
+  text-align: right;
+}
+
+/* Earnings & Deductions Tables */
+.tables-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 30px;
+  margin-bottom: 30px;
+}
+.payslip-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.payslip-table th {
+  background-color: var(--payslip-primary);
+  color: var(--payslip-white);
+  padding: 10px 15px;
+  text-align: left;
+  font-size: 10pt;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.payslip-table td {
+  padding: 10px 15px;
+  border-bottom: 1px dashed var(--payslip-border-light);
+}
+.payslip-table td.amount-col {
+  text-align: right;
+}
+.payslip-table tr:last-child td {
+  border-bottom: none;
+}
+.payslip-table .total-row td {
+  font-weight: 700;
+  font-size: 10.5pt;
+  border-top: 1px solid var(--payslip-border-light);
+  border-bottom: 1px solid var(--payslip-border-light);
+  background-color: var(--payslip-bg-light);
+}
+
+/* Net Pay Section */
+.net-pay-box {
+  border: 1px solid var(--payslip-primary);
+  background-color: var(--payslip-bg-light);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+.net-pay-left .label {
+  font-weight: 700;
+  font-size: 11pt;
+  color: var(--payslip-primary);
+  margin-bottom: 4px;
+}
+.net-pay-left .words {
+  font-size: 9pt;
+  color: var(--payslip-text-muted);
+  font-style: italic;
+}
+.net-pay-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--payslip-primary);
+}
+
+/* Footer Section */
+.payslip-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.footer-note {
+  font-size: 8pt;
+  color: var(--payslip-text-muted);
+  font-style: italic;
+  max-width: 60%;
+}
+.signature-box {
+  width: 200px;
+  text-align: center;
+}
+.signature-line {
+  border-bottom: 1px solid var(--payslip-text-dark);
+  height: 40px;
+  margin-bottom: 5px;
+}
+.signature-text {
+  font-size: 8pt;
+  color: var(--payslip-text-muted);
+}

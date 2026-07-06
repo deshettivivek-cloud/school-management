@@ -130,6 +130,190 @@ const HallTicket = () => {
     setShowPreview(true);
   };
 
+  const hallTicketStyles = `
+    .hall-page-wrapper * { margin: 0; padding: 0; box-sizing: border-box; }
+    .hall-page-wrapper {
+      font-family: 'Inter', sans-serif;
+      color: #1a1a1a;
+      background: white;
+    }
+    .hall-page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 20mm;
+      page-break-after: always;
+      position: relative;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      display: block !important;
+    }
+    .hall-page:last-child {
+      page-break-after: auto;
+    }
+    /* Header */
+    .hall-header {
+      display: flex !important;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      border-bottom: 2px solid #295F48;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+      width: 100%;
+    }
+    .hall-logo-wrapper {
+      display: flex;
+      flex-direction: row !important;
+      align-items: center;
+      gap: 15px;
+    }
+    .hall-logo {
+      width: 70px;
+      height: 70px;
+      background-color: #295F48;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+    }
+    .hall-school-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+    }
+    .hall-school-info h1 {
+      color: #295F48;
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+    .hall-school-info p {
+      color: #555;
+      font-size: 11px;
+    }
+    .hall-title-wrapper {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .hall-title-wrapper h2 {
+      font-size: 18px;
+      color: #1a1a1a;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+    .hall-title-wrapper p {
+      font-size: 11px;
+      color: #555;
+    }
+    
+    /* Student Details Grid */
+    .hall-details-container {
+      display: flex !important;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      align-items: flex-start !important;
+      margin-bottom: 25px;
+      width: 100%;
+    }
+    .hall-details-grid {
+      flex: 1;
+      display: grid !important;
+      grid-template-columns: auto 1fr auto 1fr;
+      gap: 15px 25px;
+      padding-right: 20px;
+    }
+    .hall-details-grid > div {
+      border-bottom: 1px dashed #ccc;
+      padding-bottom: 5px;
+    }
+    .hall-label {
+      color: #555;
+      font-size: 11px;
+    }
+    .hall-value {
+      font-weight: 600;
+      font-size: 12px;
+      text-align: right;
+    }
+    .hall-photo-box {
+      width: 120px;
+      height: 150px;
+      background-color: #e8f5e9;
+      border: 1px solid #295F48;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 10px;
+      color: #295F48;
+      padding: 10px;
+      flex-shrink: 0;
+    }
+    
+    /* Schedule Table */
+    .hall-section-title {
+      background-color: #295F48;
+      color: white;
+      padding: 8px 15px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-bottom: 0;
+      display: block;
+      width: 100%;
+    }
+    .hall-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+      display: table !important;
+    }
+    .hall-table th, .hall-table td {
+      border: 1px solid #b2dfdb;
+      padding: 10px 15px;
+      font-size: 11px;
+      text-align: left;
+    }
+    .hall-table th {
+       background-color: #f0f7f4;
+       color: #295F48;
+    }
+    
+    /* Footer Signatures */
+    .hall-signatures {
+      display: flex !important;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      margin-top: 80px;
+      width: 100%;
+    }
+    .hall-sig-line {
+      border-top: 1px solid #1a1a1a;
+      width: 200px;
+      text-align: center;
+      padding-top: 8px;
+      font-size: 11px;
+      color: #555;
+    }
+    
+    @media print {
+      @page { size: A4 portrait; margin: 0; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
+      .hall-page {
+        box-shadow: none;
+        margin: 0;
+      }
+    }
+  `;
+
   const handlePrint = () => {
     const content = hallTicketRef.current;
     if (!content) return;
@@ -139,755 +323,276 @@ const HallTicket = () => {
       <html>
         <head>
           <title>Hall Tickets</title>
-          <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Great+Vibes&family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-              font-family: 'Inter', sans-serif;
-              color: #0f172a;
-              background: white;
-            }
-            .ht-page {
-              width: 297mm; /* Landscape */
-              min-height: 210mm;
-              margin: 0 auto;
-              padding: 10mm;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-            }
-            .ht-border {
-              border: 3px solid #002b5e;
-              border-radius: 12px;
-              padding: 6mm 10mm;
-              width: 100%;
-              max-width: 280mm;
-              background: #fff;
-              position: relative;
-            }
-            .ht-border::before {
-              content: '';
-              position: absolute;
-              inset: 2px;
-              border: 1px solid #002b5e;
-              border-radius: 9px;
-              pointer-events: none;
-            }
-            
-            /* Header Section */
-            .ht-header-wrapper {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              margin-bottom: 15px;
-            }
-            .ht-logo-col {
-              display: flex;
-              align-items: center;
-              gap: 15px;
-              width: 28%;
-            }
-            .ht-logo {
-              width: 90px;
-              height: 90px;
-              object-fit: contain;
-            }
-            .ht-school-text {
-              display: flex;
-              flex-direction: column;
-            }
-            .ht-school-name-main {
-              font-family: 'Outfit', sans-serif;
-              font-size: 1.5rem;
-              font-weight: 800;
-              color: #002b5e;
-              line-height: 1.1;
-              letter-spacing: 0.5px;
-            }
-            .ht-school-name-sub {
-              font-family: 'Outfit', sans-serif;
-              font-size: 1.1rem;
-              font-weight: 600;
-              color: #002b5e;
-            }
-            .ht-tagline {
-              font-size: 0.75rem;
-              color: #002b5e;
-              margin-top: 4px;
-              font-weight: 500;
-              letter-spacing: 0.5px;
-            }
-            
-            .ht-title-col {
-              text-align: center;
-              flex: 1;
-            }
-            .ht-exam-title {
-              font-family: 'Outfit', sans-serif;
-              font-size: 1.8rem;
-              font-weight: 900;
-              color: #002b5e;
-              text-transform: uppercase;
-              letter-spacing: 1px;
-              margin-bottom: 8px;
-            }
-            .ht-pill-container {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 15px;
-            }
-            .ht-line {
-              height: 2px;
-              width: 50px;
-              background: #002b5e;
-              position: relative;
-            }
-            .ht-line::after {
-              content: '';
-              position: absolute;
-              width: 6px;
-              height: 6px;
-              background: #002b5e;
-              border-radius: 50%;
-              top: -2px;
-            }
-            .ht-line:first-child::after { right: -3px; }
-            .ht-line:last-child::after { left: -3px; }
-            .ht-pill {
-              background: #002b5e;
-              color: white;
-              font-family: 'Outfit', sans-serif;
-              font-size: 1.1rem;
-              font-weight: 700;
-              padding: 4px 20px;
-              border-radius: 20px;
-              letter-spacing: 2px;
-            }
-            
-            .ht-photo-col {
-              width: 28%;
-              display: flex;
-              justify-content: flex-end;
-            }
-            .ht-photo-box {
-              width: 100px;
-              height: 125px;
-              border: 2px solid #002b5e;
-              border-radius: 4px;
-              background: #f8fafc;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              overflow: hidden;
-            }
-            .ht-photo-box img {
-              width: 100%;
-              height: 100%;
-              object-fit: cover;
-            }
-
-            /* Tables */
-            .ht-table {
-              width: 100%;
-              border-collapse: collapse;
-              border: 2px solid #002b5e;
-              border-radius: 6px;
-              overflow: hidden;
-              margin-bottom: 15px;
-            }
-            .ht-table th, .ht-table td {
-              border: 1px solid #002b5e;
-              padding: 8px 12px;
-            }
-            .ht-table th {
-              background: #002b5e;
-              color: white;
-              font-weight: 600;
-              font-size: 0.85rem;
-              text-align: center;
-              text-transform: uppercase;
-            }
-            .ht-table td {
-              font-weight: 700;
-              font-size: 0.9rem;
-              color: #1e293b;
-              text-align: center;
-            }
-            
-            .ht-student-table th { font-size: 0.8rem; }
-            .ht-student-table td { font-size: 1rem; padding: 10px 12px; }
-            
-            .ht-subject-table th { font-size: 0.8rem; }
-            .ht-subject-table td { font-size: 0.85rem; }
-            .ht-subject-table td:nth-child(2) { text-align: left; }
-
-            /* Footer Box */
-            .ht-footer-box {
-              border: 2px solid #002b5e;
-              border-radius: 6px;
-              padding: 12px 20px;
-              margin-top: 10px;
-            }
-            .ht-footer-flex {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-end;
-              margin-bottom: 20px;
-            }
-            
-            /* Timings */
-            .ht-timings {
-              flex: 1;
-            }
-            .ht-timing-title {
-              font-weight: 800;
-              color: #002b5e;
-              font-size: 0.9rem;
-              margin-bottom: 8px;
-              display: flex;
-              align-items: center;
-              gap: 8px;
-            }
-            .ht-timing-row {
-              display: flex;
-              font-size: 0.85rem;
-              font-weight: 700;
-              color: #1e293b;
-              margin-bottom: 4px;
-            }
-            .ht-timing-label { width: 120px; }
-            .ht-timing-colon { margin: 0 10px; }
-            
-            /* Signatures */
-            .ht-sig-col {
-              text-align: center;
-              width: 200px;
-            }
-            .ht-sig-cursive {
-              font-family: 'Caveat', cursive;
-              font-size: 2rem;
-              color: #334155;
-              height: 40px;
-              display: flex;
-              align-items: flex-end;
-              justify-content: center;
-              margin-bottom: 5px;
-            }
-            .ht-sig-cursive.principal {
-              color: #16a34a;
-              font-size: 2.2rem;
-              font-family: 'Great Vibes', cursive;
-            }
-            .ht-sig-line {
-              border-top: 2px solid #002b5e;
-              padding-top: 6px;
-              font-weight: 700;
-              color: #002b5e;
-              font-size: 0.8rem;
-              letter-spacing: 0.5px;
-            }
-
-            /* Seal */
-            .ht-seal-col {
-              text-align: center;
-              width: 150px;
-              display: flex;
-              justify-content: center;
-            }
-            .ht-seal-circle {
-              width: 90px;
-              height: 90px;
-              border-radius: 50%;
-              border: 2px dashed #002b5e;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              position: relative;
-            }
-            .ht-seal-inner {
-              width: 76px;
-              height: 76px;
-              border-radius: 50%;
-              border: 1px solid #002b5e;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 0.5rem;
-              color: #002b5e;
-              text-align: center;
-              font-weight: bold;
-              text-transform: uppercase;
-            }
-
-            /* Footer Bottom */
-            .ht-footer-bottom {
-              display: flex;
-              align-items: center;
-              border-top: 1px solid rgba(0, 43, 94, 0.2);
-              padding-top: 12px;
-              font-size: 0.85rem;
-              font-weight: 600;
-              color: #002b5e;
-            }
-            .ht-issue-date {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-            }
-            .ht-divider-vert {
-              height: 15px;
-              width: 1px;
-              background: #002b5e;
-              margin: 0 20px;
-            }
-            .ht-address {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-            }
-            
-            @media print {
-              @page { size: landscape; margin: 0; }
-              body { -webkit-print-color-adjust: exact; padding: 0; }
-              .ht-page { padding: 0; width: 100vw; height: 100vh; }
-            }
-          </style>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+          <style>${hallTicketStyles}</style>
         </head>
         <body>
-          ${content.innerHTML}
+          <div class="hall-page-wrapper">
+            ${content.innerHTML}
+          </div>
         </body>
       </html>
     `);
     printWindow.document.close();
+    
+    // Give images time to load before calling print
     setTimeout(() => {
       printWindow.focus();
       printWindow.print();
     }, 500);
   };
 
-  const fmtDateShort = (d) => {
-    if (!d) return '—';
-    try { return format(new Date(d), 'dd-MM-yyyy'); } catch { return d; }
+  const getDayFromDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { weekday: 'long' });
+    } catch {
+      return '';
+    }
+  };
+  
+  const formatDateForDisplay = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
   };
 
-  if (loading) {
-    return <div className="spinner-container" style={{ minHeight: '60vh' }}><div className="spinner" /></div>;
-  }
+  const currentAcYear = "2025-26"; // Or fetch from somewhere
 
   return (
-    <div className="animate-fade-in">
-      {/* Page Header */}
+    <div className="page-container">
       <div className="page-header">
-        <div className="page-header-info">
-          <h1>📋 Hall Ticket</h1>
-          <p>Generate and print examination hall tickets</p>
-        </div>
-        <div className="page-header-actions">
-          <button className="btn btn-secondary" onClick={() => navigate(-1)}>
-            <HiOutlineArrowLeft /> Back
-          </button>
-          {showPreview && (
-            <button className="btn btn-primary" onClick={handlePrint}>
-              <HiOutlinePrinter /> Print Hall Ticket
-            </button>
-          )}
+        <div>
+          <h1 className="page-title">Generate Hall Tickets</h1>
+          <p className="page-subtitle">Configure and print examination hall tickets for students.</p>
         </div>
       </div>
 
-      {/* Configuration Panel */}
       {!showPreview && (
         <div className="ht-config-panel">
-          {/* Assessment & Timings */}
-          <div className="card ht-config-card">
-            <div className="card-header">
-              <h3 className="card-title">📝 Assessment Details</h3>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
+          {/* Assessment Details */}
+          <div className="card ht-config-card" style={{ padding: '20px', marginBottom: '20px' }}>
+            <h3 style={{ marginBottom: '15px' }}>📝 Assessment Details</h3>
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1', minWidth: '200px' }}>
                 <label className="form-label">Assessment Name *</label>
-                <select
-                  className="form-select"
-                  value={assessmentName}
-                  onChange={(e) => setAssessmentName(e.target.value)}
-                >
+                <select className="form-select" value={assessmentName} onChange={(e) => setAssessmentName(e.target.value)}>
                   <option value="">Select assessment type</option>
-                  {ASSESSMENT_TYPES.map(a => (
-                    <option key={a} value={a}>{a}</option>
-                  ))}
+                  {ASSESSMENT_TYPES.map(a => <option key={a} value={a}>{a}</option>)}
                   <option value="custom">Custom — Enter manually</option>
                 </select>
               </div>
               {assessmentName === 'custom' && (
-                <div className="form-group">
+                <div style={{ flex: '1', minWidth: '200px' }}>
                   <label className="form-label">Custom Name *</label>
-                  <input
-                    className="form-input"
-                    type="text"
-                    placeholder="e.g. TERM TEST - II"
-                    value={customAssessment}
-                    onChange={(e) => setCustomAssessment(e.target.value)}
-                  />
+                  <input className="form-input" type="text" value={customAssessment} onChange={(e) => setCustomAssessment(e.target.value)} />
                 </div>
               )}
             </div>
-            <div className="form-row" style={{ marginTop: '1rem' }}>
-              <div className="form-group">
-                <label className="form-label">FN Timing (First Half)</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  value={fnTiming}
-                  onChange={(e) => setFnTiming(e.target.value)}
-                />
+            
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '15px' }}>
+              <div style={{ flex: '1', minWidth: '200px' }}>
+                <label className="form-label">Default Timing</label>
+                <input className="form-input" type="text" value={fnTiming} onChange={(e) => setFnTiming(e.target.value)} />
               </div>
-              <div className="form-group">
-                <label className="form-label">AN Timing (Second Half)</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  value={anTiming}
-                  onChange={(e) => setAnTiming(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Date of Issue</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  value={issueDate}
-                  onChange={(e) => setIssueDate(e.target.value)}
-                />
+              <div style={{ flex: '1', minWidth: '200px' }}>
+                <label className="form-label">Exam Centre</label>
+                <input className="form-input" type="text" value={anTiming} onChange={(e) => setAnTiming(e.target.value)} placeholder="e.g. Main Block - Room 14" />
               </div>
             </div>
           </div>
 
           {/* Student Selection */}
-          <div className="card ht-config-card">
-            <div className="card-header">
-              <h3 className="card-title">👤 Select Student</h3>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
+          <div className="card ht-config-card" style={{ padding: '20px', marginBottom: '20px' }}>
+            <h3 style={{ marginBottom: '15px' }}>👤 Select Students</h3>
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1' }}>
                 <label className="form-label">Class *</label>
-                <select
-                  className="form-select"
-                  value={selectedClass}
-                  onChange={(e) => { setSelectedClass(e.target.value); setSelectedStudents([]); setStudents([]); }}
-                >
+                <select className="form-select" value={selectedClass} onChange={(e) => { setSelectedClass(e.target.value); setSelectedStudents([]); setStudents([]); }}>
                   <option value="">Select class</option>
-                  {classes.map(c => (
-                    <option key={c} value={c}>{c === 'Nursery' || c === 'LKG' || c === 'UKG' ? c : `Class ${c}`}</option>
-                  ))}
+                  {classes.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <div className="form-group">
+              <div style={{ flex: '1' }}>
                 <label className="form-label">Section</label>
-                <select
-                  className="form-select"
-                  value={selectedSection}
-                  onChange={(e) => { setSelectedSection(e.target.value); setSelectedStudents([]); setStudents([]); }}
-                >
-                  <option value="">All Sections</option>
-                  {sections.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
+                <select className="form-select" value={selectedSection} onChange={(e) => { setSelectedSection(e.target.value); setSelectedStudents([]); setStudents([]); }}>
+                  <option value="">All</option>
+                  {sections.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                <button className="btn btn-primary" onClick={fetchStudents} disabled={searchLoading}>
+                  {searchLoading ? 'Loading...' : 'Fetch Students'}
+                </button>
               </div>
             </div>
-            <button
-              className="btn btn-primary"
-              onClick={fetchStudents}
-              disabled={searchLoading || !selectedClass}
-            >
-              <HiOutlineSearch /> {searchLoading ? 'Searching...' : 'Search Students'}
-            </button>
 
-            {/* Student List */}
             {students.length > 0 && (
-              <div className="ht-student-list-container" style={{ marginTop: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', padding: '0 0.5rem' }}>
-                  <h4 style={{ margin: 0, fontSize: '1rem', color: '#334155' }}>
-                    Select Students ({selectedStudents.length}/{students.length})
-                  </h4>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 500, color: '#0f172a' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedStudents.length === students.length && students.length > 0}
-                      onChange={(e) => {
-                        if (e.target.checked) setSelectedStudents([...students]);
-                        else setSelectedStudents([]);
-                      }}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                    />
-                    Select All
-                  </label>
+              <div style={{ marginTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <strong>{students.length} students found</strong>
+                  <button className="btn btn-secondary" onClick={() => setSelectedStudents(selectedStudents.length === students.length ? [] : students.map(s => s.id))}>
+                    {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
+                  </button>
                 </div>
-                <div className="ht-student-list" style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.5rem' }}>
-                  {students.map(student => {
-                    const isSelected = selectedStudents.some(s => s.id === student.id);
-                    return (
-                      <div
-                        key={student.id}
-                        className={`ht-student-item ${isSelected ? 'selected' : ''}`}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedStudents(selectedStudents.filter(s => s.id !== student.id));
-                          } else {
-                            setSelectedStudents([...selectedStudents, student]);
-                          }
+                <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '4px' }}>
+                  {students.map(student => (
+                    <div key={student.id} style={{ display: 'flex', alignItems: 'center', padding: '10px', borderBottom: '1px solid #eee' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedStudents.includes(student.id)} 
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedStudents([...selectedStudents, student.id]);
+                          else setSelectedStudents(selectedStudents.filter(id => id !== student.id));
                         }}
-                        style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s', border: isSelected ? '1px solid #0f172a' : '1px solid transparent', background: isSelected ? '#f1f5f9' : 'white' }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          readOnly
-                          style={{ width: '18px', height: '18px', cursor: 'pointer', pointerEvents: 'none' }}
-                        />
-                        <div className="ht-student-item-avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {(student.photo_url || student.photoUrl) ? (
-                            <img src={student.photo_url || student.photoUrl} alt={student.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <span style={{ fontWeight: 'bold', color: '#64748b' }}>{student.name?.charAt(0)?.toUpperCase()}</span>
-                          )}
-                        </div>
-                        <div className="ht-student-item-info" style={{ flex: 1 }}>
-                          <div className="ht-student-item-name" style={{ fontWeight: 600, color: '#0f172a' }}>{student.name}</div>
-                          <div className="ht-student-item-meta" style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                            {student.admission_no || student.admissionNo} • Class {student.grade}{student.section ? `-${student.section}` : ''}
-                            {(student.roll_no || student.rollNo) ? ` • Roll: ${student.roll_no || student.rollNo}` : ''}
-                          </div>
-                        </div>
+                        style={{ marginRight: '15px', width: '20px', height: '20px' }}
+                      />
+                      <div>
+                        <div style={{ fontWeight: '600' }}>{student.name}</div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>Roll No: {student.roll_no || student.admission_no} | Class: {student.grade} {student.section}</div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Examination Schedule */}
-          <div className="card ht-config-card">
-            <div className="card-header">
-              <h3 className="card-title">📅 Subjects & Dates</h3>
-              <button className="btn btn-sm btn-secondary" onClick={handleAddSubject}>+ Add Subject</button>
+          {/* Subject Configuration */}
+          <div className="card ht-config-card" style={{ padding: '20px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+              <h3>📚 Examination Schedule</h3>
+              <button className="btn btn-secondary" onClick={handleAddSubject}>+ Add Subject</button>
             </div>
-            <div className="ht-subjects-editor">
-              {subjects.map((subject, index) => (
-                <div key={index} className="ht-subject-row">
-                  <div className="ht-subject-num">{index + 1}</div>
-                  <input
-                    className="form-input"
-                    type="text"
-                    placeholder="Subject Name"
-                    value={subject.name}
-                    onChange={(e) => handleSubjectChange(index, 'name', e.target.value)}
-                  />
-                  <input
-                    className="form-input"
-                    type="text"
-                    placeholder="Subject Code"
-                    value={subject.code}
-                    style={{ maxWidth: '140px' }}
-                    onChange={(e) => handleSubjectChange(index, 'code', e.target.value)}
-                  />
-                  <input
-                    className="form-input ht-date-input"
-                    type="date"
-                    value={subject.date}
-                    onChange={(e) => handleSubjectChange(index, 'date', e.target.value)}
-                  />
-                  <button
-                    className="btn btn-sm btn-ghost ht-remove-btn"
-                    onClick={() => handleRemoveSubject(index)}
-                    title="Remove subject"
-                  >✕</button>
+            
+            {subjects.map((subject, index) => (
+              <div key={index} style={{ display: 'flex', gap: '15px', marginBottom: '10px', alignItems: 'center' }}>
+                <div style={{ flex: '2' }}>
+                  <input type="text" className="form-input" placeholder="Subject Name" value={subject.name} onChange={(e) => handleSubjectChange(index, 'name', e.target.value)} />
                 </div>
-              ))}
-            </div>
+                <div style={{ flex: '1' }}>
+                  <input type="date" className="form-input" value={subject.date} onChange={(e) => handleSubjectChange(index, 'date', e.target.value)} />
+                </div>
+                <div style={{ flex: '1' }}>
+                  <input type="text" className="form-input" placeholder="Timing" value={subject.timing || fnTiming} onChange={(e) => handleSubjectChange(index, 'timing', e.target.value)} />
+                </div>
+                <button className="btn btn-secondary" onClick={() => handleRemoveSubject(index)} style={{ color: 'red' }}>&times;</button>
+              </div>
+            ))}
           </div>
-
-          {/* Generate Button */}
-          <div className="ht-generate-row">
-            <button className="btn btn-lg btn-primary" onClick={handleGeneratePreview}>
-              <HiOutlineDocumentText /> Generate Hall Ticket Preview
-            </button>
-          </div>
+          
+          <button className="btn btn-primary" onClick={handleGeneratePreview} style={{ width: '100%', padding: '15px', fontSize: '16px' }}>
+            Generate Hall Tickets Preview
+          </button>
         </div>
       )}
 
-      {/* ======================== HALL TICKET PREVIEW ======================== */}
-      {showPreview && selectedStudents.length > 0 && (
-        <div style={{ overflowX: 'auto', paddingBottom: '2rem' }}>
-          <div ref={hallTicketRef} style={{ minWidth: '1000px' }}>
-            {selectedStudents.map((currentStudent, sIdx) => {
-              const currentAcYear = currentStudent?.academic_year || school?.academic_year || '2025 - 2026';
-              return (
-                <div className="ht-page" key={currentStudent.id || sIdx} style={sIdx > 0 ? { pageBreakBefore: 'always', marginTop: '2rem' } : {}}>
-                  <div className="ht-border">
-                    
+      {/* Preview Section */}
+      {showPreview && (
+        <div className="hall-page-wrapper">
+          <style dangerouslySetInnerHTML={{ __html: hallTicketStyles }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', backgroundColor: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <button className="btn btn-secondary" onClick={() => setShowPreview(false)}>← Back to Edit</button>
+            <button className="btn btn-primary" onClick={handlePrint}>🖨️ Print {selectedStudents.length} Hall Tickets</button>
+          </div>
+
+          {/* A4 Preview Container */}
+          <div style={{ background: '#e0e0e0', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '30px' }}>
+            <div ref={hallTicketRef}>
+              {selectedStudents.map(studentId => {
+                const currentStudent = students.find(s => s.id === studentId);
+                if (!currentStudent) return null;
+                
+                // Construct Date of Birth nicely
+                let dobDisplay = 'N/A';
+                if (currentStudent.dob) {
+                  try {
+                    dobDisplay = new Date(currentStudent.dob).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                  } catch (e) {}
+                }
+
+                return (
+                  <div key={studentId} className="hall-page">
                     {/* Header */}
-                    <div className="ht-header-wrapper">
-                      <div className="ht-logo-col">
-                        {(school?.logo_url || school?.logo) ? (
-                          <img className="ht-logo" src={school.logo_url || school.logo} alt="Logo" />
-                        ) : (
-                          <div className="ht-logo" style={{ background: '#eee' }}></div>
-                        )}
-                        <div className="ht-school-text">
-                          <div className="ht-school-name-main">{school?.name?.split(' ')[0] || 'SCHOOL'}</div>
-                          <div className="ht-school-name-sub">{school?.name?.split(' ').slice(1).join(' ') || 'NAME'}</div>
-                          <div className="ht-tagline">Education | Discipline | Excellence</div>
+                    <div className="hall-header">
+                      <div className="hall-logo-wrapper">
+                        <div className="hall-logo">{(school?.name || 'GHS').substring(0, 3).toUpperCase()}</div>
+                        <div className="hall-school-info">
+                          <h1>{school?.name || 'Greenwood Public High School'}</h1>
+                          <p>{school?.address || '12 Lakeview Road, Hyderabad, Telangana'} • {school?.affiliation_no ? `Affiliation No. ${school.affiliation_no}` : 'Affiliation No. 2201456'}</p>
                         </div>
                       </div>
-                      
-                      <div className="ht-title-col">
-                        <div className="ht-exam-title">{getAssessmentTitle()}</div>
-                        <div className="ht-pill-container">
-                          <div className="ht-line"></div>
-                          <div className="ht-pill">HALL TICKET</div>
-                          <div className="ht-line"></div>
-                        </div>
-                      </div>
-                      
-                      <div className="ht-photo-col">
-                        <div className="ht-photo-box">
-                          {(currentStudent.photo_url || currentStudent.photoUrl) ? (
-                            <img src={currentStudent.photo_url || currentStudent.photoUrl} alt="Student" />
-                          ) : (
-                            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Photo</span>
-                          )}
-                        </div>
+                      <div className="hall-title-wrapper">
+                        <h2>HALL TICKET</h2>
+                        <p>{getAssessmentTitle()} — {currentAcYear}</p>
                       </div>
                     </div>
 
-                    {/* Student Info Table */}
-                    <table className="ht-table ht-student-table">
-                      <thead>
-                        <tr>
-                          <th style={{ width: '40%' }}>SCHOOL NAME</th>
-                          <th style={{ width: '35%' }}>EXAM FORMAT</th>
-                          <th style={{ width: '25%' }}>PHOTO</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>{school?.name || 'School Name'}</td>
-                          <td>{getAssessmentTitle()}</td>
-                          <td></td>
-                        </tr>
-                        <tr>
-                          <th style={{ background: '#002b5e', color: 'white' }}>NAME</th>
-                          <th style={{ background: '#002b5e', color: 'white' }}>ROLL NO.</th>
-                          <th style={{ background: '#002b5e', color: 'white' }}>CLASS</th>
-                          <th style={{ background: '#002b5e', color: 'white' }}>AC YEAR</th>
-                        </tr>
-                        <tr>
-                          <td>{currentStudent.name?.toUpperCase() || '—'}</td>
-                          <td>{currentStudent.roll_no || currentStudent.admission_no || '—'}</td>
-                          <td>{currentStudent.grade} {currentStudent.section ? `(${currentStudent.section})` : ''}</td>
-                          <td>{currentAcYear}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    {/* Student Details */}
+                    <div className="hall-details-container">
+                      <div className="hall-details-grid">
+                        <div className="hall-label">Student Name</div>
+                        <div className="hall-value">{currentStudent.name}</div>
+                        <div className="hall-label"></div>
+                        <div className="hall-value"></div>
 
-                    {/* Subjects Table */}
-                    <table className="ht-table ht-subject-table">
+                        <div className="hall-label">Roll Number</div>
+                        <div className="hall-value">{currentStudent.roll_no || currentStudent.admission_no || '—'}</div>
+                        <div className="hall-label">Class / Section</div>
+                        <div className="hall-value">{currentStudent.grade} — {currentStudent.section || 'A'}</div>
+
+                        <div className="hall-label">Father's Name</div>
+                        <div className="hall-value">{currentStudent.parent_name || currentStudent.parentName || '—'}</div>
+                        <div className="hall-label">Date of Birth</div>
+                        <div className="hall-value">{dobDisplay}</div>
+
+                        <div className="hall-label">Exam Centre</div>
+                        <div className="hall-value" style={{ gridColumn: 'span 3', textAlign: 'left' }}>{anTiming || 'Main Block — Room 14'}</div>
+                      </div>
+                      
+                      <div className="hall-photo-box">
+                        Affix<br/>Passport-size<br/>Photograph<br/>(attested)
+                      </div>
+                    </div>
+
+                    {/* Schedule Table */}
+                    <div className="hall-section-title">EXAMINATION SCHEDULE</div>
+                    <table className="hall-table">
                       <thead>
                         <tr>
-                          <th style={{ width: '60px' }}>SL. NO.</th>
-                          <th>SUBJECT</th>
-                          <th style={{ width: '130px' }}>SUBJECT CODE</th>
-                          <th style={{ width: '130px' }}>DATE</th>
-                          <th style={{ width: '130px' }}>ROLL NO.</th>
-                          <th style={{ width: '130px' }}>CLASS</th>
-                          <th style={{ width: '130px' }}>AC YEAR</th>
+                          <th>Date</th>
+                          <th>Day</th>
+                          <th>Subject</th>
+                          <th>Timing</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {subjects.filter(s => s.name.trim()).map((subject, index) => (
-                          <tr key={index}>
-                            <td>{index + 1}</td>
-                            <td>{subject.name.toUpperCase()}</td>
-                            <td>{subject.code.toUpperCase()}</td>
-                            <td>{fmtDateShort(subject.date)}</td>
-                            <td>{currentStudent.roll_no || currentStudent.admission_no || '—'}</td>
-                            <td>{currentStudent.grade} {currentStudent.section ? `(${currentStudent.section})` : ''}</td>
-                            <td>{currentAcYear}</td>
+                        {subjects.filter(s => s.name.trim()).map((subject, idx) => (
+                          <tr key={idx}>
+                            <td>{formatDateForDisplay(subject.date)}</td>
+                            <td>{getDayFromDate(subject.date)}</td>
+                            <td>{subject.name}</td>
+                            <td>{subject.timing || fnTiming}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
 
-                    {/* Footer Box */}
-                    <div className="ht-footer-box">
-                      <div className="ht-footer-flex">
-                        
-                        {/* Timings */}
-                        <div className="ht-timings">
-                          <div className="ht-timing-title">
-                            <i className="far fa-clock" style={{ fontSize: '1.2rem' }}></i> EXAM TIMINGS
-                          </div>
-                          <div className="ht-timing-row">
-                            <div className="ht-timing-label">FIRST HALF (FN)</div>
-                            <div className="ht-timing-colon">:</div>
-                            <div>{fnTiming}</div>
-                          </div>
-                          <div className="ht-timing-row">
-                            <div className="ht-timing-label">SECOND HALF (AN)</div>
-                            <div className="ht-timing-colon">:</div>
-                            <div>{anTiming}</div>
-                          </div>
-                        </div>
-
-                        {/* Seal */}
-                        <div className="ht-seal-col">
-                          <div className="ht-seal-circle">
-                            <div className="ht-seal-inner">
-                              SCHOOL<br/>SEAL
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Signatures */}
-                        <div className="ht-sig-col">
-                          <div className="ht-sig-cursive principal">Principal</div>
-                          <div className="ht-sig-line">PRINCIPAL SIGNATURE</div>
-                        </div>
-                      </div>
-
-                      <div className="ht-footer-bottom">
-                        <div className="ht-issue-date">
-                          <i className="far fa-calendar-alt"></i>
-                          <span>Date of Issue: {issueDate}</span>
-                        </div>
-                        <div className="ht-divider-vert"></div>
-                        <div className="ht-address">
-                          <i className="fas fa-map-marker-alt"></i>
-                          <span>{school?.address || 'School Address Not Provided'}</span>
-                        </div>
-                      </div>
+                    {/* Footer Signatures */}
+                    <div className="hall-signatures">
+                      <div className="hall-sig-line">Class Teacher's Signature</div>
+                      <div className="hall-sig-line">Principal's Signature & Seal</div>
                     </div>
-
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* Print Action */}
-      {showPreview && (
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
-          <button className="btn btn-secondary" onClick={() => setShowPreview(false)}>
-            ← Back to Edit
-          </button>
-          <button className="btn btn-primary" onClick={handlePrint}>
-            <HiOutlinePrinter size={18} /> Print Hall Ticket
-          </button>
         </div>
       )}
     </div>

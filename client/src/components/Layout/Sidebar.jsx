@@ -17,7 +17,10 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  Briefcase,
+  Banknote,
+  History
 } from 'lucide-react';
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
@@ -34,8 +37,16 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
     { path: '/admissions', icon: BookOpen, label: 'Admissions' },
     { path: '/admissions/new', icon: UserPlus, label: 'New Admission' },
 
-    { section: 'Staff' },
-    { path: '/teachers', icon: GraduationCap, label: 'Teachers' },
+    { section: 'Staff & HR' },
+    { path: '/employees', icon: Briefcase, label: 'Employees' },
+    { path: '/employees/add', icon: UserPlus, label: 'Add Employee' },
+
+    { section: 'Salary Management' },
+    { path: '/salary/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/salary/structure', icon: FileText, label: 'Structure' },
+    { path: '/salary/monthly', icon: Banknote, label: 'Monthly Salary' },
+    { path: '/salary/history', icon: History, label: 'Salary History' },
+    { path: '/salary/reports', icon: BarChart3, label: 'Salary Reports' },
 
     { section: 'Fees' },
     { path: '/fees/structure', icon: ClipboardList, label: 'Fee Structure' },
