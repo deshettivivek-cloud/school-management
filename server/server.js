@@ -8,6 +8,9 @@ const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/authRoutes');
 const schoolRoutes = require('./routes/schoolRoutes');
 const studentRoutes = require('./routes/studentRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 const feeRoutes = require('./routes/feeRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const tcRoutes = require('./routes/tcRoutes');
@@ -16,14 +19,27 @@ const expenditureRoutes = require('./routes/expenditureRoutes');
 const teacherRoutes = require('./routes/teacherRoutes');
 const superAdminRoutes = require('./routes/superAdminRoutes');
 const reportRoutes = require('./routes/reportRoutes');
-const employeeRoutes = require('./routes/employeeRoutes');
 const salaryRoutes = require('./routes/salaryRoutes');
 
 const app = express();
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    
+    const clientUrl = process.env.CLIENT_URL || '';
+    if (
+      origin === clientUrl ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1') ||
+      origin.endsWith('.vercel.app')
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -49,6 +65,8 @@ app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/salary', salaryRoutes);
+app.use('/api/attendance', require('./routes/attendanceRoutes'));
+app.use('/api/dashboard', dashboardRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
