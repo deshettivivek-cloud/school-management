@@ -33,7 +33,8 @@ app.use(cors({
       origin === clientUrl ||
       origin.includes('localhost') ||
       origin.includes('127.0.0.1') ||
-      origin.endsWith('.vercel.app')
+      origin.endsWith('.vercel.app') ||
+      origin.includes('classorbit.in')
     ) {
       callback(null, true);
     } else {
