@@ -21,7 +21,7 @@ const SuperAdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const res = await api.get('/super-admin/stats');
+      const res = await api.get('/super-admin/dashboard-stats');
       setStats(res.data.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
