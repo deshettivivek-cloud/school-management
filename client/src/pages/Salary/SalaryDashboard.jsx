@@ -13,7 +13,6 @@ const SalaryDashboard = () => {
     totalMonthlySalary: 0,
     paidSalary: 0,
     pendingSalary: 0,
-    pendingSalary: 0,
     averageSalary: 0
   });
   const [recentSalaries, setRecentSalaries] = useState([]);
