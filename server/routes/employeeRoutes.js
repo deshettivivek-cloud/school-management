@@ -5,7 +5,8 @@ const {
   createEmployee,
   getEmployee,
   updateEmployee,
-  deleteEmployee
+  deleteEmployee,
+  getEmployeeTimeline
 } = require('../controllers/employeeController');
 const { protect } = require('../middleware/auth');
 const { roleCheck } = require('../middleware/roleCheck');
@@ -17,6 +18,8 @@ router.use(protect);
 router.route('/')
   .get(getEmployees)
   .post(roleCheck('principal', 'super_admin'), createEmployee);
+
+router.get('/:id/timeline', getEmployeeTimeline);
 
 router.route('/:id')
   .get(getEmployee)

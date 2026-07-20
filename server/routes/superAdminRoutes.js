@@ -10,11 +10,8 @@ const {
   getStats,
   deleteUser,
   createSchool,
-  updateSchool,
-  deleteSchool,
   resetUserPassword,
   updateUserStatus,
-  getAuditLogs,
 } = require('../controllers/superAdminController');
 
 // All routes require auth + super_admin role
@@ -22,14 +19,11 @@ router.use(protect, superAdminGuard);
 
 // Analytics & Reports
 router.get('/dashboard-stats', getStats);
-router.get('/audit-logs', getAuditLogs);
 
 // Schools Management
 router.get('/schools', getAllSchools);
 router.get('/schools/:id', getSchoolById);
 router.post('/schools', createSchool);
-router.patch('/schools/:id', updateSchool);
-router.delete('/schools/:id', deleteSchool);
 
 // Users Management
 router.get('/users', getAllUsers);

@@ -1,5 +1,3 @@
-const supabase = require('../config/supabase');
-
 // In-memory store: { email: { attempts: number, lockedUntil: timestamp } }
 const failedAttemptsStore = new Map();
 
@@ -44,12 +42,8 @@ class AuthRateLimiter {
       record.lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
       console.warn(`[AUTH_LOCKOUT] Account ${email} locked due to too many failed attempts.`);
       
-      // Trigger password reset email via Supabase (fire and forget)
-      supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: process.env.CLIENT_URL || 'http://localhost:3000/reset-password',
-      }).catch(err => {
-        console.error(`[AUTH_LOCKOUT] Failed to send reset email to ${email}:`, err.message);
-      });
+      // Trigger password reset email (To be implemented with Nodemailer)
+      console.log(`[AUTH_LOCKOUT] Should send reset email to ${email}`);
     }
 
     failedAttemptsStore.set(email, record);

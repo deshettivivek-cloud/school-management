@@ -20,7 +20,9 @@ import {
   BookOpen,
   Briefcase,
   Banknote,
-  History
+  History,
+  Calendar,
+  Megaphone
 } from 'lucide-react';
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
@@ -30,10 +32,13 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
   const navItems = [
     { section: 'Main' },
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/calendar', icon: Calendar, label: 'Calendar' },
+    { path: '/announcements', icon: Megaphone, label: 'Announcements' },
     { path: '/school-setup', icon: Settings, label: 'School Setup' },
 
     { section: 'Students' },
     { path: '/students/directory', icon: Users, label: 'Directory' },
+    { path: '/attendance', icon: ClipboardList, label: 'Attendance' },
     { path: '/admissions', icon: BookOpen, label: 'Admissions' },
     { path: '/admissions/new', icon: UserPlus, label: 'New Admission' },
 

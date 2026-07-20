@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlineSearch, HiOutlineCurrencyRupee, HiOutlineReceiptRefund } from 'react-icons/hi';
+import StatCard from '../../components/Common/StatCard';
 import { format } from 'date-fns';
 import PrintSection from '../../components/PrintSection';
 
@@ -316,24 +317,9 @@ const FeeCollection = () => {
           {feeRecord ? (
             <>
               <div className="stat-grid" style={{ marginBottom: '1.5rem' }}>
-                <div className="stat-card primary" style={{ padding: '1rem' }}>
-                  <div className="stat-info">
-                    <div className="stat-label">Negotiated Fee</div>
-                    <div className="stat-value" style={{ fontSize: '1.35rem' }}>{formatCurrency(feeRecord.committed_fee || feeRecord.committedFee)}</div>
-                  </div>
-                </div>
-                <div className="stat-card success" style={{ padding: '1rem' }}>
-                  <div className="stat-info">
-                    <div className="stat-label">Total Paid</div>
-                    <div className="stat-value" style={{ fontSize: '1.35rem' }}>{formatCurrency(feeRecord.total_paid || feeRecord.totalPaid)}</div>
-                  </div>
-                </div>
-                <div className="stat-card warning" style={{ padding: '1rem' }}>
-                  <div className="stat-info">
-                    <div className="stat-label">Balance</div>
-                    <div className="stat-value" style={{ fontSize: '1.35rem' }}>{formatCurrency(feeRecord.balance)}</div>
-                  </div>
-                </div>
+                <StatCard className="" title="Negotiated Fee" value={feeRecord.committed_fee || feeRecord.committedFee} formatValue={formatCurrency} color="blue" periodLabel="Total" />
+                <StatCard className="" title="Total Paid" value={feeRecord.total_paid || feeRecord.totalPaid} formatValue={formatCurrency} color="green" periodLabel="Received" />
+                <StatCard className="" title="Balance" value={feeRecord.balance} formatValue={formatCurrency} color="amber" periodLabel="Pending" />
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   {getStatusBadge(feeRecord.status)}
                 </div>

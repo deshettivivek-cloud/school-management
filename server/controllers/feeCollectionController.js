@@ -1,35 +1,39 @@
-const supabase = require('../config/supabase');
+const { sql } = require('../config/database');
 
 // Helper: generate receipt number
-const generateReceiptNo = async (schoolId, academicYear) => {
+const generateReceiptNo = async (db, academicYear) => {
   const yearCode = academicYear.replace('-', '');
   const prefix = `REC-${yearCode}`;
 
-  const { data: collections } = await supabase
-    .from('fee_collections')
-    .select('payments')
-    .eq('school_id', schoolId)
-    .eq('academic_year', academicYear);
+  const result = await db.request()
+    .input('academicYear', sql.NVarChar, academicYear)
+    .query('SELECT payments FROM fee_collections WHERE academic_year = @academicYear');
 
   let maxSeq = 0;
-  if (collections) {
-    collections.forEach((fc) => {
-      const payments = fc.payments || [];
-      payments.forEach((p) => {
-        if (p.receiptNo && p.receiptNo.startsWith(prefix)) {
-          const seq = parseInt(p.receiptNo.split('-').pop(), 10);
-          if (seq > maxSeq) maxSeq = seq;
-        }
-      });
+  result.recordset.forEach((fc) => {
+    let payments = [];
+    try {
+      payments = JSON.parse(fc.payments || '[]');
+    } catch(e) {}
+    
+    payments.forEach((p) => {
+      if (p.receiptNo && p.receiptNo.startsWith(prefix)) {
+        const seq = parseInt(p.receiptNo.split('-').pop(), 10);
+        if (seq > maxSeq) maxSeq = seq;
+      }
     });
-  }
+  });
 
   return `${prefix}-${String(maxSeq + 1).padStart(4, '0')}`;
 };
 
 // Helper: recalculate fee collection totals
 const recalculate = (record) => {
-  const payments = record.payments || [];
+  let payments = [];
+  try {
+    payments = typeof record.payments === 'string' ? JSON.parse(record.payments) : (record.payments || []);
+  } catch(e) {}
+
   const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const balance = Math.max(0, record.committed_fee - totalPaid);
 
@@ -47,26 +51,57 @@ exports.getFeeCollections = async (req, res) => {
   try {
     const { academicYear, status, grade } = req.query;
 
-    let query = supabase
-      .from('fee_collections')
-      .select('*, students!inner(name, admission_no, grade, section, parent_name, parent_phone)')
-      .eq('school_id', req.user.schoolId);
+    let query = `
+      SELECT fc.*, 
+             s.name as student_name, s.admission_no, s.grade, s.section, 
+             s.parent_name, s.parent_phone
+      FROM fee_collections fc
+      JOIN students s ON fc.student_id = s.id
+      WHERE 1=1
+    `;
+    const request = req.db.request();
 
-    if (academicYear) query = query.eq('academic_year', academicYear);
-    if (status) query = query.eq('status', status);
-    if (grade) query = query.eq('students.grade', grade);
+    if (academicYear) {
+      query += ' AND fc.academic_year = @academicYear';
+      request.input('academicYear', sql.NVarChar, academicYear);
+    }
+    if (status) {
+      query += ' AND fc.status = @status';
+      request.input('status', sql.NVarChar, status);
+    }
+    if (grade) {
+      query += ' AND s.grade = @grade';
+      request.input('grade', sql.NVarChar, grade);
+    }
 
-    query = query.order('updated_at', { ascending: false });
+    query += ' ORDER BY fc.updated_at DESC';
 
-    const { data, error } = await query;
-    if (error) throw error;
+    const result = await request.query(query);
 
-    // Reshape to match frontend expectations
-    const shaped = data.map((d) => ({
-      ...d,
-      student: d.students,
-      students: undefined,
-    }));
+    const shaped = result.recordset.map((d) => {
+      // Parse JSON fields
+      try { d.fee_breakdown = JSON.parse(d.fee_breakdown); } catch(e) { d.fee_breakdown = []; }
+      try { d.payments = JSON.parse(d.payments); } catch(e) { d.payments = []; }
+      
+      // Structure student object
+      d.student = {
+        name: d.student_name,
+        admission_no: d.admission_no,
+        grade: d.grade,
+        section: d.section,
+        parent_name: d.parent_name,
+        parent_phone: d.parent_phone
+      };
+      
+      delete d.student_name;
+      delete d.admission_no;
+      delete d.grade;
+      delete d.section;
+      delete d.parent_name;
+      delete d.parent_phone;
+      
+      return d;
+    });
 
     res.json({ success: true, count: shaped.length, data: shaped });
   } catch (error) {
@@ -81,25 +116,63 @@ exports.getStudentFeeCollection = async (req, res) => {
   try {
     const { academicYear } = req.query;
 
-    let query = supabase
-      .from('fee_collections')
-      .select('*, students(name, admission_no, grade, section, parent_name, parent_phone, photo_url)')
-      .eq('student_id', req.params.studentId)
-      .eq('school_id', req.user.schoolId);
+    let query = `
+      SELECT fc.*, 
+             s.name as student_name, s.admission_no, s.grade, s.section, 
+             s.parent_name, s.parent_phone, s.photo_url
+      FROM fee_collections fc
+      JOIN students s ON fc.student_id = s.id
+      WHERE fc.student_id = @studentId
+    `;
+    const request = req.db.request();
+    request.input('studentId', sql.UniqueIdentifier, req.params.studentId);
 
-    if (academicYear) query = query.eq('academic_year', academicYear);
+    if (academicYear) {
+      query += ' AND fc.academic_year = @academicYear';
+      request.input('academicYear', sql.NVarChar, academicYear);
+    }
 
-    const { data, error } = await query.maybeSingle();
-    if (error) throw error;
+    const result = await request.query(query);
 
-    if (!data) {
+    if (result.recordset.length === 0) {
       return res.json({ success: true, data: null, message: 'No fee record found' });
     }
 
-    res.json({
-      success: true,
-      data: { ...data, student: data.students, students: undefined },
+    const d = result.recordset[0];
+    try { d.fee_breakdown = JSON.parse(d.fee_breakdown); } catch(e) { d.fee_breakdown = []; }
+    try { d.payments = JSON.parse(d.payments); } catch(e) { d.payments = []; }
+    
+    d.student = {
+      name: d.student_name, admission_no: d.admission_no, grade: d.grade,
+      section: d.section, parent_name: d.parent_name, parent_phone: d.parent_phone,
+      photo_url: d.photo_url
+    };
+    
+    delete d.student_name; delete d.admission_no; delete d.grade; delete d.section;
+    delete d.parent_name; delete d.parent_phone; delete d.photo_url;
+
+    res.json({ success: true, data: d });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get all fee collections for a specific student (History)
+// @route   GET /api/fees/history/:studentId
+// @access  Auth
+exports.getStudentFeeHistory = async (req, res) => {
+  try {
+    const result = await req.db.request()
+      .input('studentId', sql.UniqueIdentifier, req.params.studentId)
+      .query('SELECT * FROM fee_collections WHERE student_id = @studentId ORDER BY academic_year DESC');
+
+    const shaped = result.recordset.map(d => {
+      try { d.fee_breakdown = JSON.parse(d.fee_breakdown); } catch(e) { d.fee_breakdown = []; }
+      try { d.payments = JSON.parse(d.payments); } catch(e) { d.payments = []; }
+      return d;
     });
+
+    res.json({ success: true, data: shaped });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -112,70 +185,65 @@ exports.commitFee = async (req, res) => {
   try {
     const { studentId, academicYear, committedFee, feeBreakdown } = req.body;
 
-    // Verify student
-    const { data: student, error: sErr } = await supabase
-      .from('students')
-      .select('id')
-      .eq('id', studentId)
-      .eq('school_id', req.user.schoolId)
-      .single();
+    const studentResult = await req.db.request()
+      .input('id', sql.UniqueIdentifier, studentId)
+      .query('SELECT id, name, admission_no, grade, section, parent_name, parent_phone FROM students WHERE id = @id');
 
-    if (sErr || !student) {
+    if (studentResult.recordset.length === 0) {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
+    const student = studentResult.recordset[0];
 
-    // Check existing
-    const { data: existing } = await supabase
-      .from('fee_collections')
-      .select('*')
-      .eq('student_id', studentId)
-      .eq('school_id', req.user.schoolId)
-      .eq('academic_year', academicYear)
-      .maybeSingle();
+    const existingResult = await req.db.request()
+      .input('studentId', sql.UniqueIdentifier, studentId)
+      .input('academicYear', sql.NVarChar, academicYear)
+      .query('SELECT * FROM fee_collections WHERE student_id = @studentId AND academic_year = @academicYear');
 
-    let result;
+    const feeBreakdownJson = JSON.stringify(feeBreakdown || []);
+    let data;
 
-    if (existing) {
+    if (existingResult.recordset.length > 0) {
+      const existing = existingResult.recordset[0];
       const updated = { ...existing, committed_fee: committedFee };
-      if (feeBreakdown) updated.fee_breakdown = feeBreakdown;
+      if (feeBreakdown) updated.fee_breakdown = feeBreakdownJson;
       const calcs = recalculate(updated);
 
-      const { data, error } = await supabase
-        .from('fee_collections')
-        .update({
-          committed_fee: committedFee,
-          fee_breakdown: feeBreakdown || existing.fee_breakdown,
-          ...calcs,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existing.id)
-        .select('*, students(name, admission_no, grade, section, parent_name, parent_phone)')
-        .single();
-
-      if (error) throw error;
-      result = { ...data, student: data.students, students: undefined };
+      const updateResult = await req.db.request()
+        .input('id', sql.UniqueIdentifier, existing.id)
+        .input('committedFee', sql.Decimal(12,2), committedFee)
+        .input('feeBreakdown', sql.NVarChar, feeBreakdownJson || existing.fee_breakdown)
+        .input('totalPaid', sql.Decimal(12,2), calcs.total_paid)
+        .input('balance', sql.Decimal(12,2), calcs.balance)
+        .input('status', sql.NVarChar, calcs.status)
+        .query(`
+          UPDATE fee_collections 
+          SET committed_fee = @committedFee, fee_breakdown = @feeBreakdown,
+              total_paid = @totalPaid, balance = @balance, status = @status,
+              updated_at = SYSDATETIMEOFFSET()
+          OUTPUT INSERTED.*
+          WHERE id = @id
+        `);
+      data = updateResult.recordset[0];
     } else {
-      const { data, error } = await supabase
-        .from('fee_collections')
-        .insert({
-          school_id: req.user.schoolId,
-          student_id: studentId,
-          academic_year: academicYear,
-          committed_fee: committedFee,
-          fee_breakdown: feeBreakdown || [],
-          payments: [],
-          total_paid: 0,
-          balance: committedFee,
-          status: 'pending',
-        })
-        .select('*, students(name, admission_no, grade, section, parent_name, parent_phone)')
-        .single();
-
-      if (error) throw error;
-      result = { ...data, student: data.students, students: undefined };
+      const insertResult = await req.db.request()
+        .input('studentId', sql.UniqueIdentifier, studentId)
+        .input('academicYear', sql.NVarChar, academicYear)
+        .input('committedFee', sql.Decimal(12,2), committedFee)
+        .input('feeBreakdown', sql.NVarChar, feeBreakdownJson)
+        .input('balance', sql.Decimal(12,2), committedFee)
+        .query(`
+          INSERT INTO fee_collections (student_id, academic_year, committed_fee, fee_breakdown, balance, status, total_paid, payments)
+          OUTPUT INSERTED.*
+          VALUES (@studentId, @academicYear, @committedFee, @feeBreakdown, @balance, 'pending', 0, '[]')
+        `);
+      data = insertResult.recordset[0];
     }
 
-    res.status(201).json({ success: true, data: result });
+    try { data.fee_breakdown = JSON.parse(data.fee_breakdown); } catch(e) { data.fee_breakdown = []; }
+    try { data.payments = JSON.parse(data.payments); } catch(e) { data.payments = []; }
+    data.student = student;
+
+    res.status(201).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -192,26 +260,34 @@ exports.recordPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Amount must be > 0' });
     }
 
-    const { data: collection, error: fErr } = await supabase
-      .from('fee_collections')
-      .select('*')
-      .eq('student_id', studentId)
-      .eq('school_id', req.user.schoolId)
-      .eq('academic_year', academicYear)
-      .single();
+    const collResult = await req.db.request()
+      .input('studentId', sql.UniqueIdentifier, studentId)
+      .input('academicYear', sql.NVarChar, academicYear)
+      .query(`
+        SELECT fc.*, s.name as student_name, s.parent_phone 
+        FROM fee_collections fc
+        JOIN students s ON fc.student_id = s.id
+        WHERE fc.student_id = @studentId AND fc.academic_year = @academicYear
+      `);
 
-    if (fErr || !collection) {
+    if (collResult.recordset.length === 0) {
       return res.status(404).json({ success: false, message: 'No fee record found. Set committed fee first.' });
     }
+
+    const collection = collResult.recordset[0];
 
     if (collection.status === 'paid') {
       return res.status(400).json({ success: false, message: 'Fee already fully paid' });
     }
 
-    const receiptNo = await generateReceiptNo(req.user.schoolId, academicYear);
+    const receiptNo = await generateReceiptNo(req.db, academicYear);
+    
+    let existingPayments = [];
+    try { existingPayments = JSON.parse(collection.payments || '[]'); } catch(e) {}
 
+    const crypto = require('crypto');
     const newPayment = {
-      _id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      _id: crypto.randomUUID(),
       amount: parseFloat(amount),
       date: new Date().toISOString(),
       receiptNo,
@@ -219,27 +295,40 @@ exports.recordPayment = async (req, res) => {
       remarks: remarks || '',
     };
 
-    const updatedPayments = [...(collection.payments || []), newPayment];
-    const updated = { ...collection, payments: updatedPayments };
-    const calcs = recalculate(updated);
+    const updatedPayments = [...existingPayments, newPayment];
+    collection.payments = JSON.stringify(updatedPayments); // For recalculate
+    
+    const calcs = recalculate(collection);
 
-    const { data, error } = await supabase
-      .from('fee_collections')
-      .update({
-        payments: updatedPayments,
-        ...calcs,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', collection.id)
-      .select('*, students(name, admission_no, grade, section, parent_name, parent_phone, photo_url)')
-      .single();
+    const updateResult = await req.db.request()
+      .input('id', sql.UniqueIdentifier, collection.id)
+      .input('payments', sql.NVarChar, JSON.stringify(updatedPayments))
+      .input('totalPaid', sql.Decimal(12,2), calcs.total_paid)
+      .input('balance', sql.Decimal(12,2), calcs.balance)
+      .input('status', sql.NVarChar, calcs.status)
+      .query(`
+        UPDATE fee_collections 
+        SET payments = @payments, total_paid = @totalPaid, balance = @balance, status = @status, updated_at = SYSDATETIMEOFFSET()
+        OUTPUT INSERTED.*
+        WHERE id = @id
+      `);
 
-    if (error) throw error;
+    const data = updateResult.recordset[0];
+    
+    try { data.fee_breakdown = JSON.parse(data.fee_breakdown); } catch(e) { data.fee_breakdown = []; }
+    try { data.payments = JSON.parse(data.payments); } catch(e) { data.payments = []; }
+
+    // WhatsApp Notification
+    if (collection.parent_phone) {
+      const whatsappService = require('../services/whatsappService');
+      const message = `Dear Parent, we have received a fee payment of ₹${newPayment.amount} for your child ${collection.student_name}. Receipt No: ${newPayment.receiptNo}. Balance remaining: ₹${calcs.balance}. Thank you.`;
+      whatsappService.sendTextMessage(collection.parent_phone, message).catch(console.error);
+    }
 
     res.json({
       success: true,
       data: {
-        collection: { ...data, student: data.students, students: undefined },
+        collection: data,
         payment: newPayment,
       },
     });
@@ -255,27 +344,42 @@ exports.getPendingFees = async (req, res) => {
   try {
     const { academicYear, grade } = req.query;
 
-    let query = supabase
-      .from('fee_collections')
-      .select('*, students!inner(name, admission_no, grade, section, parent_name, parent_phone)')
-      .in('status', ['pending', 'partial', 'overdue'])
-      .eq('school_id', req.user.schoolId);
+    let query = `
+      SELECT fc.*, 
+             s.name as student_name, s.admission_no, s.grade, s.section, 
+             s.parent_name, s.parent_phone
+      FROM fee_collections fc
+      JOIN students s ON fc.student_id = s.id
+      WHERE fc.status IN ('pending', 'partial', 'overdue')
+    `;
+    const request = req.db.request();
 
-    if (academicYear) query = query.eq('academic_year', academicYear);
-    if (grade) query = query.eq('students.grade', grade);
+    if (academicYear) {
+      query += ' AND fc.academic_year = @academicYear';
+      request.input('academicYear', sql.NVarChar, academicYear);
+    }
+    if (grade) {
+      query += ' AND s.grade = @grade';
+      request.input('grade', sql.NVarChar, grade);
+    }
 
-    query = query.order('balance', { ascending: false });
+    query += ' ORDER BY fc.balance DESC';
 
-    console.log(`[DEBUG getPendingFees] schoolId: ${req.user.schoolId}, academicYear: ${academicYear}, grade: ${grade}`);
-    const { data, error } = await query;
-    console.log(`[DEBUG getPendingFees] data length: ${data ? data.length : 0}, error:`, error);
-    if (error) throw error;
+    const result = await request.query(query);
 
-    const shaped = data.map((d) => ({
-      ...d,
-      student: d.students,
-      students: undefined,
-    }));
+    const shaped = result.recordset.map((d) => {
+      try { d.fee_breakdown = JSON.parse(d.fee_breakdown); } catch(e) { d.fee_breakdown = []; }
+      try { d.payments = JSON.parse(d.payments); } catch(e) { d.payments = []; }
+      
+      d.student = {
+        name: d.student_name, admission_no: d.admission_no, grade: d.grade,
+        section: d.section, parent_name: d.parent_name, parent_phone: d.parent_phone
+      };
+      
+      delete d.student_name; delete d.admission_no; delete d.grade;
+      delete d.section; delete d.parent_name; delete d.parent_phone;
+      return d;
+    });
 
     const totalPending = shaped.reduce((sum, r) => sum + (r.balance || 0), 0);
 
@@ -292,11 +396,16 @@ exports.getFeeStats = async (req, res) => {
   try {
     const { academicYear } = req.query;
 
-    let query = supabase.from('fee_collections').select('*').eq('school_id', req.user.schoolId);
-    if (academicYear) query = query.eq('academic_year', academicYear);
+    let query = 'SELECT committed_fee, total_paid, balance, status FROM fee_collections WHERE 1=1';
+    const request = req.db.request();
 
-    const { data: collections, error } = await query;
-    if (error) throw error;
+    if (academicYear) {
+      query += ' AND academic_year = @academicYear';
+      request.input('academicYear', sql.NVarChar, academicYear);
+    }
+
+    const result = await request.query(query);
+    const collections = result.recordset;
 
     const totalCommitted = collections.reduce((s, c) => s + (c.committed_fee || 0), 0);
     const totalCollected = collections.reduce((s, c) => s + (c.total_paid || 0), 0);
@@ -325,18 +434,24 @@ exports.getFeeStats = async (req, res) => {
 // @access  Auth
 exports.getReceipt = async (req, res) => {
   try {
-    const { data: collection, error } = await supabase
-      .from('fee_collections')
-      .select('*, students(name, admission_no, grade, section, parent_name, parent_phone, photo_url)')
-      .eq('id', req.params.collectionId)
-      .eq('school_id', req.user.schoolId)
-      .single();
+    const result = await req.db.request()
+      .input('id', sql.UniqueIdentifier, req.params.collectionId)
+      .query(`
+        SELECT fc.*, s.name as student_name, s.admission_no, s.grade, s.section, 
+               s.parent_name, s.parent_phone, s.photo_url
+        FROM fee_collections fc
+        JOIN students s ON fc.student_id = s.id
+        WHERE fc.id = @id
+      `);
 
-    if (error || !collection) {
+    if (result.recordset.length === 0) {
       return res.status(404).json({ success: false, message: 'Fee record not found' });
     }
 
-    const payments = collection.payments || [];
+    const collection = result.recordset[0];
+    let payments = [];
+    try { payments = JSON.parse(collection.payments || '[]'); } catch(e) {}
+
     const payment = payments.find((p) => p._id === req.params.paymentId);
 
     if (!payment) {
@@ -346,7 +461,12 @@ exports.getReceipt = async (req, res) => {
     res.json({
       success: true,
       data: {
-        student: collection.students,
+        student: {
+          name: collection.student_name, admission_no: collection.admission_no,
+          grade: collection.grade, section: collection.section,
+          parent_name: collection.parent_name, parent_phone: collection.parent_phone,
+          photo_url: collection.photo_url
+        },
         committedFee: collection.committed_fee,
         totalPaid: collection.total_paid,
         balance: collection.balance,

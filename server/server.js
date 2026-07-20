@@ -46,6 +46,10 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from the 'public' directory
+const path = require('path');
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Logging in development
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -74,7 +78,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     success: true,
     message: 'School Management API is running 🏫',
-    database: 'Supabase (PostgreSQL)',
+    database: 'SQL Server',
   });
 });
 app.get('/', (req, res) => {
@@ -85,20 +89,12 @@ app.get('/', (req, res) => {
   });
 });
 
-// Debug endpoint to verify environment variables (temporary)
 app.get('/api/debug-env', (req, res) => {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
   res.json({
     success: true,
     env: {
       NODE_ENV: process.env.NODE_ENV,
       CLIENT_URL: process.env.CLIENT_URL,
-      SUPABASE_URL: process.env.SUPABASE_URL,
-      SERVICE_KEY_PREFIX: serviceKey.substring(0, 15),
-      SERVICE_KEY_SUFFIX: serviceKey.substring(serviceKey.length - 10),
-      KEY_LENGTH: serviceKey.length,
-      IS_ANON_KEY: serviceKey.includes('anon'),
-      IS_SERVICE_KEY: serviceKey.includes('service_role')
     }
   });
 });
@@ -110,6 +106,6 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🏫 School Management Server running on port ${PORT}`);
-  console.log(`📡 Database: Supabase (PostgreSQL)`);
-  console.log(`🔐 Auth: Supabase Auth + Google OAuth`);
+  console.log(`📡 Database: Microsoft SQL Server (Multi-Tenant)`);
+  console.log(`🔐 Auth: Native JWT Auth`);
 });

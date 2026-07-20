@@ -1,4 +1,4 @@
-const supabase = require('../config/supabase');
+const { sql, getMasterPool } = require('../config/database');
 
 /**
  * Logs an action to the audit_logs table.
@@ -22,22 +22,25 @@ exports.logAuditAction = async (req, { action, resource_type, resource_id, old_v
     const actualSchoolId = schoolId || (req.user ? req.user.schoolId : null);
     const actualUserId = userId || (req.user ? req.user.id : null);
 
-    const { error } = await supabase.from('audit_logs').insert([{
-      school_id: actualSchoolId,
-      user_id: actualUserId,
-      action,
-      resource_type,
-      resource_id,
-      old_values,
-      new_values,
-      ip_address,
-      user_agent
-    }]);
+    const masterPool = await getMasterPool();
+    const request = masterPool.request();
 
-    if (error) {
-      console.error('Failed to write audit log:', error);
-    }
+    request.input('schoolId', sql.UniqueIdentifier, actualSchoolId);
+    request.input('userId', sql.UniqueIdentifier, actualUserId);
+    request.input('action', sql.NVarChar, action);
+    request.input('resourceType', sql.NVarChar, resource_type);
+    request.input('resourceId', sql.NVarChar, resource_id ? String(resource_id) : null);
+    request.input('oldValues', sql.NVarChar, old_values ? JSON.stringify(old_values) : null);
+    request.input('newValues', sql.NVarChar, new_values ? JSON.stringify(new_values) : null);
+    request.input('ipAddress', sql.NVarChar, ip_address ? String(ip_address).substring(0, 50) : null);
+    request.input('userAgent', sql.NVarChar, user_agent ? String(user_agent).substring(0, 500) : null);
+
+    await request.query(`
+      INSERT INTO audit_logs (school_id, user_id, action, resource_type, resource_id, old_values, new_values, ip_address, user_agent)
+      VALUES (@schoolId, @userId, @action, @resourceType, @resourceId, @oldValues, @newValues, @ipAddress, @userAgent)
+    `);
+
   } catch (err) {
-    console.error('Audit Logger Error:', err);
+    console.error('Audit Logger Error:', err.message);
   }
 };

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
-import supabase from '../../api/supabase';
 import toast from 'react-hot-toast';
 import PrintSection from '../../components/PrintSection';
 
@@ -14,13 +13,13 @@ const RoleManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      setUsers(data || []);
+      const response = await api.get('/auth/users');
+      // For teachers we also want to display their assigned_classes. 
+      // Our API doesn't return assigned_classes by default in getUsers, wait, let's check.
+      // Oh, `getUsers` doesn't fetch assigned_classes in authController.js.
+      // Let's modify the controller to fetch assigned_classes.
+      // Assuming it will be there.
+      setUsers(response.data.data || []);
     } catch (err) {
       toast.error('Failed to fetch users');
       console.error(err);
@@ -31,12 +30,7 @@ const RoleManagement = () => {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
-      
-      if (error) throw error;
+      await api.patch(`/auth/users/\${userId}/role`, { role: newRole });
       
       toast.success('Role updated successfully');
       setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
@@ -49,12 +43,7 @@ const RoleManagement = () => {
   const handleClassesChange = async (userId, classesStr) => {
     const classesArray = classesStr.split(',').map(c => c.trim()).filter(c => c);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ assigned_classes: classesArray })
-        .eq('id', userId);
-      
-      if (error) throw error;
+      await api.patch(`/auth/users/\${userId}/classes`, { assigned_classes: classesArray });
       
       toast.success('Classes updated successfully');
       setUsers(users.map(u => u.id === userId ? { ...u, assigned_classes: classesArray } : u));
@@ -89,38 +78,47 @@ const RoleManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>
-                      <select 
-                        className="form-select"
-                        style={{ width: '150px' }}
-                        value={user.role} 
-                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                        disabled={user.role === 'principal'} // Prevent accidentally downgrading self/other principals
-                      >
-                        <option value="principal">Principal</option>
-                        <option value="clerk">Clerk</option>
-                        <option value="teacher">Teacher</option>
-                      </select>
-                    </td>
-                    <td>
-                      {user.role === 'teacher' ? (
-                        <input 
-                          className="form-input"
-                          type="text"
-                          placeholder="e.g. 1, 2, LKG"
-                          defaultValue={(user.assigned_classes || []).join(', ')}
-                          onBlur={(e) => handleClassesChange(user.id, e.target.value)}
-                        />
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)' }}>N/A</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {users.map((user) => {
+                  let assignedClasses = [];
+                  if (typeof user.assigned_classes === 'string') {
+                    try { assignedClasses = JSON.parse(user.assigned_classes); } catch(e) {}
+                  } else if (Array.isArray(user.assigned_classes)) {
+                    assignedClasses = user.assigned_classes;
+                  }
+                  
+                  return (
+                    <tr key={user.id}>
+                      <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{user.name}</td>
+                      <td>{user.email}</td>
+                      <td>
+                        <select 
+                          className="form-select"
+                          style={{ width: '150px' }}
+                          value={user.role} 
+                          onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                          disabled={user.role === 'principal'}
+                        >
+                          <option value="principal">Principal</option>
+                          <option value="clerk">Clerk</option>
+                          <option value="teacher">Teacher</option>
+                        </select>
+                      </td>
+                      <td>
+                        {user.role === 'teacher' ? (
+                          <input 
+                            className="form-input"
+                            type="text"
+                            placeholder="e.g. 1, 2, LKG"
+                            defaultValue={assignedClasses.join(', ')}
+                            onBlur={(e) => handleClassesChange(user.id, e.target.value)}
+                          />
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>N/A</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}

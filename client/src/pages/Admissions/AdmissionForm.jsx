@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/axios';
-import supabase from '../../api/supabase';
 import toast from 'react-hot-toast';
 import { HiOutlineSave, HiOutlineArrowLeft, HiOutlineUpload } from 'react-icons/hi';
 

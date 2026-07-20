@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlineSearch, HiOutlineUserGroup, HiOutlineMail, HiOutlinePhone } from 'react-icons/hi';
 
 const StudentDirectory = () => {
+  const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -168,7 +169,12 @@ const StudentDirectory = () => {
                 </thead>
                 <tbody>
                   {filteredStudents.map((student) => (
-                    <tr key={student.id}>
+                    <tr 
+                      key={student.id} 
+                      onClick={() => navigate(`/students/${student.id}`)}
+                      style={{ cursor: 'pointer' }}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    >
                       <td style={{ fontWeight: 600, color: 'var(--primary-400)' }}>
                         {student.admission_no || student.admissionNo}
                       </td>

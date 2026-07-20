@@ -1,81 +1,65 @@
-const supabase = require('../config/supabase');
-const { logAuditAction } = require('../utils/auditLogger');
+const { sql } = require('../config/database');
 
-// Configuration mapping for different report modules
 const MODULE_CONFIG = {
   students: {
     table: 'students',
-    select: '*',
     defaultSort: 'created_at',
     searchColumns: ['name', 'admission_no', 'parent_name'],
   },
   fees: {
     table: 'fee_collections',
-    select: '*, students!inner(name, admission_no, grade, section, parent_phone, parent_name, mother_name)',
-    defaultSort: 'created_at',
-    searchColumns: ['students.name', 'students.admission_no'], 
+    join: 'JOIN students s ON fee_collections.student_id = s.id',
+    select: 'fee_collections.*, s.name as student_name, s.admission_no, s.grade, s.section, s.parent_phone, s.parent_name, s.mother_name',
+    defaultSort: 'fee_collections.created_at',
+    searchColumns: ['s.name', 's.admission_no'], 
   },
   attendance: {
     table: 'attendance',
-    select: '*, students!inner(name, admission_no, grade, section, parent_phone, parent_name, mother_name)',
-    defaultSort: 'date',
-    searchColumns: ['students.name'],
+    join: 'JOIN students s ON attendance.student_id = s.id',
+    select: 'attendance.*, s.name as student_name, s.admission_no, s.grade, s.section, s.parent_phone, s.parent_name, s.mother_name',
+    defaultSort: 'attendance.date',
+    searchColumns: ['s.name'],
   },
   exams: {
     table: 'exam_marks',
-    select: '*, exams(name, term), students!inner(name, admission_no, grade, section, parent_phone, parent_name, mother_name)',
-    defaultSort: 'created_at',
-    searchColumns: ['students.name'],
+    join: 'JOIN students s ON exam_marks.student_id = s.id JOIN exams e ON exam_marks.exam_id = e.id',
+    select: 'exam_marks.*, e.name as exam_name, e.term, s.name as student_name, s.admission_no, s.grade, s.section, s.parent_phone, s.parent_name, s.mother_name',
+    defaultSort: 'exam_marks.created_at',
+    searchColumns: ['s.name'],
   },
   teachers: {
     table: 'employees',
-    select: '*',
     defaultSort: 'created_at',
-    searchColumns: ['name', 'emp_id', 'department'],
+    searchColumns: ['name', 'employee_id', 'department'],
   },
   staff: {
     table: 'employees',
-    select: '*',
     defaultSort: 'created_at',
-    searchColumns: ['name', 'emp_id', 'department'],
+    searchColumns: ['name', 'employee_id', 'department'],
   },
   admissions: {
     table: 'students',
-    select: '*',
     defaultSort: 'admission_date',
     searchColumns: ['name', 'admission_no'],
   },
   expenditure: {
     table: 'expenditures',
-    select: '*',
     defaultSort: 'date',
     searchColumns: ['title', 'vendor_name', 'category'],
   },
   tc: {
     table: 'transfer_certificates',
-    select: '*, students!inner(name, admission_no, grade, parent_name, mother_name, parent_phone)',
-    defaultSort: 'issued_date',
-    searchColumns: ['tc_number', 'students.name'],
-  },
-  dashboard: {
-    // Handled separately by metrics endpoint
+    join: 'JOIN students s ON transfer_certificates.student_id = s.id',
+    select: 'transfer_certificates.*, s.name as student_name, s.admission_no, s.grade, s.parent_name, s.mother_name, s.parent_phone',
+    defaultSort: 'transfer_certificates.issued_date',
+    searchColumns: ['transfer_certificates.tc_number', 's.name'],
   }
 };
 
-/**
- * Validates role-based access to specific modules
- */
 const checkReportAccess = (userRole, moduleName) => {
   if (userRole === 'super_admin' || userRole === 'principal') return true;
-
-  if (userRole === 'teacher') {
-    return ['students', 'attendance', 'exams', 'teachers'].includes(moduleName);
-  }
-
-  if (userRole === 'clerk') {
-    return ['students', 'fees', 'admissions', 'tc', 'staff', 'expenditure'].includes(moduleName);
-  }
-
+  if (userRole === 'teacher') return ['students', 'attendance', 'exams', 'teachers'].includes(moduleName);
+  if (userRole === 'clerk') return ['students', 'fees', 'admissions', 'tc', 'staff', 'expenditure'].includes(moduleName);
   return false;
 };
 
@@ -85,9 +69,13 @@ const checkReportAccess = (userRole, moduleName) => {
 exports.generateReport = async (req, res) => {
   try {
     const { module } = req.params;
-    const config = MODULE_CONFIG[module];
+    
+    if (module === 'dashboard') {
+      return await getDashboardMetrics(req, res);
+    }
 
-    if (!config && module !== 'dashboard') {
+    const config = MODULE_CONFIG[module];
+    if (!config) {
       return res.status(400).json({ success: false, message: 'Invalid report module' });
     }
 
@@ -95,110 +83,100 @@ exports.generateReport = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied to this report module' });
     }
 
-    // Handle dashboard metrics separately
-    if (module === 'dashboard') {
-      return await getDashboardMetrics(req, res);
-    }
-
-    // Pagination (0 limit means export all, else paginated)
-    const limit = parseInt(req.query.limit);
+    const limit = parseInt(req.query.limit) || 0;
     const page = parseInt(req.query.page) || 1;
-    
-    // Sorting
     const sortBy = req.query.sortBy || config.defaultSort;
     const sortDesc = req.query.sortOrder !== 'asc';
-
-    // Start building query
-    let query = supabase
-      .from(config.table)
-      .select(config.select, { count: 'exact' });
-
-    // Enforce Tenant Isolation (School ID)
-    if (req.user.role !== 'super_admin' && config.table !== 'schools') {
-      query = query.eq('school_id', req.user.schoolId);
-    } else if (req.user.role === 'super_admin' && req.query.schoolId) {
-      query = query.eq('school_id', req.query.schoolId);
-    }
-
-    // Dynamic Filters passed via query params
+    
     const filters = req.query.filters ? JSON.parse(req.query.filters) : {};
 
-    // Determine if we need to filter on primary table or joined students table
-    const pfx = config.table === 'students' ? '' : 'students.';
+    const tablePrefix = config.join ? `${config.table}.` : '';
+    const studentPrefix = config.join ? 's.' : '';
+    
+    let selectFields = config.select || `${config.table}.*`;
+    let queryBase = `FROM ${config.table} ${config.join || ''} WHERE 1=1`;
+    const request = req.db.request();
 
-    // Safely apply Academic Year filter
+    // Academic Year Filter
     if (filters.academicYear) {
       if (['students', 'fee_collections', 'expenditures'].includes(config.table)) {
-        query = query.eq('academic_year', filters.academicYear);
+        queryBase += ` AND ${tablePrefix}academic_year = @academicYear`;
       } else if (['attendance', 'exam_marks', 'transfer_certificates'].includes(config.table)) {
-        query = query.eq('students.academic_year', filters.academicYear);
+        queryBase += ` AND ${studentPrefix}academic_year = @academicYear`;
       }
+      request.input('academicYear', sql.NVarChar, filters.academicYear);
     }
 
-    // Apply Student-specific filters only if the table is students or joins students
+    // Student Filters
     const hasStudentJoin = ['students', 'fee_collections', 'attendance', 'exam_marks', 'transfer_certificates'].includes(config.table);
-    
     if (hasStudentJoin) {
-      if (filters.grade) query = query.eq(`${pfx}grade`, filters.grade);
-      if (filters.section) query = query.eq(`${pfx}section`, filters.section);
-      if (filters.gender) query = query.eq(`${pfx}gender`, filters.gender);
-      if (filters.admissionStatus) query = query.eq(`${pfx}admission_status`, filters.admissionStatus);
-      
-      if (filters.admissionNo) query = query.ilike(`${pfx}admission_no`, `%${filters.admissionNo}%`);
-      if (filters.studentName) query = query.ilike(`${pfx}name`, `%${filters.studentName}%`);
-      if (filters.fatherName) query = query.ilike(`${pfx}parent_name`, `%${filters.fatherName}%`);
-      if (filters.motherName) query = query.ilike(`${pfx}mother_name`, `%${filters.motherName}%`);
-      if (filters.mobileNumber) query = query.ilike(`${pfx}parent_phone`, `%${filters.mobileNumber}%`);
+      if (filters.grade) { queryBase += ` AND ${studentPrefix}grade = @grade`; request.input('grade', sql.NVarChar, filters.grade); }
+      if (filters.section) { queryBase += ` AND ${studentPrefix}section = @section`; request.input('section', sql.NVarChar, filters.section); }
+      if (filters.gender) { queryBase += ` AND ${studentPrefix}gender = @gender`; request.input('gender', sql.NVarChar, filters.gender); }
+      if (filters.admissionStatus) { queryBase += ` AND ${studentPrefix}admission_status = @admissionStatus`; request.input('admissionStatus', sql.NVarChar, filters.admissionStatus); }
+      if (filters.admissionNo) { queryBase += ` AND ${studentPrefix}admission_no LIKE @admissionNo`; request.input('admissionNo', sql.NVarChar, `%${filters.admissionNo}%`); }
+      if (filters.studentName) { queryBase += ` AND ${studentPrefix}name LIKE @studentName`; request.input('studentName', sql.NVarChar, `%${filters.studentName}%`); }
+      if (filters.fatherName) { queryBase += ` AND ${studentPrefix}parent_name LIKE @fatherName`; request.input('fatherName', sql.NVarChar, `%${filters.fatherName}%`); }
+      if (filters.motherName) { queryBase += ` AND ${studentPrefix}mother_name LIKE @motherName`; request.input('motherName', sql.NVarChar, `%${filters.motherName}%`); }
+      if (filters.mobileNumber) { queryBase += ` AND ${studentPrefix}parent_phone LIKE @mobileNumber`; request.input('mobileNumber', sql.NVarChar, `%${filters.mobileNumber}%`); }
     }
 
     if (filters.feeStatus && config.table === 'fee_collections') {
-      query = query.eq('status', filters.feeStatus);
+      queryBase += ' AND fee_collections.status = @feeStatus';
+      request.input('feeStatus', sql.NVarChar, filters.feeStatus);
     }
     
-    // Date Range (handles createdAt, date, or specific date columns based on module)
+    // Date Filters
     if (filters.startDate && filters.endDate) {
-      const dateCol = config.defaultSort.includes('date') ? config.defaultSort : 'created_at';
-      query = query.gte(dateCol, filters.startDate).lte(dateCol, filters.endDate);
+      const dateCol = config.defaultSort.includes('date') ? config.defaultSort : `${tablePrefix}created_at`;
+      queryBase += ` AND ${dateCol} >= @startDate AND ${dateCol} <= @endDate`;
+      request.input('startDate', sql.Date, filters.startDate);
+      request.input('endDate', sql.Date, filters.endDate);
     }
 
-    // Search logic (simple ilike across defined search columns)
+    // Search
     if (filters.search && config.searchColumns) {
-      const localSearchCols = config.searchColumns.filter(c => !c.includes('.'));
-      if (localSearchCols.length > 0) {
-        const orQuery = localSearchCols.map(col => `${col}.ilike.%${filters.search}%`).join(',');
-        query = query.or(orQuery);
+      const orClauses = config.searchColumns.map((col, idx) => {
+        request.input(`search${idx}`, sql.NVarChar, `%${filters.search}%`);
+        return `${col} LIKE @search${idx}`;
+      });
+      if (orClauses.length > 0) {
+        queryBase += ` AND (${orClauses.join(' OR ')})`;
       }
     }
 
-    // Role-specific row-level narrowing (e.g., Teacher only sees assigned classes)
-    if (req.user.role === 'teacher' && config.table === 'students') {
-      if (req.user.assigned_classes && req.user.assigned_classes.length > 0) {
-        const allowedGrades = req.user.assigned_classes.map(c => c.grade);
-        query = query.in('grade', allowedGrades);
-      }
-    }
+    // First, get the total count for pagination
+    const countQuery = `SELECT COUNT(*) as total ${queryBase}`;
+    const countResult = await request.query(countQuery);
+    const totalCount = countResult.recordset[0].total;
 
-    // Apply pagination if limit is > 0 (for export, limit=0 returns all matching records)
+    // Then, get the paginated data
+    let dataQuery = `SELECT ${selectFields} ${queryBase}`;
+    
+    // Convert generic sort column if needed
+    let actualSortBy = sortBy;
+    if (!sortBy.includes('.') && config.join) {
+      actualSortBy = `${tablePrefix}${sortBy}`;
+    }
+    
+    dataQuery += ` ORDER BY ${actualSortBy} ${sortDesc ? 'DESC' : 'ASC'}`;
+
     if (limit > 0) {
       const offset = (page - 1) * limit;
-      query = query.range(offset, offset + limit - 1);
+      dataQuery += ` OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
     }
 
-    // Execute paginated query
-    const { data, count, error } = await query
-      .order(sortBy, { ascending: !sortDesc });
-
-    if (error) throw error;
+    const dataResult = await request.query(dataQuery);
 
     res.json({
       success: true,
-      data,
+      data: dataResult.recordset,
       pagination: limit > 0 ? {
-        total: count,
+        total: totalCount,
         page,
         limit,
-        totalPages: Math.ceil(count / limit)
-      } : { total: count }
+        totalPages: Math.ceil(totalCount / limit)
+      } : { total: totalCount }
     });
 
   } catch (error) {
@@ -207,40 +185,34 @@ exports.generateReport = async (req, res) => {
   }
 };
 
-/**
- * Specialized handler for the Reports Dashboard summary metrics
- */
 const getDashboardMetrics = async (req, res) => {
-  const schoolId = req.user.role === 'super_admin' ? req.query.schoolId : req.user.schoolId;
-  const matchObj = schoolId ? { school_id: schoolId } : {};
+  try {
+    // Fire parallel requests on the db pool
+    const [studentsResult, teachersResult, feesResult] = await Promise.all([
+      req.db.request().query("SELECT COUNT(*) as count FROM students WHERE is_active = 1"),
+      req.db.request().query("SELECT COUNT(*) as count FROM employees WHERE is_active = 1"),
+      req.db.request().query("SELECT SUM(committed_fee) as committed, SUM(total_paid) as paid FROM fee_collections")
+    ]);
 
-  // Fire parallel counts using exact head requests for speed
-  const getCount = (table) => supabase.from(table).select('*', { count: 'exact', head: true }).match(matchObj);
-  
-  const [students, teachers, fees] = await Promise.all([
-    getCount('students'),
-    supabase.from('employees').select('*', { count: 'exact', head: true }).match({ ...matchObj, status: 'Active' }),
-    supabase.from('fee_collections').select('committed_fee, total_paid').match(matchObj)
-  ]);
+    const studentCount = studentsResult.recordset[0].count || 0;
+    const teacherCount = teachersResult.recordset[0].count || 0;
+    
+    const feesData = feesResult.recordset[0];
+    const totalFeesCommitted = feesData.committed || 0;
+    const totalFeesPaid = feesData.paid || 0;
+    const pendingFees = totalFeesCommitted - totalFeesPaid;
 
-  let totalCommitted = 0;
-  let totalPaid = 0;
-  
-  if (fees.data) {
-    fees.data.forEach(f => {
-      totalCommitted += Number(f.committed_fee) || 0;
-      totalPaid += Number(f.total_paid) || 0;
+    res.json({
+      success: true,
+      data: {
+        studentCount,
+        teacherCount,
+        totalFeesCommitted,
+        totalFeesPaid,
+        pendingFees,
+      }
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
-
-  res.json({
-    success: true,
-    data: {
-      studentCount: students.count || 0,
-      teacherCount: teachers.count || 0,
-      totalFeesCommitted: totalCommitted,
-      totalFeesPaid: totalPaid,
-      pendingFees: totalCommitted - totalPaid,
-    }
-  });
 };

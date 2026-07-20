@@ -1,9 +1,11 @@
-const { createClient } = require('@supabase/supabase-js');
+const { verifyToken } = require('../config/auth');
+const { sql, getMasterPool } = require('../config/database');
+const { resolveSchoolDbName, getSchoolPool } = require('../config/tenantPool');
 
 /**
- * Supabase Auth middleware.
- * Verifies the Bearer token from the frontend's Supabase session
- * and attaches the user + profile to req.
+ * JWT Auth middleware — replaces Supabase Auth.
+ * Verifies the Bearer token, fetches the user profile,
+ * and resolves the school's database connection.
  */
 const protect = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -18,46 +20,75 @@ const protect = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    // Create a per-request Supabase client with the user's token
-    // This respects RLS policies
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: { autoRefreshToken: false, persistSession: false },
+    // Verify the JWT
+    const decoded = verifyToken(token);
+
+    // Check if user is a Super Admin
+    if (decoded.role === 'super_admin') {
+      // Super Admins are stored in the master database
+      const masterPool = await getMasterPool();
+      const result = await masterPool.request()
+        .input('id', sql.UniqueIdentifier, decoded.id)
+        .query('SELECT * FROM super_admin_profiles WHERE id = @id');
+
+      if (!result.recordset || result.recordset.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: 'Not authorized — super admin profile not found',
+        });
       }
-    );
 
-    // Verify the JWT and get the user
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+      const profile = result.recordset[0];
 
-    if (error || !user) {
-      return res.status(401).json({
+      req.user = {
+        id: profile.id,
+        email: profile.email,
+        name: profile.name,
+        role: 'super_admin',
+        schoolId: null,
+        mustChangePassword: profile.must_change_password,
+        isSuperAdmin: true,
+      };
+
+      // Super Admin uses master database
+      req.db = masterPool;
+      req.isMasterDb = true;
+      return next();
+    }
+
+    // Regular school user — resolve their school's database
+    const schoolId = decoded.schoolId;
+    if (!schoolId) {
+      return res.status(403).json({
         success: false,
-        message: 'Not authorized — invalid or expired token',
+        message: 'Your account has not yet been assigned to a school.',
       });
     }
 
-    // Fetch the user's profile (role, name)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
+    // Get the school's database connection
+    const dbName = await resolveSchoolDbName(schoolId);
+    const schoolPool = await getSchoolPool(dbName);
 
-    // We don't throw 401 if profile is missing, to prevent infinite login loops 
-    // for users who signed up before the database schema was fully executed.
+    // Fetch user profile from the school's database
+    const profileResult = await schoolPool.request()
+      .input('id', sql.UniqueIdentifier, decoded.id)
+      .query('SELECT * FROM profiles WHERE id = @id');
 
-    // Attach to request
+    const profile = profileResult.recordset[0];
+
     req.user = {
-      id: user.id,
-      email: user.email,
-      name: profile?.name || user.email,
-      role: profile?.role || 'teacher', // fallback to 'teacher' instead of 'staff' based on schema
-      schoolId: profile?.school_id || null,
+      id: decoded.id,
+      email: decoded.email,
+      name: profile?.name || decoded.email,
+      role: profile?.role || decoded.role || 'teacher',
+      schoolId: schoolId,
       mustChangePassword: profile?.must_change_password || false,
-      isSuperAdmin: profile?.role === 'super_admin',
+      isSuperAdmin: false,
     };
+
+    // Attach the school's database connection
+    req.db = schoolPool;
+    req.isMasterDb = false;
 
     // If user must change password, only allow specific endpoints
     if (req.user.mustChangePassword) {
@@ -75,25 +106,20 @@ const protect = async (req, res, next) => {
       }
     }
 
-    // Super Admin users don't need a school — skip school check for them
-    if (req.user.isSuperAdmin) {
-      return next();
-    }
+    next();
+  } catch (error) {
+    console.error('Auth middleware error:', error.message);
 
-    // Protect multi-tenant routes from users without a school
-    if (!req.user.schoolId && req.originalUrl !== '/api/auth/me') {
-      return res.status(403).json({
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
         success: false,
-        message: 'Your account has not yet been assigned to a school. Please contact your administrator.',
+        message: 'Not authorized — token has expired',
       });
     }
 
-    next();
-  } catch (error) {
-    console.error('Auth middleware error:', error);
     return res.status(401).json({
       success: false,
-      message: 'Not authorized — token verification failed',
+      message: 'Not authorized — invalid token',
     });
   }
 };

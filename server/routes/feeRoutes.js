@@ -10,6 +10,7 @@ const {
 const {
   getFeeCollections,
   getStudentFeeCollection,
+  getStudentFeeHistory,
   commitFee,
   recordPayment,
   getPendingFees,
@@ -29,6 +30,7 @@ router.post('/structure/:id/apply', protect, roleCheck('principal', 'clerk'), ap
 // Fee Collection routes
 router.get('/collection', protect, getFeeCollections);
 router.get('/collection/:studentId', protect, getStudentFeeCollection);
+router.get('/history/:studentId', protect, getStudentFeeHistory);
 router.post('/collection/commit', protect, roleCheck('principal', 'clerk'), commitFee);
 router.post('/collection/pay', protect, recordPayment);
 

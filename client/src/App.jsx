@@ -13,6 +13,7 @@ import AdmissionsList from './pages/Admissions/AdmissionsList';
 import AdmissionForm from './pages/Admissions/AdmissionForm';
 import VirtualAdmissionForm from './pages/Admissions/VirtualAdmissionForm';
 import StudentDirectory from './pages/Students/StudentDirectory';
+import StudentProfile from './pages/Students/StudentProfile';
 import FeeStructure from './pages/Fees/FeeStructure';
 import FeeCollection from './pages/Fees/FeeCollection';
 import PendingFees from './pages/Fees/PendingFees';
@@ -40,6 +41,9 @@ import ManageUsers from './pages/SuperAdmin/ManageUsers';
 import AuditLogs from './pages/SuperAdmin/AuditLogs';
 import ReportsDashboard from './pages/Reports/ReportsDashboard';
 import ReportViewer from './pages/Reports/ReportViewer';
+import AttendanceRegister from './pages/Attendance/AttendanceRegister';
+import CalendarView from './pages/CalendarView';
+import AnnouncementsDashboard from './pages/Announcements/AnnouncementsDashboard';
 
 // Protected route wrapper — requires authentication
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -261,7 +265,11 @@ function App() {
       >
         <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/calendar" element={<CalendarView />} />
+        <Route path="/announcements" element={<AnnouncementsDashboard />} />
         <Route path="/students/directory" element={<StudentDirectory />} />
+        <Route path="/students/:id" element={<StudentProfile />} />
+        <Route path="/attendance" element={<AttendanceRegister />} />
         <Route path="/admissions" element={<AdmissionsList />} />
         <Route path="/admissions/new" element={<AdmissionForm />} />
         <Route path="/admissions/edit/:id" element={<AdmissionForm />} />

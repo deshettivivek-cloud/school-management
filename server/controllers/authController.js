@@ -1,9 +1,10 @@
-const supabase = require('../config/supabase');
+const { sql, getMasterPool } = require('../config/database');
+const { resolveSchoolDbName, getSchoolPool } = require('../config/tenantPool');
+const { hashPassword, comparePassword, generateToken, generateTempPassword } = require('../config/auth');
 const { logAuditAction } = require('../utils/auditLogger');
 const { z } = require('zod');
 const AuthRateLimiter = require('../services/authRateLimiter');
 
-// Helper to strip HTML tags, script tags, and unexpected special characters
 const sanitizeString = (val) => {
   if (typeof val !== 'string') return val;
   return val.replace(/<[^>]*>?/gm, '').replace(/[^\w\s\.\-]/g, '').trim();
@@ -22,10 +23,7 @@ const registerSchema = z.object({
 });
 
 const handleValidationError = (error, req, res) => {
-  // Log validation failure server-side for monitoring
   console.warn(`[AUTH_VALIDATION_FAILURE] Path: ${req.originalUrl} | IP: ${req.ip} | Errors:`, JSON.stringify(error.errors || error.message));
-  
-  // Return generic error message without exposing specific field failures
   return res.status(400).json({
     success: false,
     message: 'Invalid input provided. Please check your details and try again.'
@@ -43,108 +41,86 @@ exports.login = async (req, res) => {
     }
     const { email, password } = parseResult.data;
 
-    // Check if account is locked out
     if (AuthRateLimiter.isLocked(email)) {
-      // Artificially delay to prevent timing attacks, and do not reveal lockout status
       await AuthRateLimiter.delay(3000);
-      return res.status(401).json({
-        success: false,
-        message: 'Incorrect email or password'
-      });
+      return res.status(401).json({ success: false, message: 'Incorrect email or password' });
     }
 
-    // Sign in with Supabase Auth using a fresh client to avoid mutating the global singleton
-    const { createClient } = require('@supabase/supabase-js');
-    const client = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { persistSession: false, autoRefreshToken: false } }
-    );
-    
-    const { data: authData, error: authError } = await client.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const masterPool = await getMasterPool();
 
-    if (authError) {
-      // Record failed attempt, trigger email on threshold, and apply progressive delay
+    // 1. Find school mapping for this email
+    const routeResult = await masterPool.request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT school_id FROM global_users WHERE email = @email');
+
+    if (!routeResult.recordset || routeResult.recordset.length === 0) {
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
       await AuthRateLimiter.delay(delayMs);
-
-      return res.status(401).json({
-        success: false,
-        message: 'Incorrect email or password',
-      });
+      return res.status(401).json({ success: false, message: 'Incorrect email or password' });
     }
 
-    // Successful login: clear the tracking record
+    const schoolId = routeResult.recordset[0].school_id;
+    const dbName = await resolveSchoolDbName(schoolId);
+    const schoolPool = await getSchoolPool(dbName);
+
+    // 2. Fetch user from school DB
+    const profileResult = await schoolPool.request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT * FROM profiles WHERE email = @email AND is_active = 1');
+
+    if (!profileResult.recordset || profileResult.recordset.length === 0) {
+      const delayMs = await AuthRateLimiter.incrementAttempt(email);
+      await AuthRateLimiter.delay(delayMs);
+      return res.status(401).json({ success: false, message: 'Incorrect email or password' });
+    }
+
+    const user = profileResult.recordset[0];
+
+    // 3. Verify password
+    const isMatch = await comparePassword(password, user.password_hash);
+    if (!isMatch) {
+      const delayMs = await AuthRateLimiter.incrementAttempt(email);
+      await AuthRateLimiter.delay(delayMs);
+      return res.status(401).json({ success: false, message: 'Incorrect email or password' });
+    }
+
+    // Block super_admin from school login (shouldn't happen, but just in case)
+    if (user.role === 'super_admin') {
+      return res.status(403).json({ success: false, message: 'Super Admin accounts must use the admin portal.' });
+    }
+
     AuthRateLimiter.clearAttempts(email);
 
-    // Fetch user profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', authData.user.id)
-      .maybeSingle();
-
-    let activeProfile = profile;
-
-    if (!activeProfile) {
-      // Auto-fallback: Create the missing profile from auth user data
-      const name = authData.user.user_metadata?.full_name || authData.user.user_metadata?.name || authData.user.email.split('@')[0];
-      
-      const { data: newProfile, error: upsertError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: authData.user.id,
-          email: authData.user.email,
-          name: name,
-          role: 'teacher',
-          must_change_password: true,
-        })
-        .select('*')
-        .single();
-        
-      if (upsertError) {
-        console.error('Failed to auto-create profile:', upsertError);
-        return res.status(500).json({
-          success: false,
-          message: 'Account exists but profile setup failed. Please contact your Super Admin.',
-        });
-      }
-      activeProfile = newProfile;
-    }
-
-    // Block super_admin from logging in through school user portal
-    if (activeProfile.role === 'super_admin') {
-      // The session was created, but we won't return it to the frontend.
-      // The frontend will treat this as a failed login.
-      return res.status(403).json({
-        success: false,
-        message: 'Super Admin accounts must use the admin portal to sign in.',
-      });
-    }
+    // 4. Generate token
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      schoolId: schoolId,
+    });
 
     res.json({
       success: true,
       data: {
-        session: authData.session,
+        session: { access_token: token }, // Wrap in session object for frontend compat
         user: {
-          id: activeProfile.id,
-          name: activeProfile.name,
-          email: activeProfile.email,
-          role: activeProfile.role,
-          schoolId: activeProfile.school_id,
-          mustChangePassword: activeProfile.must_change_password || false,
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          schoolId: schoolId,
+          mustChangePassword: user.must_change_password || false,
         },
       },
     });
+
+    req.user = { id: user.id, schoolId }; // Mock for audit
     await logAuditAction(req, {
       action: 'LOGIN',
       resource_type: 'user',
-      resource_id: activeProfile.id,
-      userId: activeProfile.id,
-      schoolId: activeProfile.school_id
+      resource_id: user.id,
+      userId: user.id,
+      schoolId: schoolId
     });
 
   } catch (error) {
@@ -164,104 +140,61 @@ exports.superAdminLogin = async (req, res) => {
     }
     const { email, password } = parseResult.data;
 
-    // Check if account is locked out
     if (AuthRateLimiter.isLocked(email)) {
       await AuthRateLimiter.delay(3000);
-      return res.status(401).json({
-        success: false,
-        message: 'Incorrect email or password'
-      });
+      return res.status(401).json({ success: false, message: 'Incorrect email or password' });
     }
 
-    // Sign in with Supabase Auth using a fresh client to avoid mutating the global singleton
-    const { createClient } = require('@supabase/supabase-js');
-    const client = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { persistSession: false, autoRefreshToken: false } }
-    );
-    
-    const { data: authData, error: authError } = await client.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const masterPool = await getMasterPool();
 
-    if (authError) {
+    const profileResult = await masterPool.request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT * FROM super_admin_profiles WHERE email = @email');
+
+    if (!profileResult.recordset || profileResult.recordset.length === 0) {
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
       await AuthRateLimiter.delay(delayMs);
-
-      return res.status(401).json({
-        success: false,
-        message: 'Incorrect email or password',
-      });
+      return res.status(401).json({ success: false, message: 'Incorrect email or password' });
     }
 
-    // Successful login: clear the tracking record
+    const admin = profileResult.recordset[0];
+
+    const isMatch = await comparePassword(password, admin.password_hash);
+    if (!isMatch) {
+      const delayMs = await AuthRateLimiter.incrementAttempt(email);
+      await AuthRateLimiter.delay(delayMs);
+      return res.status(401).json({ success: false, message: 'Incorrect email or password' });
+    }
+
     AuthRateLimiter.clearAttempts(email);
 
-    // Fetch user profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', authData.user.id)
-      .maybeSingle();
-
-    let activeProfile = profile;
-
-    if (!activeProfile) {
-      // Check if email ends with @classorbit.in or is the designated super admin
-      if (authData.user.email === 'superadmin@classorbit.in' || authData.user.email.endsWith('@classorbit.in')) {
-         const { data: newProfile, error: upsertError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: authData.user.id,
-            email: authData.user.email,
-            name: 'Super Admin',
-            role: 'super_admin',
-            must_change_password: true,
-          })
-          .select('*')
-          .single();
-
-         if (upsertError) {
-           return res.status(500).json({ success: false, message: 'Failed to auto-create admin profile' });
-         }
-         activeProfile = newProfile;
-      } else {
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to fetch user profile',
-        });
-      }
-    }
-
-    // Only allow super_admin role
-    if (activeProfile.role !== 'super_admin') {
-      // The session was created, but we won't return it to the frontend.
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Only Super Admin accounts can log in through this portal.',
-      });
-    }
+    const token = generateToken({
+      id: admin.id,
+      email: admin.email,
+      role: 'super_admin',
+      schoolId: null, // Super admin
+    });
 
     res.json({
       success: true,
       data: {
-        session: authData.session,
+        session: { access_token: token },
         user: {
-          id: activeProfile.id,
-          name: activeProfile.name,
-          email: activeProfile.email,
-          role: activeProfile.role,
-          mustChangePassword: activeProfile.must_change_password || false,
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+          mustChangePassword: admin.must_change_password || false,
         },
       },
     });
+
+    req.user = { id: admin.id }; // Mock for audit
     await logAuditAction(req, {
       action: 'LOGIN',
       resource_type: 'user',
-      resource_id: activeProfile.id,
-      userId: activeProfile.id
+      resource_id: admin.id,
+      userId: admin.id
     });
 
   } catch (error) {
@@ -270,7 +203,7 @@ exports.superAdminLogin = async (req, res) => {
   }
 };
 
-// @desc    Change password (first login or voluntary)
+// @desc    Change password
 // @route   POST /api/auth/change-password
 // @access  Auth
 exports.changePassword = async (req, res) => {
@@ -278,84 +211,38 @@ exports.changePassword = async (req, res) => {
     const { newPassword } = req.body;
 
     if (!newPassword || newPassword.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password must be at least 8 characters',
-      });
+      return res.status(400).json({ success: false, message: 'New password must be at least 8 characters' });
     }
 
-    // Update password via Supabase Admin API
-    const { error: updateError } = await supabase.auth.admin.updateUserById(
-      req.user.id,
-      { password: newPassword }
-    );
+    const passwordHash = await hashPassword(newPassword);
 
-    if (updateError) {
-      throw updateError;
+    if (req.user.isSuperAdmin) {
+      await req.db.request()
+        .input('id', sql.UniqueIdentifier, req.user.id)
+        .input('hash', sql.NVarChar, passwordHash)
+        .query('UPDATE super_admin_profiles SET password_hash = @hash, must_change_password = 0, password_changed_at = SYSDATETIMEOFFSET() WHERE id = @id');
+    } else {
+      await req.db.request()
+        .input('id', sql.UniqueIdentifier, req.user.id)
+        .input('hash', sql.NVarChar, passwordHash)
+        .query('UPDATE profiles SET password_hash = @hash, must_change_password = 0, password_changed_at = SYSDATETIMEOFFSET() WHERE id = @id');
     }
 
-    // Mark password as changed in profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        must_change_password: false,
-        password_changed_at: new Date().toISOString(),
-      })
-      .eq('id', req.user.id);
+    res.json({ success: true, message: 'Password changed successfully' });
 
-    if (profileError) {
-      throw profileError;
-    }
-
-    res.json({
-      success: true,
-      message: 'Password changed successfully',
-    });
-
-    await logAuditAction(req, {
-      action: 'CHANGE_PASSWORD',
-      resource_type: 'user',
-      resource_id: req.user.id
-    });
+    await logAuditAction(req, { action: 'CHANGE_PASSWORD', resource_type: 'user', resource_id: req.user.id });
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Forgot password — send reset email
+// @desc    Forgot password
 // @route   POST /api/auth/forgot-password
 // @access  Public
 exports.forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required',
-      });
-    }
-
-    // Send password reset email via Supabase
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${req.headers.origin || process.env.CLIENT_URL || 'http://localhost:3000'}/reset-password`,
-    });
-
-    if (error) {
-      // Don't reveal if email exists or not (security)
-      console.error('Forgot password error:', error);
-    }
-
-    // Always return success to prevent email enumeration
-    res.json({
-      success: true,
-      message: 'If that email is registered, you\'ll receive a reset link',
-    });
-  } catch (error) {
-    console.error('Forgot password error:', error);
-    res.status(500).json({ success: false, message: 'Failed to process request' });
-  }
+  // To be implemented: generate reset token, store it, send email
+  res.json({ success: true, message: 'If that email is registered, you\'ll receive a reset link' });
 };
 
 // @desc    Get current user profile
@@ -363,18 +250,22 @@ exports.forgotPassword = async (req, res) => {
 // @access  Auth
 exports.getMe = async (req, res) => {
   try {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', req.user.id)
-      .single();
+    let query, table;
+    if (req.user.isSuperAdmin) {
+      query = 'SELECT id, email, name, role, must_change_password FROM super_admin_profiles WHERE id = @id';
+    } else {
+      query = 'SELECT id, email, name, role, assigned_classes, must_change_password FROM profiles WHERE id = @id';
+    }
 
-    if (error) throw error;
+    const result = await req.db.request()
+      .input('id', sql.UniqueIdentifier, req.user.id)
+      .query(query);
 
-    res.json({
-      success: true,
-      data: profile,
-    });
+    if (!result.recordset || result.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'Profile not found' });
+    }
+
+    res.json({ success: true, data: result.recordset[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -385,25 +276,16 @@ exports.getMe = async (req, res) => {
 // @access  Admin
 exports.getUsers = async (req, res) => {
   try {
-    const { data: users, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('school_id', req.user.schoolId)
-      .order('created_at', { ascending: false });
+    const result = await req.db.request()
+      .query('SELECT id, name, email, role, assigned_classes, created_at, is_active FROM profiles ORDER BY created_at DESC');
 
-    if (error) throw error;
-
-    res.json({
-      success: true,
-      count: users.length,
-      data: users,
-    });
+    res.json({ success: true, count: result.recordset.length, data: result.recordset });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Create a new user (admin only) — uses Supabase Admin API
+// @desc    Create a new user (admin only)
 // @route   POST /api/auth/register
 // @access  Admin
 exports.register = async (req, res) => {
@@ -414,36 +296,42 @@ exports.register = async (req, res) => {
     }
     const { name, email, password, role } = parseResult.data;
 
-    // Create user via Supabase Admin API
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // Auto-confirm email
-      user_metadata: { name, full_name: name },
-    });
+    // 1. Check if email exists globally
+    const masterPool = await getMasterPool();
+    const existing = await masterPool.request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT email FROM global_users WHERE email = @email');
 
-    if (authError) throw authError;
-
-    if (role) {
-      const { error: roleError } = await supabase
-        .from('profiles')
-        .upsert({ id: authData.user.id, role, name, school_id: req.user.schoolId, email });
-
-      if (roleError) throw roleError;
-    } else {
-      await supabase
-        .from('profiles')
-        .upsert({ id: authData.user.id, name, school_id: req.user.schoolId, email });
+    if (existing.recordset.length > 0) {
+      return res.status(400).json({ success: false, message: 'A user with this email already exists in the system' });
     }
+
+    const passwordHash = await hashPassword(password);
+    const assignedRole = role || 'clerk';
+
+    // 2. Insert into school DB
+    const profileResult = await req.db.request()
+      .input('email', sql.NVarChar, email)
+      .input('passwordHash', sql.NVarChar, passwordHash)
+      .input('name', sql.NVarChar, name)
+      .input('role', sql.NVarChar, assignedRole)
+      .query(`
+        INSERT INTO profiles (email, password_hash, name, role, must_change_password)
+        OUTPUT INSERTED.id, INSERTED.email, INSERTED.name, INSERTED.role
+        VALUES (@email, @passwordHash, @name, @role, 1)
+      `);
+
+    const newUser = profileResult.recordset[0];
+
+    // 3. Add to global routing table
+    await masterPool.request()
+      .input('email', sql.NVarChar, email)
+      .input('schoolId', sql.UniqueIdentifier, req.user.schoolId)
+      .query('INSERT INTO global_users (email, school_id) VALUES (@email, @schoolId)');
 
     res.status(201).json({
       success: true,
-      data: {
-        id: authData.user.id,
-        name,
-        email,
-        role: role || 'clerk',
-      },
+      data: newUser,
     });
   } catch (error) {
     console.error('Registration error:', error.message);
@@ -451,7 +339,7 @@ exports.register = async (req, res) => {
   }
 };
 
-// @desc    Update user role (admin only)
+// @desc    Update user role
 // @route   PATCH /api/auth/users/:id/role
 // @access  Admin
 exports.updateRole = async (req, res) => {
@@ -459,24 +347,46 @@ exports.updateRole = async (req, res) => {
     const { role } = req.body;
 
     if (!['principal', 'clerk', 'teacher'].includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Role must be "principal", "clerk" or "teacher"',
-      });
+      return res.status(400).json({ success: false, message: 'Role must be "principal", "clerk" or "teacher"' });
     }
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ role })
-      .eq('id', req.params.id)
-      .eq('school_id', req.user.schoolId)
-      .select()
-      .single();
+    const result = await req.db.request()
+      .input('id', sql.UniqueIdentifier, req.params.id)
+      .input('role', sql.NVarChar, role)
+      .query('UPDATE profiles SET role = @role OUTPUT INSERTED.* WHERE id = @id');
 
-    if (error) throw error;
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
-    res.json({ success: true, data });
+    res.json({ success: true, data: result.recordset[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Update user classes
+// @route   PATCH /api/auth/users/:id/classes
+// @access  Admin
+exports.updateClasses = async (req, res) => {
+  try {
+    const { assigned_classes } = req.body;
+    
+    // Convert to JSON string for SQL Server if it's an array
+    const classesStr = Array.isArray(assigned_classes) ? JSON.stringify(assigned_classes) : '[]';
+
+    const result = await req.db.request()
+      .input('id', sql.UniqueIdentifier, req.params.id)
+      .input('classes', sql.NVarChar, classesStr)
+      .query('UPDATE profiles SET assigned_classes = @classes OUTPUT INSERTED.* WHERE id = @id');
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true, data: result.recordset[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+

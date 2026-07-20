@@ -10,9 +10,9 @@ import {
   HiOutlineAcademicCap, 
   HiOutlineBadgeCheck, 
   HiOutlineDocumentDuplicate,
-  HiOutlineGlobe,
   HiOutlineChartBar
 } from 'react-icons/hi';
+import StatCard from '../../components/Common/StatCard';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
@@ -46,15 +46,13 @@ const ReportsDashboard = () => {
   };
 
   const allReports = [
-    { id: 'students', title: 'Student Reports', icon: HiOutlineUserGroup, color: '#3b82f6', desc: 'Lists, contacts, admissions', roles: ['super_admin', 'principal', 'teacher', 'clerk'] },
-    { id: 'fees', title: 'Fee Reports', icon: HiOutlineCash, color: '#10b981', desc: 'Collections, pending, dues', roles: ['super_admin', 'principal', 'clerk'] },
-    { id: 'attendance', title: 'Attendance Reports', icon: HiOutlineCalendar, color: '#f59e0b', desc: 'Daily, monthly, low attendance', roles: ['super_admin', 'principal', 'teacher'] },
-    { id: 'exams', title: 'Exam Reports', icon: HiOutlineDocumentText, color: '#8b5cf6', desc: 'Marks, ranks, performance', roles: ['super_admin', 'principal', 'teacher'] },
-    { id: 'teachers', title: 'Teacher Reports', icon: HiOutlineAcademicCap, color: '#ec4899', desc: 'Directory, assignments', roles: ['super_admin', 'principal', 'teacher'] },
-    { id: 'staff', title: 'Staff Reports', icon: HiOutlineBadgeCheck, color: '#06b6d4', desc: 'Staff directory, roles', roles: ['super_admin', 'principal', 'clerk'] },
-    { id: 'admissions', title: 'Admission Reports', icon: HiOutlineUserGroup, color: '#14b8a6', desc: 'Daily, monthly trends', roles: ['super_admin', 'principal', 'clerk'] },
-    { id: 'expenditure', title: 'Expenditure Reports', icon: HiOutlineCash, color: '#ef4444', desc: 'Expenses, categories', roles: ['super_admin', 'principal', 'clerk'] },
-    { id: 'tc', title: 'TC Reports', icon: HiOutlineDocumentDuplicate, color: '#6366f1', desc: 'Issued, pending transfers', roles: ['super_admin', 'principal', 'clerk'] }
+    { id: 'admissions_daily', title: 'Daily Admissions', icon: HiOutlineUserGroup, color: '#3b82f6', desc: 'Daily admission trends', roles: ['super_admin', 'principal', 'clerk'] },
+    { id: 'fee_defaulters', title: 'Fee Defaulters', icon: HiOutlineCash, color: '#ef4444', desc: 'Pending fee dues', roles: ['super_admin', 'principal', 'clerk'] },
+    { id: 'fee_collections_daily', title: 'Daily Fee Collections', icon: HiOutlineCash, color: '#10b981', desc: 'Daily fee collection', roles: ['super_admin', 'principal', 'clerk'] },
+    { id: 'attendance_low', title: 'Low Attendance', icon: HiOutlineCalendar, color: '#f59e0b', desc: 'Students with low attendance', roles: ['super_admin', 'principal', 'teacher'] },
+    { id: 'expenditure_category', title: 'Category-wise Expenditure', icon: HiOutlineCash, color: '#8b5cf6', desc: 'Expenses by category', roles: ['super_admin', 'principal', 'clerk'] },
+    { id: 'staff_attendance', title: 'Staff Attendance', icon: HiOutlineAcademicCap, color: '#ec4899', desc: 'Staff attendance records', roles: ['super_admin', 'principal'] },
+    { id: 'exam_toppers', title: 'Exam Toppers', icon: HiOutlineDocumentText, color: '#06b6d4', desc: 'Top performing students', roles: ['super_admin', 'principal', 'teacher'] },
   ];
 
   const allowedReports = allReports.filter(r => r.roles.includes(user?.role));
@@ -73,35 +71,11 @@ const ReportsDashboard = () => {
       </div>
 
       {/* High Level Metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        <div className="stat-card" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-          <div className="stat-header">
-            <h3 style={{ color: '#60a5fa' }}>Total Students</h3>
-            <HiOutlineUserGroup size={24} color="#60a5fa" />
-          </div>
-          <p className="stat-value">{loading ? '...' : metrics.studentCount}</p>
-        </div>
-        <div className="stat-card" style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-          <div className="stat-header">
-            <h3 style={{ color: '#34d399' }}>Total Teachers</h3>
-            <HiOutlineAcademicCap size={24} color="#34d399" />
-          </div>
-          <p className="stat-value">{loading ? '...' : metrics.teacherCount}</p>
-        </div>
-        <div className="stat-card" style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05))', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-          <div className="stat-header">
-            <h3 style={{ color: '#fbbf24' }}>Total Fee Collection</h3>
-            <HiOutlineCash size={24} color="#fbbf24" />
-          </div>
-          <p className="stat-value">{loading ? '...' : formatCurrency(metrics.totalFeesPaid)}</p>
-        </div>
-        <div className="stat-card" style={{ background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05))', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-          <div className="stat-header">
-            <h3 style={{ color: '#f87171' }}>Pending Fees</h3>
-            <HiOutlineChartBar size={24} color="#f87171" />
-          </div>
-          <p className="stat-value">{loading ? '...' : formatCurrency(metrics.pendingFees)}</p>
-        </div>
+      <div className="stat-grid" style={{ marginBottom: '2rem' }}>
+        <StatCard className="" title="Total Students" value={loading ? '...' : metrics.studentCount} icon={HiOutlineUserGroup} color="blue" hideDelta={true} />
+        <StatCard className="" title="Total Teachers" value={loading ? '...' : metrics.teacherCount} icon={HiOutlineAcademicCap} color="green" hideDelta={true} />
+        <StatCard className="" title="Total Fee Collection" value={loading ? '...' : metrics.totalFeesPaid} formatValue={loading ? undefined : formatCurrency} icon={HiOutlineCash} color="amber" hideDelta={true} />
+        <StatCard className="" title="Pending Fees" value={loading ? '...' : metrics.pendingFees} formatValue={loading ? undefined : formatCurrency} icon={HiOutlineChartBar} color="red" hideDelta={true} />
       </div>
 
       {/* Report Modules Grid */}

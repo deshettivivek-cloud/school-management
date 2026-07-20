@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import supabase from '../api/supabase';
+
 import toast from 'react-hot-toast';
 import { UploadCloud, Save } from 'lucide-react';
 
@@ -82,24 +82,19 @@ const SchoolSetup = () => {
       // Handle logo upload separately
       if (logo) {
         try {
-          const fileExt = logo.name.split('.').pop();
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const formData = new FormData();
+          formData.append('photo', logo);
           
-          const { error: uploadError } = await supabase.storage
-            .from('logos')
-            .upload(fileName, logo);
-            
-          if (uploadError) {
-            console.error('Storage Upload Error:', uploadError);
-            toast.error(`Logo upload failed: ${uploadError.message}. Please create a "logos" storage bucket in Supabase.`);
-          } else {
-            const { data } = supabase.storage
-              .from('logos')
-              .getPublicUrl(fileName);
-              
-            await api.post('/schools/logo', { logoUrl: data.publicUrl });
+          const uploadRes = await api.post('/upload/photo', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+          
+          if (uploadRes.data.success) {
+            await api.post('/schools/logo', { logoUrl: uploadRes.data.url });
             toast.success('School settings & logo saved! 🎉');
             return;
+          } else {
+            toast.error('Logo upload failed');
           }
         } catch (logoErr) {
           console.error('Logo save error:', logoErr);

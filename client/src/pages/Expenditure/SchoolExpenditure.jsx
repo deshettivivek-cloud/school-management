@@ -6,6 +6,7 @@ import {
   HiOutlineTrash, HiOutlinePencil, HiOutlineX, HiOutlineCheck,
   HiOutlineFilter, HiOutlineTrendingUp
 } from 'react-icons/hi';
+import StatCard from '../../components/Common/StatCard';
 import { format } from 'date-fns';
 
 const CATEGORIES = [
@@ -179,36 +180,12 @@ const SchoolExpenditure = () => {
       {/* Stats Cards */}
       {stats && (
         <div className="stat-grid">
-          <div className="stat-card primary">
-            <div className="stat-icon primary">
-              <HiOutlineCurrencyRupee />
-            </div>
-            <div className="stat-info">
-              <div className="stat-label">Total Expenditure</div>
-              <div className="stat-value">₹{stats.totalExpenditure?.toLocaleString('en-IN') || 0}</div>
-            </div>
-          </div>
-          <div className="stat-card success">
-            <div className="stat-icon success">
-              <HiOutlineTrendingUp />
-            </div>
-            <div className="stat-info">
-              <div className="stat-label">Total Entries</div>
-              <div className="stat-value">{stats.totalCount || 0}</div>
-            </div>
-          </div>
+          <StatCard className="" title="Total Expenditure" value={stats.totalExpenditure || 0} formatValue={(v) => `₹${Number(v).toLocaleString('en-IN')}`} icon={HiOutlineCurrencyRupee} color="blue" hideDelta={true} />
+          <StatCard className="" title="Total Entries" value={stats.totalCount || 0} icon={HiOutlineTrendingUp} color="green" hideDelta={true} />
           {stats.categoryWise?.slice(0, 2).map((cat, i) => {
             const info = getCategoryInfo(cat.category);
             return (
-              <div key={cat.category} className={`stat-card ${i === 0 ? 'warning' : 'danger'}`}>
-                <div className={`stat-icon ${i === 0 ? 'warning' : 'danger'}`}>
-                  <HiOutlineFilter />
-                </div>
-                <div className="stat-info">
-                  <div className="stat-label">{info.label}</div>
-                  <div className="stat-value">₹{cat.amount?.toLocaleString('en-IN')}</div>
-                </div>
-              </div>
+              <StatCard key={cat.category} className="" title={info.label} value={cat.amount || 0} formatValue={(v) => `₹${Number(v).toLocaleString('en-IN')}`} icon={HiOutlineFilter} color={i === 0 ? 'amber' : 'red'} hideDelta={true} />
             );
           })}
         </div>

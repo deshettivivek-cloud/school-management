@@ -9,6 +9,7 @@ const {
   getUsers,
   register,
   updateRole,
+  updateClasses,
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { roleCheck } = require('../middleware/roleCheck');
@@ -26,5 +27,6 @@ router.post('/change-password', protect, changePassword);
 router.get('/users', protect, roleCheck('principal'), getUsers);
 router.post('/register', protect, roleCheck('principal'), register);
 router.patch('/users/:id/role', protect, roleCheck('principal'), updateRole);
+router.patch('/users/:id/classes', protect, roleCheck('principal'), updateClasses);
 
 module.exports = router;

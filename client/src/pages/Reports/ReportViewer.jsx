@@ -19,108 +19,65 @@ import ReportFilterModal from './ReportFilterModal';
 
 // Configuration mapping for columns per report type
 const REPORT_CONFIG = {
-  students: {
-    title: 'Student Report',
+  admissions_daily: {
+    title: 'Daily Admissions Report',
     columns: [
-      { key: 'name', header: 'Student Name' },
-      { key: 'admission_no', header: 'Admission No' },
-      { key: 'parent_name', header: 'Parent Name' },
-      { key: 'parent_phone', header: 'Parent Mobile' },
-      { key: 'grade', header: 'Class' },
-      { key: 'section', header: 'Section' },
-      { key: 'dob', header: 'DOB' },
-      { key: 'gender', header: 'Gender' },
-      { key: 'address', header: 'Address' },
-      { key: 'admission_date', header: 'Admission Date' },
-      { key: 'admission_status', header: 'Status' }
-    ]
-  },
-  fees: {
-    title: 'Fee Collection Report',
-    columns: [
-      { key: 'students.name', header: 'Student Name' },
-      { key: 'students.admission_no', header: 'Admission No' },
-      { key: 'students.grade', header: 'Class' },
-      { key: 'academic_year', header: 'Academic Year' },
-      { key: 'committed_fee', header: 'Total Fee' },
-      { key: 'total_paid', header: 'Paid Amount' },
-      { key: 'balance', header: 'Balance Amount' },
-      { key: 'status', header: 'Fee Status' }
-    ]
-  },
-  attendance: {
-    title: 'Attendance Report',
-    columns: [
-      { key: 'students.name', header: 'Student Name' },
-      { key: 'students.grade', header: 'Class' },
-      { key: 'students.section', header: 'Section' },
-      { key: 'date', header: 'Date' },
-      { key: 'status', header: 'Status' },
-      { key: 'remarks', header: 'Remarks' }
-    ]
-  },
-  exams: {
-    title: 'Exam Marks Report',
-    columns: [
-      { key: 'students.name', header: 'Student Name' },
-      { key: 'exams.name', header: 'Exam Name' },
-      { key: 'subject', header: 'Subject' },
-      { key: 'marks_obtained', header: 'Marks Obtained' },
-      { key: 'max_marks', header: 'Max Marks' },
-      { key: 'grade', header: 'Grade' }
-    ]
-  },
-  teachers: {
-    title: 'Teacher Directory Report',
-    columns: [
-      { key: 'name', header: 'Teacher Name' },
-      { key: 'employee_id', header: 'Emp ID' },
-      { key: 'department', header: 'Department' },
-      { key: 'email', header: 'Email' },
-      { key: 'phone', header: 'Phone' },
-      { key: 'joining_date', header: 'Joining Date' }
-    ]
-  },
-  staff: {
-    title: 'Staff Directory Report',
-    columns: [
-      { key: 'name', header: 'Staff Name' },
-      { key: 'employee_id', header: 'Emp ID' },
-      { key: 'role', header: 'Role' },
-      { key: 'department', header: 'Department' },
-      { key: 'phone', header: 'Phone' }
-    ]
-  },
-  admissions: {
-    title: 'Admissions Report',
-    columns: [
-      { key: 'name', header: 'Student Name' },
-      { key: 'admission_no', header: 'Admission No' },
-      { key: 'grade', header: 'Applied Class' },
       { key: 'admission_date', header: 'Date' },
+      { key: 'name', header: 'Student Name' },
+      { key: 'grade', header: 'Grade' },
       { key: 'admission_status', header: 'Status' }
     ]
   },
-  expenditure: {
-    title: 'Expenditure Report',
+  fee_defaulters: {
+    title: 'Fee Defaulters Report',
     columns: [
-      { key: 'date', header: 'Date' },
-      { key: 'title', header: 'Title' },
-      { key: 'category', header: 'Category' },
-      { key: 'vendor_name', header: 'Vendor' },
-      { key: 'amount', header: 'Amount' },
-      { key: 'payment_mode', header: 'Payment Mode' }
+      { key: 'students.name', header: 'Student Name' },
+      { key: 'students.grade', header: 'Grade' },
+      { key: 'balance', header: 'Pending Amount' },
+      { key: 'due_date', header: 'Due Date' }
     ]
   },
-  tc: {
-    title: 'Transfer Certificate Report',
+  fee_collections_daily: {
+    title: 'Daily Fee Collections Report',
     columns: [
-      { key: 'tc_number', header: 'TC Number' },
+      { key: 'payment_date', header: 'Date' },
+      { key: 'amount', header: 'Amount' },
+      { key: 'payment_mode', header: 'Mode' },
+      { key: 'collected_by', header: 'Collected By' }
+    ]
+  },
+  attendance_low: {
+    title: 'Low Attendance Report',
+    columns: [
       { key: 'students.name', header: 'Student Name' },
-      { key: 'students.grade', header: 'Class' },
-      { key: 'issued_date', header: 'Issue Date' },
-      { key: 'reason', header: 'Reason' },
-      { key: 'conduct', header: 'Conduct' }
+      { key: 'students.grade', header: 'Grade' },
+      { key: 'attendance_percentage', header: '% Attendance' },
+      { key: 'last_present_date', header: 'Last Present' }
+    ]
+  },
+  expenditure_category: {
+    title: 'Category-wise Expenditure',
+    columns: [
+      { key: 'category', header: 'Category' },
+      { key: 'amount', header: 'Amount' },
+      { key: 'month', header: 'Month' }
+    ]
+  },
+  staff_attendance: {
+    title: 'Staff Attendance Report',
+    columns: [
+      { key: 'staff_name', header: 'Staff Name' },
+      { key: 'days_present', header: 'Days Present' },
+      { key: 'leaves_taken', header: 'Leaves Taken' }
+    ]
+  },
+  exam_toppers: {
+    title: 'Exam Toppers Report',
+    columns: [
+      { key: 'exams.name', header: 'Exam Name' },
+      { key: 'students.name', header: 'Student Name' },
+      { key: 'students.grade', header: 'Grade' },
+      { key: 'score_percentage', header: '% Score' }
     ]
   }
 };

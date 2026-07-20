@@ -1,19 +1,14 @@
-const supabase = require('../config/supabase');
+const { sql } = require('../config/database');
 
 // @desc    Get all blog posts for the user's school
 // @route   GET /api/blog
 // @access  Auth (All Staff)
 exports.getBlogPosts = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('blog_posts')
-      .select('*')
-      .eq('school_id', req.user.schoolId)
-      .order('created_at', { ascending: false });
+    const result = await req.db.request()
+      .query('SELECT * FROM blog_posts ORDER BY created_at DESC');
 
-    if (error) throw error;
-
-    res.json({ success: true, data: data || [] });
+    res.json({ success: true, data: result.recordset });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -24,16 +19,15 @@ exports.getBlogPosts = async (req, res) => {
 // @access  Auth (All Staff)
 exports.getBlogPost = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('blog_posts')
-      .select('*')
-      .eq('id', req.params.id)
-      .eq('school_id', req.user.schoolId)
-      .single();
+    const result = await req.db.request()
+      .input('id', sql.UniqueIdentifier, req.params.id)
+      .query('SELECT * FROM blog_posts WHERE id = @id');
 
-    if (error) throw error;
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'Blog post not found' });
+    }
 
-    res.json({ success: true, data });
+    res.json({ success: true, data: result.recordset[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -50,23 +44,20 @@ exports.createBlogPost = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Title and content are required' });
     }
 
-    const { data, error } = await supabase
-      .from('blog_posts')
-      .insert({
-        school_id: req.user.schoolId,
-        title,
-        content,
-        author_id: req.user.id,
-        author_name: req.user.name,
-        cover_image_url: coverImageUrl || '',
-        is_published: isPublished !== undefined ? isPublished : true,
-      })
-      .select()
-      .single();
+    const result = await req.db.request()
+      .input('title', sql.NVarChar, title)
+      .input('content', sql.NVarChar, content)
+      .input('authorId', sql.UniqueIdentifier, req.user.id)
+      .input('authorName', sql.NVarChar, req.user.name)
+      .input('coverImageUrl', sql.NVarChar, coverImageUrl || '')
+      .input('isPublished', sql.Bit, isPublished !== undefined ? isPublished : 1)
+      .query(`
+        INSERT INTO blog_posts (title, content, author_id, author_name, cover_image_url, is_published)
+        OUTPUT INSERTED.*
+        VALUES (@title, @content, @authorId, @authorName, @coverImageUrl, @isPublished)
+      `);
 
-    if (error) throw error;
-
-    res.status(201).json({ success: true, data });
+    res.status(201).json({ success: true, data: result.recordset[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -79,23 +70,46 @@ exports.updateBlogPost = async (req, res) => {
   try {
     const { title, content, coverImageUrl, isPublished } = req.body;
 
-    const updateData = { updated_at: new Date().toISOString() };
-    if (title !== undefined) updateData.title = title;
-    if (content !== undefined) updateData.content = content;
-    if (coverImageUrl !== undefined) updateData.cover_image_url = coverImageUrl;
-    if (isPublished !== undefined) updateData.is_published = isPublished;
+    const request = req.db.request();
+    let setClauses = [];
 
-    const { data, error } = await supabase
-      .from('blog_posts')
-      .update(updateData)
-      .eq('id', req.params.id)
-      .eq('school_id', req.user.schoolId)
-      .select()
-      .single();
+    if (title !== undefined) {
+      setClauses.push('title = @title');
+      request.input('title', sql.NVarChar, title);
+    }
+    if (content !== undefined) {
+      setClauses.push('content = @content');
+      request.input('content', sql.NVarChar, content);
+    }
+    if (coverImageUrl !== undefined) {
+      setClauses.push('cover_image_url = @coverImageUrl');
+      request.input('coverImageUrl', sql.NVarChar, coverImageUrl);
+    }
+    if (isPublished !== undefined) {
+      setClauses.push('is_published = @isPublished');
+      request.input('isPublished', sql.Bit, isPublished ? 1 : 0);
+    }
 
-    if (error) throw error;
+    if (setClauses.length === 0) {
+      return res.status(400).json({ success: false, message: 'No fields provided for update' });
+    }
 
-    res.json({ success: true, data });
+    setClauses.push('updated_at = SYSDATETIMEOFFSET()');
+
+    request.input('id', sql.UniqueIdentifier, req.params.id);
+
+    const result = await request.query(`
+      UPDATE blog_posts 
+      SET ${setClauses.join(', ')} 
+      OUTPUT INSERTED.* 
+      WHERE id = @id
+    `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'Blog post not found' });
+    }
+
+    res.json({ success: true, data: result.recordset[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -106,13 +120,13 @@ exports.updateBlogPost = async (req, res) => {
 // @access  Auth (All Staff)
 exports.deleteBlogPost = async (req, res) => {
   try {
-    const { error } = await supabase
-      .from('blog_posts')
-      .delete()
-      .eq('id', req.params.id)
-      .eq('school_id', req.user.schoolId);
+    const result = await req.db.request()
+      .input('id', sql.UniqueIdentifier, req.params.id)
+      .query('DELETE FROM blog_posts WHERE id = @id');
 
-    if (error) throw error;
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ success: false, message: 'Blog post not found' });
+    }
 
     res.json({ success: true, message: 'Blog post deleted' });
   } catch (error) {
@@ -120,7 +134,8 @@ exports.deleteBlogPost = async (req, res) => {
   }
 };
 
-// ─── Helper: fetch with timeout ─────────────────────────────
+// ─── AI / Web Helpers ─────────────────────────────────────────
+
 const fetchWithTimeout = (url, timeoutMs = 8000) => {
   return Promise.race([
     fetch(url).then(r => r.json()),
@@ -128,18 +143,14 @@ const fetchWithTimeout = (url, timeoutMs = 8000) => {
   ]);
 };
 
-// ─── Helper: Search Wikipedia for content ───────────────────
 const searchWikipedia = async (topic) => {
   try {
-    // Step 1: Search for the topic
     const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&srlimit=3&format=json&origin=*`;
     const searchData = await fetchWithTimeout(searchUrl);
 
     if (!searchData.query?.search?.length) return null;
-
     const pageTitle = searchData.query.search[0].title;
 
-    // Step 2: Get the full extract
     const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=extracts|pageimages&exintro=false&explaintext=true&exsectionformat=plain&pithumbsize=600&format=json&origin=*`;
     const extractData = await fetchWithTimeout(extractUrl);
 
@@ -160,7 +171,6 @@ const searchWikipedia = async (topic) => {
   }
 };
 
-// ─── Helper: Search DuckDuckGo Instant Answer ───────────────
 const searchDuckDuckGo = async (topic) => {
   try {
     const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(topic)}&format=json&no_html=1&skip_disambig=1`;
@@ -178,7 +188,7 @@ const searchDuckDuckGo = async (topic) => {
 
     return {
       title: data.Heading || topic,
-      content: sections.join('\n\n'),
+      content: sections.join('\\n\\n'),
       imageUrl: data.Image ? `https://duckduckgo.com${data.Image}` : '',
     };
   } catch (err) {
@@ -187,15 +197,10 @@ const searchDuckDuckGo = async (topic) => {
   }
 };
 
-// ─── Helper: Format raw content into a blog post ────────────
 const formatBlogContent = (topic, rawContent, source) => {
-  // Clean and trim the content
   let content = rawContent.trim();
+  let paragraphs = content.split('\\n').filter(p => p.trim().length > 20);
 
-  // Split into paragraphs
-  let paragraphs = content.split('\n').filter(p => p.trim().length > 20);
-
-  // If too long, trim to reasonable blog length (~2000 chars)
   let result = [];
   let totalLen = 0;
   for (const para of paragraphs) {
@@ -204,14 +209,11 @@ const formatBlogContent = (topic, rawContent, source) => {
     totalLen += para.length;
   }
 
-  // Build the blog post
   const intro = `This article explores the topic of "${topic}" — a subject of great interest for students, educators, and the wider school community.`;
+  const body = result.join('\\n\\n');
+  const outro = `\\n\\nWe hope this article helps our school community understand more about "${topic}". If you have questions or would like to discuss this topic further, please reach out to our staff.\\n\\nSource: ${source}`;
 
-  const body = result.join('\n\n');
-
-  const outro = `\n\nWe hope this article helps our school community understand more about "${topic}". If you have questions or would like to discuss this topic further, please reach out to our staff.\n\nSource: ${source}`;
-
-  return `${intro}\n\n${body}${outro}`;
+  return `${intro}\\n\\n${body}${outro}`;
 };
 
 // @desc    Auto-generate a blog post by searching online
@@ -226,12 +228,9 @@ exports.generateBlogPost = async (req, res) => {
     }
 
     const cleanTopic = topic.trim();
-
-    // Try Wikipedia first (richer content)
     let result = await searchWikipedia(cleanTopic);
     let source = 'Wikipedia';
 
-    // Fallback to DuckDuckGo
     if (!result || result.content.length < 100) {
       result = await searchDuckDuckGo(cleanTopic);
       source = 'DuckDuckGo';
@@ -244,10 +243,7 @@ exports.generateBlogPost = async (req, res) => {
       });
     }
 
-    // Format into a proper blog post
     const blogContent = formatBlogContent(cleanTopic, result.content, source);
-
-    // Create a nice title
     const blogTitle = result.title || cleanTopic;
 
     res.json({

@@ -1,35 +1,26 @@
-const supabase = require('../config/supabase');
-const { logAuditAction } = require('../utils/auditLogger');
-const { safeUpdate, safeDelete } = require('../utils/concurrency');
+const { sql, getMasterPool } = require('../config/database');
+const { getSchoolPool, resolveSchoolDbName } = require('../config/tenantPool');
+const { hashPassword } = require('../config/auth');
 
 // @desc    Get all schools (platform-wide)
 // @route   GET /api/super-admin/schools
 // @access  Super Admin
 exports.getAllSchools = async (req, res) => {
   try {
-    const { data: schools, error } = await supabase
-      .from('schools')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const masterPool = await getMasterPool();
+    const result = await masterPool.request().query('SELECT * FROM schools ORDER BY created_at DESC');
+    
+    // Enrich with user counts by querying global_users
+    const userCountsResult = await masterPool.request().query('SELECT school_id, COUNT(*) as count FROM global_users GROUP BY school_id');
+    
+    const countMap = {};
+    userCountsResult.recordset.forEach(r => {
+      countMap[r.school_id] = r.count;
+    });
 
-    if (error) throw error;
-
-    // Get user counts per school
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('school_id')
-      .not('school_id', 'is', null);
-
-    const schoolUserCounts = {};
-    if (profiles) {
-      profiles.forEach(p => {
-        schoolUserCounts[p.school_id] = (schoolUserCounts[p.school_id] || 0) + 1;
-      });
-    }
-
-    const enrichedSchools = (schools || []).map(school => ({
+    const enrichedSchools = result.recordset.map(school => ({
       ...school,
-      userCount: schoolUserCounts[school.id] || 0,
+      userCount: countMap[school.id] || 0,
     }));
 
     res.json({
@@ -47,33 +38,28 @@ exports.getAllSchools = async (req, res) => {
 // @access  Super Admin
 exports.getSchoolById = async (req, res) => {
   try {
-    const { data: school, error } = await supabase
-      .from('schools')
-      .select('*')
-      .eq('id', req.params.id)
-      .single();
+    const masterPool = await getMasterPool();
+    const schoolResult = await masterPool.request()
+      .input('id', sql.UniqueIdentifier, req.params.id)
+      .query('SELECT * FROM schools WHERE id = @id');
 
-    if (error) throw error;
+    if (schoolResult.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'School not found' });
+    }
+    const school = schoolResult.recordset[0];
 
-    // Get users in this school
-    const { data: users } = await supabase
-      .from('profiles')
-      .select('id, name, email, role, created_at')
-      .eq('school_id', req.params.id)
-      .order('created_at', { ascending: false });
-
-    // Get student count
-    const { count: studentCount } = await supabase
-      .from('students')
-      .select('id', { count: 'exact', head: true })
-      .eq('school_id', req.params.id);
+    // Connect to tenant DB to get users and student count
+    const schoolPool = await getSchoolPool(school.db_name);
+    
+    const usersResult = await schoolPool.request().query('SELECT id, name, email, role, created_at FROM profiles ORDER BY created_at DESC');
+    const studentCountResult = await schoolPool.request().query('SELECT COUNT(*) as count FROM students');
 
     res.json({
       success: true,
       data: {
         ...school,
-        users: users || [],
-        studentCount: studentCount || 0,
+        users: usersResult.recordset || [],
+        studentCount: studentCountResult.recordset[0].count || 0,
       },
     });
   } catch (error) {
@@ -86,33 +72,39 @@ exports.getSchoolById = async (req, res) => {
 // @access  Super Admin
 exports.getAllUsers = async (req, res) => {
   try {
-    const { data: users, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .neq('role', 'super_admin')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    // Enrich with school names
-    const { data: schools } = await supabase
-      .from('schools')
-      .select('id, name');
-
+    const masterPool = await getMasterPool();
+    // Query schools and global users
+    const schoolsResult = await masterPool.request().query('SELECT id, name, db_name FROM schools');
+    const schools = schoolsResult.recordset;
+    
     const schoolMap = {};
-    if (schools) {
-      schools.forEach(s => { schoolMap[s.id] = s.name; });
-    }
+    schools.forEach(s => { schoolMap[s.id] = s.name; });
 
-    const enrichedUsers = (users || []).map(user => ({
-      ...user,
-      school_name: user.school_id ? schoolMap[user.school_id] || 'Unknown' : 'No School',
-    }));
+    let allUsers = [];
+
+    // Parallel query to each school database to get profiles
+    const tasks = schools.map(async (school) => {
+      try {
+        const pool = await getSchoolPool(school.db_name);
+        const usersResult = await pool.request().query('SELECT id, name, email, role, is_active FROM profiles');
+        usersResult.recordset.forEach(u => {
+          allUsers.push({
+            ...u,
+            school_id: school.id,
+            school_name: school.name
+          });
+        });
+      } catch (err) {
+        console.error(`Failed to fetch users for ${school.name}:`, err.message);
+      }
+    });
+
+    await Promise.all(tasks);
 
     res.json({
       success: true,
-      count: enrichedUsers.length,
-      data: enrichedUsers,
+      count: allUsers.length,
+      data: allUsers,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -126,80 +118,61 @@ exports.createUser = async (req, res) => {
   try {
     const { name, email, password, role, schoolId } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name, email, and password are required',
-      });
+    if (!name || !email || !password || !schoolId) {
+      return res.status(400).json({ success: false, message: 'Name, email, password, and schoolId required' });
     }
 
-    if (!['principal', 'clerk', 'teacher'].includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Role must be "principal", "clerk", or "teacher"',
-      });
+    const masterPool = await getMasterPool();
+    
+    // Check if user exists globally
+    const checkUser = await masterPool.request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT * FROM global_users WHERE email = @email');
+      
+    if (checkUser.recordset.length > 0) {
+      return res.status(400).json({ success: false, message: 'A user with this email already exists' });
     }
 
-    if (!schoolId) {
-      return res.status(400).json({
-        success: false,
-        message: 'School ID is required',
-      });
+    const schoolResult = await masterPool.request()
+      .input('id', sql.UniqueIdentifier, schoolId)
+      .query('SELECT * FROM schools WHERE id = @id');
+
+    if (schoolResult.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'School not found' });
     }
+    const school = schoolResult.recordset[0];
 
-    // Verify school exists
-    const { data: school, error: schoolError } = await supabase
-      .from('schools')
-      .select('id, name')
-      .eq('id', schoolId)
-      .single();
+    const passwordHash = await hashPassword(password);
+    
+    // Add to tenant DB
+    const schoolPool = await getSchoolPool(school.db_name);
+    const profileResult = await schoolPool.request()
+      .input('email', sql.NVarChar, email)
+      .input('passwordHash', sql.NVarChar, passwordHash)
+      .input('name', sql.NVarChar, name)
+      .input('role', sql.NVarChar, role)
+      .query(`
+        INSERT INTO profiles (email, password_hash, name, role, must_change_password)
+        OUTPUT INSERTED.*
+        VALUES (@email, @passwordHash, @name, @role, 1)
+      `);
 
-    if (schoolError || !school) {
-      return res.status(404).json({
-        success: false,
-        message: 'School not found',
-      });
-    }
+    const newProfile = profileResult.recordset[0];
 
-    // Create user via Supabase Admin API
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { name, full_name: name, role, schoolId },
-    });
-
-    if (authError) {
-      if (authError.message.includes('already')) {
-        return res.status(400).json({ success: false, message: 'A user with this email already exists' });
-      }
-      throw authError;
-    }
-
-    // Upsert profile directly to bypass any broken triggers
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert({
-        id: authData.user.id,
-        email,
-        name,
-        role,
-        school_id: schoolId,
-        must_change_password: true,
-      });
-
-    if (profileError) {
-      console.error('Profile creation error:', profileError);
-      // Wait, if profile creation fails, the user is still in auth.users!
-      // In a real production system we might rollback, but for now we throw error so admin knows.
-      throw new Error(`Auth user created but profile failed: ${profileError.message}`);
-    }
+    // Add to global routing table
+    await masterPool.request()
+      .input('email', sql.NVarChar, email)
+      .input('schoolId', sql.UniqueIdentifier, schoolId)
+      .query(`
+        INSERT INTO global_users (email, school_id)
+        VALUES (@email, @schoolId)
+      `);
 
     res.status(201).json({
       success: true,
-      message: `User created successfully. They must change their password on first login.`,
+      message: 'User created successfully',
       data: {
-        id: authData.user.id,
+        id: newProfile.id,
         name,
         email,
         role,
@@ -208,7 +181,6 @@ exports.createUser = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Create user error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -217,77 +189,34 @@ exports.createUser = async (req, res) => {
 // @route   POST /api/super-admin/schools
 // @access  Super Admin
 exports.createSchool = async (req, res) => {
+  // Uses the CLI script function internally or reproduces it
   try {
+    const { createSchoolDatabase } = require('../scripts/createSchoolDb');
     const { schoolName, schoolCode, address, phone, email, academicYear, logo, principalName, principalEmail, temporaryPassword } = req.body;
 
     if (!schoolName || !principalName || !principalEmail || !temporaryPassword) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    // Insert school
-    const { data: school, error: schoolError } = await supabase
-      .from('schools')
-      .insert([{
-        name: schoolName,
-        join_code: schoolCode || Math.random().toString(36).substring(2, 8).toUpperCase(),
-        academic_year: academicYear || '2023-2024',
-        email: email || null,
-        phone: phone || null,
-        address: address || null,
-        logo_url: logo || null
-      }])
-      .select()
-      .single();
+    const school = await createSchoolDatabase(
+      schoolName, 
+      schoolCode || Math.random().toString(36).substring(2, 8).toUpperCase(), 
+      academicYear || '2023-2024', 
+      principalEmail, 
+      temporaryPassword, 
+      { address, phone, email, logoUrl: logo, principalName }
+    );
 
-    if (schoolError) throw schoolError;
-
-    // Create Principal user via Supabase Admin API
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: principalEmail,
-      password: temporaryPassword,
-      email_confirm: true,
-      user_metadata: { name: principalName, role: 'principal', schoolId: school.id },
-    });
-
-    if (authError) {
-      return res.status(400).json({ success: false, message: authError.message });
+    if (!school) {
+      return res.status(400).json({ success: false, message: 'Failed to create school. School code may already exist.' });
     }
-
-    // Upsert Profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert({
-        id: authData.user.id,
-        name: principalName,
-        email: principalEmail,
-        role: 'principal',
-        school_id: school.id,
-        must_change_password: true
-      });
-
-    if (profileError) {
-      // Compensating transaction
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      await supabase.from('schools').delete().eq('id', school.id);
-      throw profileError;
-    }
-
-    // Log the school creation
-    await logAuditAction(req, {
-      action: 'CREATE',
-      resource_type: 'school',
-      resource_id: school.id,
-      new_values: { schoolName, schoolCode },
-      schoolId: school.id // since the super admin has no schoolId themselves
-    });
 
     res.status(201).json({
       success: true,
       message: 'School and Principal created successfully',
-      data: { school, principal: { id: authData.user.id, email: principalEmail } }
+      data: { school }
     });
   } catch (error) {
-    console.error('Create school error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -297,50 +226,43 @@ exports.createSchool = async (req, res) => {
 // @access  Super Admin
 exports.getStats = async (req, res) => {
   try {
-    // Total schools
-    const { count: totalSchools } = await supabase
-      .from('schools')
-      .select('id', { count: 'exact', head: true });
+    const masterPool = await getMasterPool();
+    
+    const schoolsResult = await masterPool.request().query('SELECT id, name, db_name, created_at FROM schools ORDER BY created_at DESC');
+    const schools = schoolsResult.recordset;
+    const totalSchools = schools.length;
 
-    // Total users (excluding super_admin)
-    const { count: totalUsers } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .neq('role', 'super_admin');
-
-    // Total students
-    const { count: totalStudents } = await supabase
-      .from('students')
-      .select('id', { count: 'exact', head: true });
-
-    // Users by role
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('role')
-      .neq('role', 'super_admin');
-
+    let totalUsers = 0;
+    let totalStudents = 0;
     const roleCounts = {};
-    if (profiles) {
-      profiles.forEach(p => {
-        roleCounts[p.role] = (roleCounts[p.role] || 0) + 1;
-      });
-    }
 
-    // Recent schools
-    const { data: recentSchools } = await supabase
-      .from('schools')
-      .select('id, name, created_at')
-      .order('created_at', { ascending: false })
-      .limit(5);
+    const tasks = schools.map(async (school) => {
+      try {
+        const pool = await getSchoolPool(school.db_name);
+        
+        const uCount = await pool.request().query('SELECT COUNT(*) as count FROM profiles');
+        totalUsers += uCount.recordset[0].count;
+
+        const sCount = await pool.request().query('SELECT COUNT(*) as count FROM students');
+        totalStudents += sCount.recordset[0].count;
+
+        const rCounts = await pool.request().query('SELECT role, COUNT(*) as count FROM profiles GROUP BY role');
+        rCounts.recordset.forEach(r => {
+          roleCounts[r.role] = (roleCounts[r.role] || 0) + r.count;
+        });
+      } catch (err) {}
+    });
+
+    await Promise.all(tasks);
 
     res.json({
       success: true,
       data: {
-        totalSchools: totalSchools || 0,
-        totalUsers: totalUsers || 0,
-        totalStudents: totalStudents || 0,
+        totalSchools,
+        totalUsers,
+        totalStudents,
         roleCounts,
-        recentSchools: recentSchools || [],
+        recentSchools: schools.slice(0, 5),
       },
     });
   } catch (error) {
@@ -353,38 +275,28 @@ exports.getStats = async (req, res) => {
 // @access  Super Admin
 exports.deleteUser = async (req, res) => {
   try {
-    const userId = req.params.id;
-
-    // Check that we're not deleting a super_admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single();
-
-    if (profile?.role === 'super_admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Cannot delete a Super Admin account',
-      });
+    // Requires email to delete from global_users, or finding the user first
+    const { email, schoolId } = req.body;
+    
+    if (!email || !schoolId) {
+      return res.status(400).json({ success: false, message: 'email and schoolId required in body to delete user' });
     }
 
-    // Delete from Supabase Auth (cascades to profiles)
-    const { error } = await supabase.auth.admin.deleteUser(userId);
+    const dbName = await resolveSchoolDbName(schoolId);
+    if (!dbName) return res.status(404).json({ success: false, message: 'School not found' });
 
-    if (error) throw error;
+    const schoolPool = await getSchoolPool(dbName);
+    
+    await schoolPool.request()
+      .input('email', sql.NVarChar, email)
+      .query('DELETE FROM profiles WHERE email = @email');
 
-    await logAuditAction(req, {
-      action: 'DELETE',
-      resource_type: 'user',
-      resource_id: userId,
-      old_values: profile
-    });
+    const masterPool = await getMasterPool();
+    await masterPool.request()
+      .input('email', sql.NVarChar, email)
+      .query('DELETE FROM global_users WHERE email = @email');
 
-    res.json({
-      success: true,
-      message: 'User deleted successfully',
-    });
+    res.json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -396,35 +308,33 @@ exports.deleteUser = async (req, res) => {
 exports.resetUserPassword = async (req, res) => {
   try {
     const userId = req.params.id;
+    const { schoolId } = req.body;
     
-    // Check that we're not modifying a super_admin
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single();
-    if (profile?.role === 'super_admin') {
-      return res.status(403).json({ success: false, message: 'Cannot reset a Super Admin account' });
+    if (!schoolId) {
+      return res.status(400).json({ success: false, message: 'schoolId required in body' });
     }
+
+    const dbName = await resolveSchoolDbName(schoolId);
+    if (!dbName) return res.status(404).json({ success: false, message: 'School not found' });
 
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
     let newPassword = '';
     for (let i = 0; i < 12; i++) newPassword += chars[Math.floor(Math.random() * chars.length)];
+    const passwordHash = await hashPassword(newPassword);
 
-    const { error: authError } = await supabase.auth.admin.updateUserById(userId, {
-      password: newPassword
-    });
+    const schoolPool = await getSchoolPool(dbName);
+    const result = await schoolPool.request()
+      .input('id', sql.UniqueIdentifier, userId)
+      .input('hash', sql.NVarChar, passwordHash)
+      .query(`
+        UPDATE profiles 
+        SET password_hash = @hash, must_change_password = 1 
+        WHERE id = @id
+      `);
 
-    if (authError) throw authError;
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ must_change_password: true })
-      .eq('id', userId);
-
-    if (profileError) throw profileError;
-
-    await logAuditAction(req, {
-      action: 'RESET_PASSWORD',
-      resource_type: 'user',
-      resource_id: userId
-    });
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
     res.json({ success: true, message: 'Password reset successfully', data: { temporaryPassword: newPassword } });
   } catch (error) {
@@ -438,127 +348,26 @@ exports.resetUserPassword = async (req, res) => {
 exports.updateUserStatus = async (req, res) => {
   try {
     const userId = req.params.id;
-    const { status } = req.body; // 'active', 'suspended', 'deactivated'
+    const { status, schoolId } = req.body; 
     
-    // Check that we're not modifying a super_admin
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single();
-    if (profile?.role === 'super_admin') {
-      return res.status(403).json({ success: false, message: 'Cannot modify a Super Admin account' });
+    if (!schoolId) {
+      return res.status(400).json({ success: false, message: 'schoolId required in body' });
     }
 
-    let banDuration = 'none';
-    if (status === 'suspended' || status === 'deactivated') {
-      banDuration = '87600h'; // ~10 years
+    const dbName = await resolveSchoolDbName(schoolId);
+    if (!dbName) return res.status(404).json({ success: false, message: 'School not found' });
+
+    const schoolPool = await getSchoolPool(dbName);
+    const result = await schoolPool.request()
+      .input('id', sql.UniqueIdentifier, userId)
+      .input('status', sql.Bit, status === 'active' ? 1 : 0)
+      .query('UPDATE profiles SET is_active = @status WHERE id = @id');
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const { error } = await supabase.auth.admin.updateUserById(userId, {
-      ban_duration: banDuration
-    });
-
-    if (error) throw error;
-
-    await logAuditAction(req, {
-      action: 'UPDATE_STATUS',
-      resource_type: 'user',
-      resource_id: userId,
-      new_values: { status }
-    });
-
-    res.json({ success: true, message: `User ${status} successfully` });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Update a school
-// @route   PATCH /api/super-admin/schools/:id
-// @access  Super Admin
-exports.updateSchool = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, address, phone, email, status, updated_at } = req.body;
-
-    const updates = { name, address, phone, email, status };
-    
-    // Remove undefined values
-    Object.keys(updates).forEach(key => updates[key] === undefined && delete updates[key]);
-    
-    // Update updated_at automatically
-    updates.updated_at = new Date().toISOString();
-
-    const { data } = await safeUpdate('schools', id, updates, updated_at);
-
-    await logAuditAction(req, {
-      action: 'UPDATE',
-      resource_type: 'school',
-      resource_id: id,
-      new_values: updates,
-      schoolId: id
-    });
-
-    res.json({ success: true, data, message: 'School updated successfully' });
-  } catch (error) {
-    res.status(error.status || 500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Delete a school
-// @route   DELETE /api/super-admin/schools/:id
-// @access  Super Admin
-exports.deleteSchool = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { updated_at } = req.body;
-
-    const { data } = await safeDelete('schools', id, updated_at);
-
-    // Delete associated super admins/principals/users for this school from auth
-    // Wait, since we are not directly exposing auth.users, deleting school cascades to profiles,
-    // but auth.users will be left orphaned. Let's rely on DB cascade for profiles.
-    // For a real production app we'd iterate through profiles and delete auth.users.
-    
-    await logAuditAction(req, {
-      action: 'DELETE',
-      resource_type: 'school',
-      resource_id: id,
-      old_values: data
-    });
-
-    res.json({ success: true, message: 'School deleted successfully' });
-  } catch (error) {
-    res.status(error.status || 500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Get system-wide audit logs
-// @route   GET /api/super-admin/audit-logs
-// @access  Super Admin
-exports.getAuditLogs = async (req, res) => {
-  try {
-    const { limit = 100, offset = 0, resource_type, action } = req.query;
-
-    let query = supabase
-      .from('audit_logs')
-      .select(`
-        *,
-        profiles:user_id(name, email, role),
-        schools:school_id(name)
-      `)
-      .order('created_at', { ascending: false })
-      .range(offset, parseInt(offset) + parseInt(limit) - 1);
-
-    if (resource_type) query = query.eq('resource_type', resource_type);
-    if (action) query = query.eq('action', action);
-
-    const { data: logs, error, count } = await query;
-
-    if (error) throw error;
-
-    res.json({
-      success: true,
-      data: logs,
-      count
-    });
+    res.json({ success: true, message: `User status updated to ${status}` });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -1,30 +1,104 @@
-const supabase = require('../config/supabase');
+const { sql } = require('../config/database');
 
 // @desc    Get all expenditures
 // @route   GET /api/expenditures
-// @access  Auth
+// @access  Auth (Admin, Principal, Clerk)
 exports.getExpenditures = async (req, res) => {
   try {
-    const { category, startDate, endDate, academicYear } = req.query;
+    const { startDate, endDate, category, search, academicYear } = req.query;
 
-    let query = supabase
-      .from('expenditures')
-      .select('*')
-      .eq('school_id', req.user.schoolId);
+    let query = `
+      SELECT e.*, p.name as created_by_name 
+      FROM expenditures e
+      LEFT JOIN profiles p ON e.created_by = p.id
+      WHERE 1=1
+    `;
+    const request = req.db.request();
 
-    if (category) query = query.eq('category', category);
-    if (academicYear) query = query.eq('academic_year', academicYear);
-    if (startDate) query = query.gte('date', startDate);
-    if (endDate) query = query.lte('date', endDate);
+    if (startDate) {
+      query += ' AND e.date >= @startDate';
+      request.input('startDate', sql.Date, startDate);
+    }
+    if (endDate) {
+      query += ' AND e.date <= @endDate';
+      request.input('endDate', sql.Date, endDate);
+    }
+    if (category) {
+      query += ' AND e.category = @category';
+      request.input('category', sql.NVarChar, category);
+    }
+    if (academicYear) {
+      query += ' AND e.academic_year = @academicYear';
+      request.input('academicYear', sql.NVarChar, academicYear);
+    }
+    if (search) {
+      query += ' AND (e.title LIKE @search OR e.vendor_name LIKE @search OR e.description LIKE @search)';
+      request.input('search', sql.NVarChar, `%${search}%`);
+    }
 
-    query = query.order('date', { ascending: false });
+    query += ' ORDER BY e.date DESC, e.created_at DESC';
 
-    const { data, error } = await query;
-    if (error) throw error;
+    const result = await request.query(query);
 
-    res.json({ success: true, count: data.length, data });
+    const formattedData = result.recordset.map(row => {
+      const data = { ...row };
+      if (data.created_by_name) {
+        data.created_by = { name: data.created_by_name };
+      } else {
+        data.created_by = null;
+      }
+      delete data.created_by_name;
+      return data;
+    });
+
+    res.json({
+      success: true,
+      count: formattedData.length,
+      data: formattedData
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error getting expenditures:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch expenditures' });
+  }
+};
+
+// @desc    Create expenditure
+// @route   POST /api/expenditures
+// @access  Auth (Admin, Principal, Clerk)
+exports.createExpenditure = async (req, res) => {
+  try {
+    const { title, amount, category, date, description, payment_mode, vendor_name, academic_year } = req.body;
+
+    if (!title || !amount) {
+      return res.status(400).json({ success: false, message: 'Title and amount are required' });
+    }
+
+    const result = await req.db.request()
+      .input('title', sql.NVarChar, title)
+      .input('amount', sql.Decimal(12,2), amount)
+      .input('category', sql.NVarChar, category || 'other')
+      .input('date', sql.Date, date || new Date().toISOString().split('T')[0])
+      .input('description', sql.NVarChar, description || '')
+      .input('paymentMode', sql.NVarChar, payment_mode || 'cash')
+      .input('vendorName', sql.NVarChar, vendor_name || '')
+      .input('academicYear', sql.NVarChar, academic_year || '')
+      .input('createdBy', sql.UniqueIdentifier, req.user.id)
+      .query(`
+        INSERT INTO expenditures (
+          title, amount, category, date, description, payment_mode, 
+          vendor_name, academic_year, created_by
+        )
+        OUTPUT INSERTED.*
+        VALUES (
+          @title, @amount, @category, @date, @description, @paymentMode,
+          @vendorName, @academicYear, @createdBy
+        )
+      `);
+
+    res.status(201).json({ success: true, data: result.recordset[0] });
+  } catch (error) {
+    console.error('Error creating expenditure:', error);
+    res.status(500).json({ success: false, message: 'Failed to create expenditure' });
   }
 };
 
@@ -33,155 +107,106 @@ exports.getExpenditures = async (req, res) => {
 // @access  Auth
 exports.getExpenditure = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('expenditures')
-      .select('*')
-      .eq('id', req.params.id)
-      .eq('school_id', req.user.schoolId)
-      .single();
+    const result = await req.db.request()
+      .input('id', sql.UniqueIdentifier, req.params.id)
+      .query(`
+        SELECT e.*, p.name as created_by_name 
+        FROM expenditures e
+        LEFT JOIN profiles p ON e.created_by = p.id
+        WHERE e.id = @id
+      `);
 
-    if (error) throw error;
-    if (!data) return res.status(404).json({ success: false, message: 'Expenditure not found' });
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'Expenditure not found' });
+    }
+
+    const data = { ...result.recordset[0] };
+    if (data.created_by_name) {
+      data.created_by = { name: data.created_by_name };
+    } else {
+      data.created_by = null;
+    }
+    delete data.created_by_name;
 
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Create expenditure
-// @route   POST /api/expenditures
-// @access  Auth
-exports.createExpenditure = async (req, res) => {
-  try {
-    const { title, amount, category, date, description, paymentMode, vendorName, academicYear } = req.body;
-
-    if (!title || !amount || !category || !date) {
-      return res.status(400).json({ success: false, message: 'Title, amount, category and date are required' });
-    }
-
-    const { data, error } = await supabase
-      .from('expenditures')
-      .insert({
-        school_id: req.user.schoolId,
-        title,
-        amount: parseFloat(amount),
-        category,
-        date,
-        description: description || '',
-        payment_mode: paymentMode || 'cash',
-        vendor_name: vendorName || '',
-        academic_year: academicYear || '',
-        created_by: req.user.id,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    res.status(201).json({ success: true, data });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error getting expenditure:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch expenditure' });
   }
 };
 
 // @desc    Update expenditure
 // @route   PUT /api/expenditures/:id
-// @access  Auth
+// @access  Auth (Admin, Principal, Clerk)
 exports.updateExpenditure = async (req, res) => {
   try {
-    const { title, amount, category, date, description, paymentMode, vendorName, academicYear } = req.body;
+    const fields = [
+      'title', 'amount', 'category', 'date', 'description', 
+      'payment_mode', 'vendor_name', 'academic_year'
+    ];
+    
+    // Map API fields to DB columns if different
+    const dbFields = { payment_mode: 'payment_mode', vendor_name: 'vendor_name', academic_year: 'academic_year' };
+    
+    let setClauses = [];
+    const request = req.db.request();
 
-    const updateData = { updated_at: new Date().toISOString() };
-    if (title !== undefined) updateData.title = title;
-    if (amount !== undefined) updateData.amount = parseFloat(amount);
-    if (category !== undefined) updateData.category = category;
-    if (date !== undefined) updateData.date = date;
-    if (description !== undefined) updateData.description = description;
-    if (paymentMode !== undefined) updateData.payment_mode = paymentMode;
-    if (vendorName !== undefined) updateData.vendor_name = vendorName;
-    if (academicYear !== undefined) updateData.academic_year = academicYear;
+    fields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        const dbCol = dbFields[field] || field;
+        setClauses.push(`${dbCol} = @${field}`);
+        
+        if (field === 'date') {
+          request.input(field, sql.Date, req.body[field]);
+        } else if (field === 'amount') {
+          request.input(field, sql.Decimal(12,2), req.body[field]);
+        } else {
+          request.input(field, sql.NVarChar, req.body[field]);
+        }
+      }
+    });
 
-    const { data, error } = await supabase
-      .from('expenditures')
-      .update(updateData)
-      .eq('id', req.params.id)
-      .eq('school_id', req.user.schoolId)
-      .select()
-      .single();
+    if (setClauses.length === 0) {
+      return res.status(400).json({ success: false, message: 'No fields to update' });
+    }
 
-    if (error) throw error;
-    if (!data) return res.status(404).json({ success: false, message: 'Expenditure not found' });
+    setClauses.push('updated_at = SYSDATETIMEOFFSET()');
+    request.input('id', sql.UniqueIdentifier, req.params.id);
+    
+    const result = await request.query(`
+      UPDATE expenditures 
+      SET ${setClauses.join(', ')} 
+      OUTPUT INSERTED.*
+      WHERE id = @id
+    `);
 
-    res.json({ success: true, data });
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'Expenditure not found' });
+    }
+
+    res.json({ success: true, data: result.recordset[0] });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error updating expenditure:', error);
+    res.status(500).json({ success: false, message: 'Failed to update expenditure' });
   }
 };
 
 // @desc    Delete expenditure
 // @route   DELETE /api/expenditures/:id
-// @access  Auth
+// @access  Auth (Admin, Principal)
 exports.deleteExpenditure = async (req, res) => {
   try {
-    const { error } = await supabase
-      .from('expenditures')
-      .delete()
-      .eq('id', req.params.id)
-      .eq('school_id', req.user.schoolId);
+    const result = await req.db.request()
+      .input('id', sql.UniqueIdentifier, req.params.id)
+      .query('DELETE FROM expenditures WHERE id = @id');
 
-    if (error) throw error;
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ success: false, message: 'Expenditure not found' });
+    }
 
-    res.json({ success: true, message: 'Expenditure deleted' });
+    res.json({ success: true, message: 'Expenditure deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Get expenditure stats
-// @route   GET /api/expenditures/stats
-// @access  Auth
-exports.getExpenditureStats = async (req, res) => {
-  try {
-    const { academicYear } = req.query;
-
-    let query = supabase.from('expenditures').select('*').eq('school_id', req.user.schoolId);
-    if (academicYear) query = query.eq('academic_year', academicYear);
-
-    const { data: expenditures, error } = await query;
-    if (error) throw error;
-
-    const totalExpenditure = expenditures.reduce((sum, e) => sum + (e.amount || 0), 0);
-
-    // Category-wise breakdown
-    const categoryMap = {};
-    expenditures.forEach((e) => {
-      categoryMap[e.category] = (categoryMap[e.category] || 0) + e.amount;
-    });
-    const categoryWise = Object.entries(categoryMap)
-      .map(([category, amount]) => ({ category, amount }))
-      .sort((a, b) => b.amount - a.amount);
-
-    // Monthly breakdown
-    const monthMap = {};
-    expenditures.forEach((e) => {
-      const month = e.date ? e.date.substring(0, 7) : 'Unknown'; // YYYY-MM
-      monthMap[month] = (monthMap[month] || 0) + e.amount;
-    });
-    const monthlyWise = Object.entries(monthMap)
-      .map(([month, amount]) => ({ month, amount }))
-      .sort((a, b) => a.month.localeCompare(b.month));
-
-    res.json({
-      success: true,
-      data: {
-        totalExpenditure,
-        totalCount: expenditures.length,
-        categoryWise,
-        monthlyWise,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error deleting expenditure:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete expenditure' });
   }
 };

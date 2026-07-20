@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlineSearch, HiOutlineExclamationCircle } from 'react-icons/hi';
+import StatCard from '../../components/Common/StatCard';
 import PrintSection from '../../components/PrintSection';
 
 const PendingFees = () => {
@@ -66,16 +67,7 @@ const PendingFees = () => {
 
       {/* Summary Card */}
       <div className="stat-grid" style={{ marginBottom: '1.5rem' }}>
-        <div className="stat-card danger">
-          <div className="stat-icon danger">
-            <HiOutlineExclamationCircle />
-          </div>
-          <div className="stat-info">
-            <div className="stat-label">Total Pending Amount</div>
-            <div className="stat-value">{formatCurrency(totalPending)}</div>
-            <div className="stat-change negative">{records.length} students</div>
-          </div>
-        </div>
+        <StatCard className="" title="Total Pending Amount" value={totalPending} formatValue={formatCurrency} icon={HiOutlineExclamationCircle} color="red" periodLabel={`${records.length} students`} hideDelta={true} />
       </div>
 
       {/* Filter */}
