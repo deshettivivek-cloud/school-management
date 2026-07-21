@@ -377,6 +377,14 @@ exports.register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'A user with this email already exists in the system' });
     }
 
+    const existingAdmin = await masterPool.request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT email FROM super_admin_profiles WHERE email = @email');
+
+    if (existingAdmin.recordset.length > 0) {
+      return res.status(400).json({ success: false, message: 'A user with this email already exists in the system' });
+    }
+
     const passwordHash = await hashPassword(password);
     const assignedRole = role || 'clerk';
 

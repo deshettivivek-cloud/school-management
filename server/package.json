@@ -1,7 +1,7 @@
 {
   "name": "school-management-server",
   "version": "1.0.0",
-  "description": "School Management System - Backend API (Supabase)",
+  "description": "School Management System - Backend API (Multi-Tenant)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -8,6 +8,13 @@ function buildDbConfig(database) {
     const parts = serverName.split('\\');
     serverName = parts[0];
     instanceName = parts[1];
+  } else if (serverName.includes(':')) {
+    const parts = serverName.split(':');
+    serverName = parts[0];
+    // If DB_PORT wasn't explicitly set, fallback to the port in the URL
+    if (!process.env.DB_PORT && parts[1]) {
+      process.env.DB_PORT = parts[1];
+    }
   }
 
   const config = {
