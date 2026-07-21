@@ -4,6 +4,7 @@ const { hashPassword, comparePassword, generateToken, generateTempPassword } = r
 const { logAuditAction } = require('../utils/auditLogger');
 const { z } = require('zod');
 const AuthRateLimiter = require('../services/authRateLimiter');
+const { sendEmail } = require('../services/emailService');
 
 const sanitizeString = (val) => {
   if (typeof val !== 'string') return val;
@@ -241,8 +242,78 @@ exports.changePassword = async (req, res) => {
 // @route   POST /api/auth/forgot-password
 // @access  Public
 exports.forgotPassword = async (req, res) => {
-  // To be implemented: generate reset token, store it, send email
-  res.json({ success: true, message: 'If that email is registered, you\'ll receive a reset link' });
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    // Always return a success response immediately to prevent email enumeration
+    res.json({ success: true, message: 'If that email is registered, you\'ll receive an email with instructions.' });
+
+    const masterPool = await getMasterPool();
+
+    // 1. Check if email exists in global_users (school users) or super_admin_profiles
+    const globalUserResult = await masterPool.request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT school_id FROM global_users WHERE email = @email');
+
+    const superAdminResult = await masterPool.request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT id FROM super_admin_profiles WHERE email = @email');
+
+    if (globalUserResult.recordset.length === 0 && superAdminResult.recordset.length === 0) {
+      return; // Stop execution silently
+    }
+
+    // 2. Generate new temp password
+    const tempPassword = generateTempPassword(12);
+    const passwordHash = await hashPassword(tempPassword);
+
+    // 3. Update the corresponding profile
+    if (superAdminResult.recordset.length > 0) {
+      await masterPool.request()
+        .input('email', sql.NVarChar, email)
+        .input('hash', sql.NVarChar, passwordHash)
+        .query('UPDATE super_admin_profiles SET password_hash = @hash, must_change_password = 1 WHERE email = @email');
+    } else if (globalUserResult.recordset.length > 0) {
+      const schoolId = globalUserResult.recordset[0].school_id;
+      const dbName = await resolveSchoolDbName(schoolId);
+      const schoolPool = await getSchoolPool(dbName);
+
+      await schoolPool.request()
+        .input('email', sql.NVarChar, email)
+        .input('hash', sql.NVarChar, passwordHash)
+        .query('UPDATE profiles SET password_hash = @hash, must_change_password = 1 WHERE email = @email');
+    }
+
+    // 4. Send email
+    const emailText = `
+Hello,
+
+You recently requested to reset your password. 
+We have generated a secure temporary password for your account.
+
+Your temporary password is: ${tempPassword}
+
+Please log in using this temporary password. You will be immediately prompted to set a new, permanent password of your choosing.
+
+If you did not request a password reset, please contact your administrator.
+
+Regards,
+School Management System
+    `;
+
+    await sendEmail({
+      to: email,
+      subject: 'Your Password Reset Request',
+      text: emailText.trim(),
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    // Don't send 500 error to client to prevent timing attacks/enumeration
+  }
 };
 
 // @desc    Get current user profile
