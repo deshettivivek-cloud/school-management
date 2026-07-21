@@ -16,7 +16,7 @@ function buildDbConfig(database) {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     options: {
-      encrypt: true,
+      encrypt: process.env.DB_ENCRYPT === 'true', // Default false to prevent ECONNRESET on unencrypted Docker/Railway DBs
       trustServerCertificate: true,
     },
     pool: { max: 10, min: 2, idleTimeoutMillis: 30000 },
