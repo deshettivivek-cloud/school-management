@@ -4,6 +4,11 @@ function buildDbConfig(database) {
   let serverName = process.env.DB_SERVER || 'localhost';
   let instanceName;
   
+  // Strip 'tcp:' prefix if present (Azure/Standard SQL Server style)
+  if (serverName.startsWith('tcp:')) {
+    serverName = serverName.substring(4);
+  }
+  
   if (serverName.includes('\\')) {
     const parts = serverName.split('\\');
     serverName = parts[0];
@@ -12,6 +17,13 @@ function buildDbConfig(database) {
     const parts = serverName.split(':');
     serverName = parts[0];
     // If DB_PORT wasn't explicitly set, fallback to the port in the URL
+    if (!process.env.DB_PORT && parts[1]) {
+      process.env.DB_PORT = parts[1];
+    }
+  } else if (serverName.includes(',')) {
+    // Handle comma separated ports (e.g. server.database.windows.net,1433)
+    const parts = serverName.split(',');
+    serverName = parts[0];
     if (!process.env.DB_PORT && parts[1]) {
       process.env.DB_PORT = parts[1];
     }

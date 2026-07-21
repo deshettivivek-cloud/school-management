@@ -126,7 +126,7 @@ exports.login = async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
+    res.status(500).json({ success: false, message: 'Login failed. Please try again.', error: error.message, stack: error.stack });
   }
 };
 
@@ -200,7 +200,7 @@ exports.superAdminLogin = async (req, res) => {
 
   } catch (error) {
     console.error('Super Admin login error:', error);
-    res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
+    res.status(500).json({ success: false, message: 'Login failed. Please try again.', error: error.message, stack: error.stack });
   }
 };
 
