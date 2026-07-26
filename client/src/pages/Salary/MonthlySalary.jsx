@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { Play, CheckCircle, Clock } from 'lucide-react';
 
 const MonthlySalary = () => {
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
   const [salaries, setSalaries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,6 +14,7 @@ const MonthlySalary = () => {
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [employeeDetails, setEmployeeDetails] = useState({});
+  const [advancePaymentChecks, setAdvancePaymentChecks] = useState({});
 
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const years = ['2023', '2024', '2025', '2026', '2027'];
@@ -105,9 +108,10 @@ const MonthlySalary = () => {
 
   const handlePay = async (salaryId) => {
     try {
+      const isAdvance = advancePaymentChecks[salaryId] || false;
       await api.put(`/salary/${salaryId}/status`, {
         status: 'Paid',
-        payment_mode: 'Bank Transfer',
+        payment_mode: isAdvance ? 'Advance' : 'Bank Transfer',
         payment_date: new Date().toISOString()
       });
       toast.success('Salary marked as Paid');
@@ -179,11 +183,18 @@ const MonthlySalary = () => {
                   <th>Designation</th>
                   <th>Basic Salary</th>
                   <th>Leaves Taken</th>
+                  <th>Advance (₹)</th>
                   <th>Amount Paid (₹)</th>
                 </tr>
               </thead>
               <tbody>
-                {eligibleEmployees.map(emp => (
+                {eligibleEmployees.map(emp => {
+                  const basic = Number(emp.basic_salary) || 0;
+                  const leaves = Number(employeeDetails[emp.id]?.leaves) || 0;
+                  const advance = Number(employeeDetails[emp.id]?.advance) || 0;
+                  const autoNet = Math.max(0, basic - (basic / 30) * leaves - advance);
+                  
+                  return (
                   <tr key={emp.id}>
                     <td style={{ textAlign: 'center' }}>
                       <input 
@@ -200,7 +211,7 @@ const MonthlySalary = () => {
                       <input 
                         type="number" 
                         className="form-input" 
-                        style={{ width: '80px', padding: '0.25rem 0.5rem', minHeight: '32px' }}
+                        style={{ width: '70px', padding: '0.25rem 0.5rem', minHeight: '32px' }}
                         value={employeeDetails[emp.id]?.leaves || ''}
                         onChange={(e) => handleDetailChange(emp.id, 'leaves', e.target.value)}
                         placeholder="0"
@@ -210,14 +221,25 @@ const MonthlySalary = () => {
                       <input 
                         type="number" 
                         className="form-input" 
-                        style={{ width: '120px', padding: '0.25rem 0.5rem', minHeight: '32px' }}
+                        style={{ width: '90px', padding: '0.25rem 0.5rem', minHeight: '32px' }}
+                        value={employeeDetails[emp.id]?.advance || ''}
+                        onChange={(e) => handleDetailChange(emp.id, 'advance', e.target.value)}
+                        placeholder="0"
+                      />
+                    </td>
+                    <td>
+                      <input 
+                        type="number" 
+                        className="form-input" 
+                        style={{ width: '110px', padding: '0.25rem 0.5rem', minHeight: '32px' }}
                         value={employeeDetails[emp.id]?.salaryAmount || ''}
                         onChange={(e) => handleDetailChange(emp.id, 'salaryAmount', e.target.value)}
-                        placeholder="Auto"
+                        placeholder={`Auto (₹${autoNet.toFixed(0)})`}
                       />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -249,38 +271,67 @@ const MonthlySalary = () => {
                 </tr>
               </thead>
               <tbody>
-                {salaries.map(sal => (
+                {salaries.map(sal => {
+                  let totalAllow = 0;
+                  if (Array.isArray(sal.allowances)) sal.allowances.forEach(a => totalAllow += Number(a.amount));
+                  const gross = (Number(sal.basic_salary) || 0) + totalAllow;
+                  
+                  let totalDed = 0;
+                  if (Array.isArray(sal.deductions)) sal.deductions.forEach(d => totalDed += Number(d.amount));
+                  
+                  return (
                   <tr key={sal.id}>
                     <td>
                       <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{sal.employees?.name}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{sal.employees?.emp_id}</div>
                     </td>
-                    <td>₹{sal.gross_salary}</td>
-                    <td style={{ color: 'var(--danger-500)' }}>₹{sal.total_deductions}</td>
+                    <td>₹{gross.toFixed(2)}</td>
+                    <td style={{ color: 'var(--danger-500)' }}>₹{totalDed.toFixed(2)}</td>
                     <td style={{ color: 'var(--warning-600)' }}>{sal.leaves_taken || 0}</td>
                     <td style={{ fontWeight: 600, color: 'var(--success-600)' }}>₹{sal.paid_amount || sal.net_salary}</td>
                     <td>
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600,
-                        backgroundColor: sal.status === 'Paid' ? 'var(--success-50)' : 'var(--warning-50)',
-                        color: sal.status === 'Paid' ? 'var(--success-700)' : 'var(--warning-700)'
+                        backgroundColor: sal.status === 'paid' ? 'var(--success-50)' : 'var(--warning-50)',
+                        color: sal.status === 'paid' ? 'var(--success-700)' : 'var(--warning-700)'
                       }}>
-                        {sal.status === 'Paid' ? <CheckCircle size={12} /> : <Clock size={12} />}
+                        {sal.status === 'paid' ? <CheckCircle size={12} /> : <Clock size={12} />}
                         {sal.status}
                       </span>
                     </td>
                     <td>
-                      {sal.status === 'Pending' && (
-                        <button className="btn btn-outline btn-sm" onClick={() => handlePay(sal.id)}>
-                          Mark Paid
-                        </button>
+                      {sal.status === 'pending' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={advancePaymentChecks[sal.id] || false}
+                              onChange={(e) => setAdvancePaymentChecks(prev => ({ ...prev, [sal.id]: e.target.checked }))}
+                            />
+                            Taken in Advance
+                          </label>
+                          <button className="btn btn-outline btn-sm" onClick={() => handlePay(sal.id)}>
+                            Mark Paid
+                          </button>
+                        </div>
                       )}
-                      {sal.status === 'Paid' && (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Paid on {new Date(sal.payment_date).toLocaleDateString()}</span>
+                      {sal.status === 'paid' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                            Paid on {sal.paid_date ? new Date(sal.paid_date).toLocaleDateString() : 'N/A'}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontStyle: 'italic', textTransform: 'capitalize' }}>
+                            Mode: {sal.payment_mode ? sal.payment_mode.replace('_', ' ') : 'N/A'}
+                          </span>
+                          <button className="btn btn-outline btn-sm" onClick={() => navigate(`/salary/slip/${sal.employee_id}/${selectedMonth}-${selectedYear}`)}>
+                            View Payslip
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}

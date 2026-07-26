@@ -1,4 +1,4 @@
-const { sql } = require('../config/database');
+const crypto = require('crypto');
 
 // @desc    Get all expenditures
 // @route   GET /api/expenditures
@@ -13,34 +13,34 @@ exports.getExpenditures = async (req, res) => {
       LEFT JOIN profiles p ON e.created_by = p.id
       WHERE 1=1
     `;
-    const request = req.db.request();
+    let params = [];
 
     if (startDate) {
-      query += ' AND e.date >= @startDate';
-      request.input('startDate', sql.Date, startDate);
+      query += ' AND e.date >= ?';
+      params.push(startDate);
     }
     if (endDate) {
-      query += ' AND e.date <= @endDate';
-      request.input('endDate', sql.Date, endDate);
+      query += ' AND e.date <= ?';
+      params.push(endDate);
     }
     if (category) {
-      query += ' AND e.category = @category';
-      request.input('category', sql.NVarChar, category);
+      query += ' AND e.category = ?';
+      params.push(category);
     }
     if (academicYear) {
-      query += ' AND e.academic_year = @academicYear';
-      request.input('academicYear', sql.NVarChar, academicYear);
+      query += ' AND e.academic_year = ?';
+      params.push(academicYear);
     }
     if (search) {
-      query += ' AND (e.title LIKE @search OR e.vendor_name LIKE @search OR e.description LIKE @search)';
-      request.input('search', sql.NVarChar, `%${search}%`);
+      query += ' AND (e.title LIKE ? OR e.vendor_name LIKE ? OR e.description LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     query += ' ORDER BY e.date DESC, e.created_at DESC';
 
-    const result = await request.query(query);
+    const [rows] = await req.db.query(query, params);
 
-    const formattedData = result.recordset.map(row => {
+    const formattedData = rows.map(row => {
       const data = { ...row };
       if (data.created_by_name) {
         data.created_by = { name: data.created_by_name };
@@ -73,29 +73,25 @@ exports.createExpenditure = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Title and amount are required' });
     }
 
-    const result = await req.db.request()
-      .input('title', sql.NVarChar, title)
-      .input('amount', sql.Decimal(12,2), amount)
-      .input('category', sql.NVarChar, category || 'other')
-      .input('date', sql.Date, date || new Date().toISOString().split('T')[0])
-      .input('description', sql.NVarChar, description || '')
-      .input('paymentMode', sql.NVarChar, payment_mode || 'cash')
-      .input('vendorName', sql.NVarChar, vendor_name || '')
-      .input('academicYear', sql.NVarChar, academic_year || '')
-      .input('createdBy', sql.UniqueIdentifier, req.user.id)
-      .query(`
+    const newExpId = crypto.randomUUID();
+
+    await req.db.query(`
         INSERT INTO expenditures (
-          title, amount, category, date, description, payment_mode, 
+          id, title, amount, category, date, description, payment_mode, 
           vendor_name, academic_year, created_by
         )
-        OUTPUT INSERTED.*
         VALUES (
-          @title, @amount, @category, @date, @description, @paymentMode,
-          @vendorName, @academicYear, @createdBy
+          ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?
         )
-      `);
+      `, [
+        newExpId, title, amount, category || 'other', date || new Date().toISOString().split('T')[0],
+        description || '', payment_mode || 'cash', vendor_name || '', academic_year || '', req.user.id
+      ]);
 
-    res.status(201).json({ success: true, data: result.recordset[0] });
+    const [rows] = await req.db.query('SELECT * FROM expenditures WHERE id = ?', [newExpId]);
+
+    res.status(201).json({ success: true, data: rows[0] });
   } catch (error) {
     console.error('Error creating expenditure:', error);
     res.status(500).json({ success: false, message: 'Failed to create expenditure' });
@@ -107,20 +103,18 @@ exports.createExpenditure = async (req, res) => {
 // @access  Auth
 exports.getExpenditure = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .query(`
+    const [rows] = await req.db.query(`
         SELECT e.*, p.name as created_by_name 
         FROM expenditures e
         LEFT JOIN profiles p ON e.created_by = p.id
-        WHERE e.id = @id
-      `);
+        WHERE e.id = ?
+      `, [req.params.id]);
 
-    if (result.recordset.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Expenditure not found' });
     }
 
-    const data = { ...result.recordset[0] };
+    const data = { ...rows[0] };
     if (data.created_by_name) {
       data.created_by = { name: data.created_by_name };
     } else {
@@ -149,20 +143,13 @@ exports.updateExpenditure = async (req, res) => {
     const dbFields = { payment_mode: 'payment_mode', vendor_name: 'vendor_name', academic_year: 'academic_year' };
     
     let setClauses = [];
-    const request = req.db.request();
+    let params = [];
 
     fields.forEach(field => {
       if (req.body[field] !== undefined) {
         const dbCol = dbFields[field] || field;
-        setClauses.push(`${dbCol} = @${field}`);
-        
-        if (field === 'date') {
-          request.input(field, sql.Date, req.body[field]);
-        } else if (field === 'amount') {
-          request.input(field, sql.Decimal(12,2), req.body[field]);
-        } else {
-          request.input(field, sql.NVarChar, req.body[field]);
-        }
+        setClauses.push(`${dbCol} = ?`);
+        params.push(req.body[field]);
       }
     });
 
@@ -170,21 +157,21 @@ exports.updateExpenditure = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No fields to update' });
     }
 
-    setClauses.push('updated_at = SYSDATETIMEOFFSET()');
-    request.input('id', sql.UniqueIdentifier, req.params.id);
+    params.push(req.params.id);
     
-    const result = await request.query(`
+    await req.db.query(`
       UPDATE expenditures 
       SET ${setClauses.join(', ')} 
-      OUTPUT INSERTED.*
-      WHERE id = @id
-    `);
+      WHERE id = ?
+    `, params);
 
-    if (result.recordset.length === 0) {
+    const [rows] = await req.db.query('SELECT * FROM expenditures WHERE id = ?', [req.params.id]);
+
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Expenditure not found' });
     }
 
-    res.json({ success: true, data: result.recordset[0] });
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     console.error('Error updating expenditure:', error);
     res.status(500).json({ success: false, message: 'Failed to update expenditure' });
@@ -196,11 +183,9 @@ exports.updateExpenditure = async (req, res) => {
 // @access  Auth (Admin, Principal)
 exports.deleteExpenditure = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .query('DELETE FROM expenditures WHERE id = @id');
+    const [result] = await req.db.query('DELETE FROM expenditures WHERE id = ?', [req.params.id]);
 
-    if (result.rowsAffected[0] === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Expenditure not found' });
     }
 
@@ -208,5 +193,46 @@ exports.deleteExpenditure = async (req, res) => {
   } catch (error) {
     console.error('Error deleting expenditure:', error);
     res.status(500).json({ success: false, message: 'Failed to delete expenditure' });
+  }
+};
+
+// @desc    Get expenditure stats
+// @route   GET /api/expenditures/stats
+// @access  Auth (Admin, Principal, Clerk)
+exports.getExpenditureStats = async (req, res) => {
+  try {
+    const [rows] = await req.db.query(`
+      SELECT 
+        SUM(amount) as totalExpenditure,
+        category,
+        SUM(amount) as categoryTotal
+      FROM expenditures
+      GROUP BY category WITH ROLLUP
+    `);
+
+    let totalExpenditure = 0;
+    const categoryBreakdown = [];
+
+    rows.forEach(row => {
+      if (row.category === null) {
+        totalExpenditure = row.totalExpenditure || 0;
+      } else {
+        categoryBreakdown.push({
+          category: row.category,
+          amount: row.categoryTotal || 0
+        });
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalExpenditure,
+        categoryBreakdown
+      }
+    });
+  } catch (error) {
+    console.error('Error getting expenditure stats:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch expenditure stats' });
   }
 };

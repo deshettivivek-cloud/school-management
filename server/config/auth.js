@@ -30,7 +30,7 @@ async function comparePassword(password, hash) {
  * @param {string} payload.id - The user's ID
  * @param {string} payload.email - The user's email
  * @param {string} payload.role - The user's role
- * @param {string|null} payload.schoolId - The user's school ID (null for super admins)
+ * @param {string|null} payload.tenantDb - The user's tenant database (null for super admins)
  * @returns {string} The signed JWT token
  */
 function generateToken(payload) {
@@ -39,7 +39,7 @@ function generateToken(payload) {
       id: payload.id,
       email: payload.email,
       role: payload.role,
-      schoolId: payload.schoolId || null,
+      tenantDb: payload.tenantDb || null,
     },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }

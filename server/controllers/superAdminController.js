@@ -1,4 +1,5 @@
-const { sql, getMasterPool } = require('../config/database');
+const crypto = require('crypto');
+const { getMasterPool } = require('../config/database');
 const { getSchoolPool, resolveSchoolDbName } = require('../config/tenantPool');
 const { hashPassword } = require('../config/auth');
 
@@ -8,17 +9,17 @@ const { hashPassword } = require('../config/auth');
 exports.getAllSchools = async (req, res) => {
   try {
     const masterPool = await getMasterPool();
-    const result = await masterPool.request().query('SELECT * FROM schools ORDER BY created_at DESC');
+    const [schools] = await masterPool.query('SELECT * FROM schools ORDER BY created_at DESC');
     
     // Enrich with user counts by querying global_users
-    const userCountsResult = await masterPool.request().query('SELECT school_id, COUNT(*) as count FROM global_users GROUP BY school_id');
+    const [userCounts] = await masterPool.query('SELECT school_id, COUNT(*) as count FROM global_users GROUP BY school_id');
     
     const countMap = {};
-    userCountsResult.recordset.forEach(r => {
+    userCounts.forEach(r => {
       countMap[r.school_id] = r.count;
     });
 
-    const enrichedSchools = result.recordset.map(school => ({
+    const enrichedSchools = schools.map(school => ({
       ...school,
       userCount: countMap[school.id] || 0,
     }));
@@ -39,27 +40,25 @@ exports.getAllSchools = async (req, res) => {
 exports.getSchoolById = async (req, res) => {
   try {
     const masterPool = await getMasterPool();
-    const schoolResult = await masterPool.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .query('SELECT * FROM schools WHERE id = @id');
+    const [schoolRows] = await masterPool.execute('SELECT * FROM schools WHERE id = ?', [req.params.id]);
 
-    if (schoolResult.recordset.length === 0) {
+    if (schoolRows.length === 0) {
       return res.status(404).json({ success: false, message: 'School not found' });
     }
-    const school = schoolResult.recordset[0];
+    const school = schoolRows[0];
 
     // Connect to tenant DB to get users and student count
     const schoolPool = await getSchoolPool(school.db_name);
     
-    const usersResult = await schoolPool.request().query('SELECT id, name, email, role, created_at FROM profiles ORDER BY created_at DESC');
-    const studentCountResult = await schoolPool.request().query('SELECT COUNT(*) as count FROM students');
+    const [users] = await schoolPool.query('SELECT id, name, email, role, created_at FROM profiles ORDER BY created_at DESC');
+    const [studentCountResult] = await schoolPool.query('SELECT COUNT(*) as count FROM students');
 
     res.json({
       success: true,
       data: {
         ...school,
-        users: usersResult.recordset || [],
-        studentCount: studentCountResult.recordset[0].count || 0,
+        users: users || [],
+        studentCount: studentCountResult[0].count || 0,
       },
     });
   } catch (error) {
@@ -74,8 +73,7 @@ exports.getAllUsers = async (req, res) => {
   try {
     const masterPool = await getMasterPool();
     // Query schools and global users
-    const schoolsResult = await masterPool.request().query('SELECT id, name, db_name FROM schools');
-    const schools = schoolsResult.recordset;
+    const [schools] = await masterPool.query('SELECT id, name, db_name FROM schools');
     
     const schoolMap = {};
     schools.forEach(s => { schoolMap[s.id] = s.name; });
@@ -86,8 +84,8 @@ exports.getAllUsers = async (req, res) => {
     const tasks = schools.map(async (school) => {
       try {
         const pool = await getSchoolPool(school.db_name);
-        const usersResult = await pool.request().query('SELECT id, name, email, role, is_active FROM profiles');
-        usersResult.recordset.forEach(u => {
+        const [users] = await pool.query('SELECT id, name, email, role, is_active FROM profiles');
+        users.forEach(u => {
           allUsers.push({
             ...u,
             school_id: school.id,
@@ -125,48 +123,39 @@ exports.createUser = async (req, res) => {
     const masterPool = await getMasterPool();
     
     // Check if user exists globally
-    const checkUser = await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .query('SELECT * FROM global_users WHERE email = @email');
+    const [checkUser] = await masterPool.execute('SELECT * FROM global_users WHERE email = ?', [email]);
       
-    if (checkUser.recordset.length > 0) {
+    if (checkUser.length > 0) {
       return res.status(400).json({ success: false, message: 'A user with this email already exists' });
     }
 
-    const schoolResult = await masterPool.request()
-      .input('id', sql.UniqueIdentifier, schoolId)
-      .query('SELECT * FROM schools WHERE id = @id');
+    const [schoolRows] = await masterPool.execute('SELECT * FROM schools WHERE id = ?', [schoolId]);
 
-    if (schoolResult.recordset.length === 0) {
+    if (schoolRows.length === 0) {
       return res.status(404).json({ success: false, message: 'School not found' });
     }
-    const school = schoolResult.recordset[0];
+    const school = schoolRows[0];
 
     const passwordHash = await hashPassword(password);
     
     // Add to tenant DB
     const schoolPool = await getSchoolPool(school.db_name);
-    const profileResult = await schoolPool.request()
-      .input('email', sql.NVarChar, email)
-      .input('passwordHash', sql.NVarChar, passwordHash)
-      .input('name', sql.NVarChar, name)
-      .input('role', sql.NVarChar, role)
-      .query(`
-        INSERT INTO profiles (email, password_hash, name, role, must_change_password)
-        OUTPUT INSERTED.*
-        VALUES (@email, @passwordHash, @name, @role, 1)
-      `);
+    const profileId = crypto.randomUUID();
+    
+    await schoolPool.execute(`
+        INSERT INTO profiles (id, email, password_hash, name, role, must_change_password)
+        VALUES (?, ?, ?, ?, ?, 1)
+      `, [profileId, email, passwordHash, name, role]);
 
-    const newProfile = profileResult.recordset[0];
+    const [profileRows] = await schoolPool.execute('SELECT * FROM profiles WHERE id = ?', [profileId]);
+    const newProfile = profileRows[0];
 
     // Add to global routing table
-    await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .input('schoolId', sql.UniqueIdentifier, schoolId)
-      .query(`
-        INSERT INTO global_users (email, school_id)
-        VALUES (@email, @schoolId)
-      `);
+    const globalUserId = crypto.randomUUID();
+    await masterPool.execute(`
+        INSERT INTO global_users (id, email, school_id)
+        VALUES (?, ?, ?)
+      `, [globalUserId, email, schoolId]);
 
     res.status(201).json({
       success: true,
@@ -228,8 +217,7 @@ exports.getStats = async (req, res) => {
   try {
     const masterPool = await getMasterPool();
     
-    const schoolsResult = await masterPool.request().query('SELECT id, name, db_name, created_at FROM schools ORDER BY created_at DESC');
-    const schools = schoolsResult.recordset;
+    const [schools] = await masterPool.query('SELECT id, name, db_name, created_at FROM schools ORDER BY created_at DESC');
     const totalSchools = schools.length;
 
     let totalUsers = 0;
@@ -240,14 +228,14 @@ exports.getStats = async (req, res) => {
       try {
         const pool = await getSchoolPool(school.db_name);
         
-        const uCount = await pool.request().query('SELECT COUNT(*) as count FROM profiles');
-        totalUsers += uCount.recordset[0].count;
+        const [uCount] = await pool.query('SELECT COUNT(*) as count FROM profiles');
+        totalUsers += uCount[0].count;
 
-        const sCount = await pool.request().query('SELECT COUNT(*) as count FROM students');
-        totalStudents += sCount.recordset[0].count;
+        const [sCount] = await pool.query('SELECT COUNT(*) as count FROM students');
+        totalStudents += sCount[0].count;
 
-        const rCounts = await pool.request().query('SELECT role, COUNT(*) as count FROM profiles GROUP BY role');
-        rCounts.recordset.forEach(r => {
+        const [rCounts] = await pool.query('SELECT role, COUNT(*) as count FROM profiles GROUP BY role');
+        rCounts.forEach(r => {
           roleCounts[r.role] = (roleCounts[r.role] || 0) + r.count;
         });
       } catch (err) {}
@@ -287,14 +275,10 @@ exports.deleteUser = async (req, res) => {
 
     const schoolPool = await getSchoolPool(dbName);
     
-    await schoolPool.request()
-      .input('email', sql.NVarChar, email)
-      .query('DELETE FROM profiles WHERE email = @email');
+    await schoolPool.execute('DELETE FROM profiles WHERE email = ?', [email]);
 
     const masterPool = await getMasterPool();
-    await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .query('DELETE FROM global_users WHERE email = @email');
+    await masterPool.execute('DELETE FROM global_users WHERE email = ?', [email]);
 
     res.json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
@@ -323,16 +307,13 @@ exports.resetUserPassword = async (req, res) => {
     const passwordHash = await hashPassword(newPassword);
 
     const schoolPool = await getSchoolPool(dbName);
-    const result = await schoolPool.request()
-      .input('id', sql.UniqueIdentifier, userId)
-      .input('hash', sql.NVarChar, passwordHash)
-      .query(`
+    const [result] = await schoolPool.execute(`
         UPDATE profiles 
-        SET password_hash = @hash, must_change_password = 1 
-        WHERE id = @id
-      `);
+        SET password_hash = ?, must_change_password = 1 
+        WHERE id = ?
+      `, [passwordHash, userId]);
 
-    if (result.rowsAffected[0] === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
@@ -358,12 +339,9 @@ exports.updateUserStatus = async (req, res) => {
     if (!dbName) return res.status(404).json({ success: false, message: 'School not found' });
 
     const schoolPool = await getSchoolPool(dbName);
-    const result = await schoolPool.request()
-      .input('id', sql.UniqueIdentifier, userId)
-      .input('status', sql.Bit, status === 'active' ? 1 : 0)
-      .query('UPDATE profiles SET is_active = @status WHERE id = @id');
+    const [result] = await schoolPool.execute('UPDATE profiles SET is_active = ? WHERE id = ?', [status === 'active' ? 1 : 0, userId]);
 
-    if (result.rowsAffected[0] === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
@@ -372,3 +350,82 @@ exports.updateUserStatus = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Update a school's details
+// @route   PATCH /api/super-admin/schools/:id
+// @access  Super Admin
+exports.updateSchool = async (req, res) => {
+  console.log("🔥 updateSchool called");
+  console.log(req.params.id);
+  console.log(req.body);
+  try {
+    const schoolId = req.params.id;
+    const { name, address, phone, email, status } = req.body;
+
+    const masterPool = await getMasterPool();
+
+    // Check if school exists
+    const [schoolRows] = await masterPool.execute('SELECT * FROM schools WHERE id = ?', [schoolId]);
+    if (schoolRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'School not found' });
+    }
+
+    // Build dynamic update
+    const updates = [];
+    const values = [];
+
+    if (name !== undefined) { updates.push('name = ?'); values.push(name); }
+    if (address !== undefined) { updates.push('address = ?'); values.push(address); }
+    if (phone !== undefined) { updates.push('phone = ?'); values.push(phone); }
+    if (email !== undefined) { updates.push('email = ?'); values.push(email); }
+    if (status !== undefined) { updates.push('is_active = ?'); values.push(status === 'active' || status === 'Active' ? 1 : 0); }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, message: 'No fields to update' });
+    }
+
+    values.push(schoolId);
+    await masterPool.execute(`UPDATE schools SET ${updates.join(', ')} WHERE id = ?`, values);
+
+    const [updatedRows] = await masterPool.execute('SELECT * FROM schools WHERE id = ?', [schoolId]);
+
+    res.json({
+      success: true,
+      message: 'School updated successfully',
+      data: updatedRows[0],
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete a school
+// @route   DELETE /api/super-admin/schools/:id
+// @access  Super Admin
+exports.deleteSchool = async (req, res) => {
+  try {
+    const schoolId = req.params.id;
+    const masterPool = await getMasterPool();
+
+    const [schoolRows] = await masterPool.execute('SELECT * FROM schools WHERE id = ?', [schoolId]);
+    if (schoolRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'School not found' });
+    }
+
+    const school = schoolRows[0];
+
+    // Remove global users for this school
+    await masterPool.execute('DELETE FROM global_users WHERE school_id = ?', [schoolId]);
+
+    // Drop the tenant database
+    await masterPool.execute(`DROP DATABASE IF EXISTS \`${school.db_name}\``);
+
+    // Delete school record
+    await masterPool.execute('DELETE FROM schools WHERE id = ?', [schoolId]);
+
+    res.json({ success: true, message: `School "${school.name}" deleted successfully` });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+

@@ -1,5 +1,3 @@
-const { sql } = require('../config/database');
-
 // @desc    Get Salary Dashboard Metrics
 // @route   GET /api/salary/dashboard
 // @access  Private (Principal)
@@ -7,23 +5,21 @@ exports.getSalaryDashboard = async (req, res) => {
   try {
     const { month, year } = req.query; // Optional filters
 
-    const empResult = await req.db.request()
-      .query('SELECT id, basic_salary FROM employees WHERE is_active = 1');
+    const [employees] = await req.db.execute('SELECT id, basic_salary FROM employees WHERE is_active = 1');
     
-    const employees = empResult.recordset;
     let totalMonthlyCommitment = employees.reduce((sum, emp) => sum + (Number(emp.basic_salary) || 0), 0);
     
     let paidSalary = 0;
     let pendingSalary = 0;
 
     if (month && year) {
-      const monthStr = `${year}-${String(month).padStart(2, '0')}`; // e.g. '2025-07'
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const monthIndex = typeof month === 'string' ? monthNames.indexOf(month) + 1 : month;
+      const monthNumStr = monthIndex > 0 ? String(monthIndex).padStart(2, '0') : '01';
+      const monthStr = `${year}-${monthNumStr}`;
       
-      const salResult = await req.db.request()
-        .input('month', sql.NVarChar, monthStr)
-        .query('SELECT net_salary, status FROM salary_records WHERE month = @month');
+      const [salaries] = await req.db.execute('SELECT net_salary, status FROM salary_records WHERE month = ?', [monthStr]);
       
-      const salaries = salResult.recordset;
       paidSalary = salaries.filter(s => s.status === 'paid').reduce((sum, s) => sum + (Number(s.net_salary) || 0), 0);
       pendingSalary = salaries.filter(s => s.status === 'pending').reduce((sum, s) => sum + (Number(s.net_salary) || 0), 0);
     }
@@ -55,23 +51,16 @@ exports.generateMonthlySalary = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Month, year and employee list required' });
     }
 
-    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthIndex = typeof month === 'string' ? monthNames.indexOf(month) + 1 : month;
+    const monthNumStr = monthIndex > 0 ? String(monthIndex).padStart(2, '0') : '01';
+    const monthStr = `${year}-${monthNumStr}`;
+    const empIdsList = employee_ids.map(() => '?').join(',');
 
-    // Fetch employees
-    const empIdsList = employee_ids.map((_, i) => `@eid${i}`).join(',');
-    const empReq = req.db.request();
-    employee_ids.forEach((id, i) => empReq.input(`eid${i}`, sql.UniqueIdentifier, id));
+    const [employees] = await req.db.query(`SELECT * FROM employees WHERE id IN (${empIdsList})`, employee_ids);
     
-    const empResult = await empReq.query(`SELECT * FROM employees WHERE id IN (${empIdsList})`);
-    const employees = empResult.recordset;
-
-    // Check existing
-    const existReq = req.db.request();
-    existReq.input('month', sql.NVarChar, monthStr);
-    employee_ids.forEach((id, i) => existReq.input(`eid${i}`, sql.UniqueIdentifier, id));
-    
-    const existResult = await existReq.query(`SELECT employee_id FROM salary_records WHERE month = @month AND employee_id IN (${empIdsList})`);
-    const existingIds = existResult.recordset.map(e => e.employee_id);
+    const [existResult] = await req.db.query(`SELECT employee_id FROM salary_records WHERE month = ? AND employee_id IN (${empIdsList})`, [monthStr, ...employee_ids]);
+    const existingIds = existResult.map(e => e.employee_id);
     
     const toGenerate = employees.filter(emp => !existingIds.includes(emp.id));
 
@@ -79,11 +68,10 @@ exports.generateMonthlySalary = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Salaries already generated for selected employees for this month' });
     }
 
-    const insertReq = req.db.request();
-    insertReq.input('month', sql.NVarChar, monthStr);
-    
     let valuesArr = [];
-    toGenerate.forEach((emp, i) => {
+    let params = [];
+
+    toGenerate.forEach((emp) => {
       const basic = Number(emp.basic_salary) || 0;
       const details = employee_details && employee_details[emp.id] ? employee_details[emp.id] : {};
       
@@ -103,6 +91,10 @@ exports.generateMonthlySalary = async (req, res) => {
         deductions.push({ name: `Leaves (${details.leaves})`, amount: leaveDeduction });
         totalDeductions += leaveDeduction;
       }
+      if (details.advance) {
+        deductions.push({ name: 'Salary Taken in Advance', amount: Number(details.advance) });
+        totalDeductions += Number(details.advance);
+      }
 
       let net_salary = basic + totalAllowances - totalDeductions;
       
@@ -110,19 +102,17 @@ exports.generateMonthlySalary = async (req, res) => {
         net_salary = Number(details.salaryAmount);
       }
 
-      insertReq.input(`empId${i}`, sql.UniqueIdentifier, emp.id);
-      insertReq.input(`basic${i}`, sql.Decimal(12,2), basic);
-      insertReq.input(`allow${i}`, sql.NVarChar, JSON.stringify(allowances));
-      insertReq.input(`deduct${i}`, sql.NVarChar, JSON.stringify(deductions));
-      insertReq.input(`net${i}`, sql.Decimal(12,2), net_salary);
-      
-      valuesArr.push(`(@empId${i}, @month, @basic${i}, @allow${i}, @deduct${i}, @net${i}, 'pending')`);
+      let leaves_taken = details.leaves ? Number(details.leaves) : 0;
+      let paid_amount = net_salary; // Default paid_amount to net_salary
+
+      valuesArr.push(`(?, ?, ?, ?, ?, ?, 'pending', ?, ?)`);
+      params.push(emp.id, monthStr, basic, JSON.stringify(allowances), JSON.stringify(deductions), net_salary, leaves_taken, paid_amount);
     });
 
-    await insertReq.query(`
-      INSERT INTO salary_records (employee_id, month, basic_salary, allowances, deductions, net_salary, status)
+    await req.db.query(`
+      INSERT INTO salary_records (employee_id, month, basic_salary, allowances, deductions, net_salary, status, leaves_taken, paid_amount)
       VALUES ${valuesArr.join(', ')}
-    `);
+    `, params);
 
     res.status(201).json({
       success: true,
@@ -148,35 +138,42 @@ exports.getSalaryHistory = async (req, res) => {
       JOIN employees e ON sr.employee_id = e.id
       WHERE 1=1
     `;
-    const request = req.db.request();
+    let params = [];
 
     if (month && year) {
-      const monthStr = `${year}-${String(month).padStart(2, '0')}`;
-      query += ' AND sr.month = @month';
-      request.input('month', sql.NVarChar, monthStr);
-    } else if (month) { // If it's already in YYYY-MM format from frontend
-      query += ' AND sr.month = @monthStr';
-      request.input('monthStr', sql.NVarChar, month);
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const monthIndex = typeof month === 'string' ? monthNames.indexOf(month) + 1 : month;
+      const monthNumStr = monthIndex > 0 ? String(monthIndex).padStart(2, '0') : '01';
+      const monthStr = `${year}-${monthNumStr}`;
+      query += ' AND sr.month = ?';
+      params.push(monthStr);
+    } else if (month) { 
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const monthIndex = typeof month === 'string' ? monthNames.indexOf(month) + 1 : month;
+      const monthNumStr = monthIndex > 0 ? String(monthIndex).padStart(2, '0') : '01';
+      // If no year provided, use LIKE to match the month part
+      query += ' AND sr.month LIKE ?';
+      params.push(`%-${monthNumStr}`);
     }
 
     if (status) {
-      query += ' AND sr.status = @status';
-      request.input('status', sql.NVarChar, status);
+      query += ' AND sr.status = ?';
+      params.push(status);
     }
     if (employee_id) {
-      query += ' AND sr.employee_id = @employeeId';
-      request.input('employeeId', sql.UniqueIdentifier, employee_id);
+      query += ' AND sr.employee_id = ?';
+      params.push(employee_id);
     }
     if (department) {
-      query += ' AND e.department = @department';
-      request.input('department', sql.NVarChar, department);
+      query += ' AND e.department = ?';
+      params.push(department);
     }
 
     query += ' ORDER BY sr.created_at DESC';
 
-    const result = await request.query(query);
+    const [rows] = await req.db.query(query, params);
 
-    const formattedData = result.recordset.map(r => {
+    const formattedData = rows.map(r => {
       const data = { ...r };
       try { data.allowances = JSON.parse(data.allowances); } catch(e) { data.allowances = []; }
       try { data.deductions = JSON.parse(data.deductions); } catch(e) { data.deductions = []; }
@@ -214,25 +211,23 @@ exports.updateSalaryStatus = async (req, res) => {
   try {
     const { status, payment_mode, payment_date } = req.body;
 
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .input('status', sql.NVarChar, status.toLowerCase())
-      .input('paymentMode', sql.NVarChar, payment_mode || 'bank_transfer')
-      .input('paymentDate', sql.Date, payment_date || new Date().toISOString().split('T')[0])
-      .query(`
-        UPDATE salary_records 
-        SET status = @status, payment_mode = @paymentMode, paid_date = @paymentDate, updated_at = SYSDATETIMEOFFSET()
-        OUTPUT INSERTED.*
-        WHERE id = @id
-      `);
+    const formattedDate = payment_date ? payment_date.split('T')[0] : new Date().toISOString().split('T')[0];
 
-    if (result.recordset.length === 0) {
+    await req.db.execute(`
+        UPDATE salary_records 
+        SET status = ?, payment_mode = ?, paid_date = ?
+        WHERE id = ?
+      `, [status.toLowerCase(), payment_mode || 'bank_transfer', formattedDate, req.params.id]);
+
+    const [rows] = await req.db.execute('SELECT * FROM salary_records WHERE id = ?', [req.params.id]);
+
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Salary record not found' });
     }
 
     res.json({
       success: true,
-      data: result.recordset[0]
+      data: rows[0]
     });
   } catch (error) {
     console.error('Error updating salary:', error);

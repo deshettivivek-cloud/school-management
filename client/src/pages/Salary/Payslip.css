@@ -1,212 +1,84 @@
 :root {
-  --payslip-primary: #295F48; /* Dark green theme */
-  --payslip-text-dark: #1a1a1a;
-  --payslip-text-muted: #555555;
-  --payslip-border-light: #e0e0e0;
-  --payslip-bg-light: #f4f8f6;
+  --payslip-text-dark: #111827;
+  --payslip-text-muted: #6b7280;
+  --payslip-border-light: #e5e7eb;
+  --payslip-bg-light: #f9fafb;
   --payslip-white: #ffffff;
 }
 
 .payslip-container {
   display: flex;
   justify-content: center;
-  padding: 20px;
-  background-color: #e5e5e5;
+  padding: 40px 20px;
+  background-color: var(--payslip-bg-light);
   min-height: 100vh;
 }
 
 .payslip-page {
-  width: 210mm;
-  min-height: 297mm;
-  padding: 15mm;
+  width: 100%;
+  max-width: 650px;
   background: var(--payslip-white);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  position: relative;
-  font-family: 'Inter', sans-serif;
+  padding: 48px;
+  border: 1px solid var(--payslip-border-light);
+  border-radius: 8px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--payslip-text-dark);
-  font-size: 9.5pt;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 @media print {
   .payslip-container {
-    background: var(--payslip-white);
+    background: transparent;
     padding: 0;
   }
   .payslip-page {
+    border: none;
     box-shadow: none;
     width: 100%;
-    min-height: 100vh;
-    padding: 10mm 15mm;
-    margin: 0;
+    max-width: 100%;
+    padding: 0;
   }
   @page {
-    size: A4 portrait;
-    margin: 0;
+    margin: 15mm;
   }
 }
 
-.flex { display: flex; }
-.justify-between { justify-content: space-between; }
-.items-center { align-items: center; }
-
 /* Header */
-.payslip-header { margin-bottom: 10px; }
-.payslip-logo {
-  width: 60px;
-  height: 60px;
-  background-color: var(--payslip-primary);
-  color: var(--payslip-white);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 800;
-  margin-right: 15px;
-  letter-spacing: 1px;
-}
-.payslip-info h1 {
-  color: var(--payslip-primary);
-  font-size: 22px;
-  margin-bottom: 0px;
-  font-weight: 700;
-  margin-top: 0;
-  font-family: serif;
-}
-.payslip-info p {
-  color: var(--payslip-text-muted);
-  font-size: 9pt;
-  margin: 0;
-}
-.payslip-title { text-align: right; }
-.payslip-title h2 {
-  font-size: 16px;
-  color: var(--payslip-text-dark);
-  font-weight: 700;
-  letter-spacing: 2px;
-  margin-bottom: 2px;
-  margin-top: 0;
-}
-.payslip-title p {
-  font-size: 10pt;
-  color: var(--payslip-text-muted);
-  margin: 0;
-}
-.payslip-divider {
-  height: 2px;
-  background-color: var(--payslip-primary);
-  margin: 15px 0 20px 0;
-}
+.payslip-header { margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-start; }
+.payslip-info h1 { margin: 0; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
+.payslip-info p { margin: 4px 0 0; color: var(--payslip-text-muted); font-size: 12px; }
 
-/* Details Section */
-.details-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 40px;
-  margin-bottom: 25px;
-}
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-}
-.detail-label {
-  color: var(--payslip-text-muted);
-}
-.detail-value {
-  font-weight: 600;
-  text-align: right;
-}
+.payslip-title h2 { margin: 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--payslip-text-muted); text-align: right; }
+.payslip-title p { margin: 4px 0 0; font-weight: 500; text-align: right; }
 
-/* Earnings & Deductions Tables */
-.tables-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 30px;
-  margin-bottom: 30px;
-}
-.payslip-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.payslip-table th {
-  background-color: var(--payslip-primary);
-  color: var(--payslip-white);
-  padding: 10px 15px;
-  text-align: left;
-  font-size: 10pt;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.payslip-table td {
-  padding: 10px 15px;
-  border-bottom: 1px dashed var(--payslip-border-light);
-}
-.payslip-table td.amount-col {
-  text-align: right;
-}
-.payslip-table tr:last-child td {
-  border-bottom: none;
-}
-.payslip-table .total-row td {
-  font-weight: 700;
-  font-size: 10.5pt;
-  border-top: 1px solid var(--payslip-border-light);
-  border-bottom: 1px solid var(--payslip-border-light);
-  background-color: var(--payslip-bg-light);
-}
+.payslip-divider { height: 1px; background-color: var(--payslip-border-light); margin: 32px 0; }
 
-/* Net Pay Section */
-.net-pay-box {
-  border: 1px solid var(--payslip-primary);
-  background-color: var(--payslip-bg-light);
-  padding: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 40px;
-}
-.net-pay-left .label {
-  font-weight: 700;
-  font-size: 11pt;
-  color: var(--payslip-primary);
-  margin-bottom: 4px;
-}
-.net-pay-left .words {
-  font-size: 9pt;
-  color: var(--payslip-text-muted);
-  font-style: italic;
-}
-.net-pay-amount {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--payslip-primary);
-}
+/* Details Grid */
+.details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 40px; }
+.detail-row { display: flex; flex-direction: column; margin-bottom: 16px; }
+.detail-label { font-size: 11px; text-transform: uppercase; color: var(--payslip-text-muted); letter-spacing: 0.05em; margin-bottom: 4px; }
+.detail-value { font-weight: 500; font-size: 13px; }
 
-/* Footer Section */
-.payslip-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-.footer-note {
-  font-size: 8pt;
-  color: var(--payslip-text-muted);
-  font-style: italic;
-  max-width: 60%;
-}
-.signature-box {
-  width: 200px;
-  text-align: center;
-}
-.signature-line {
-  border-bottom: 1px solid var(--payslip-text-dark);
-  height: 40px;
-  margin-bottom: 5px;
-}
-.signature-text {
-  font-size: 8pt;
-  color: var(--payslip-text-muted);
-}
+/* Tables Grid */
+.tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+
+.payslip-table { width: 100%; border-collapse: collapse; }
+.payslip-table th { text-align: left; padding: 0 0 12px 0; font-size: 11px; text-transform: uppercase; color: var(--payslip-text-muted); letter-spacing: 0.05em; font-weight: 600; border-bottom: 1px solid var(--payslip-border-light); }
+.payslip-table td { padding: 12px 0; border-bottom: 1px dashed var(--payslip-border-light); }
+.payslip-table th.amount-col, .payslip-table td.amount-col { text-align: right; }
+
+.total-row td { font-weight: 600; border-bottom: none; padding-top: 16px; font-size: 14px; }
+
+/* Net Pay Box */
+.net-pay-box { display: flex; justify-content: space-between; align-items: center; padding: 24px 0; border-top: 2px solid var(--payslip-text-dark); border-bottom: 2px solid var(--payslip-text-dark); margin-bottom: 48px; }
+.net-pay-left .label { font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--payslip-text-muted); margin-bottom: 6px; }
+.net-pay-left .words { font-size: 13px; font-weight: 500; }
+.net-pay-amount { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+
+/* Footer */
+.payslip-footer { display: flex; justify-content: space-between; align-items: flex-end; }
+.footer-note { font-size: 11px; color: var(--payslip-text-muted); max-width: 60%; line-height: 1.5; }
+.signature-box { text-align: right; }
+.signature-line { width: 160px; border-bottom: 1px solid var(--payslip-border-light); margin-bottom: 8px; }
+.signature-text { font-size: 11px; color: var(--payslip-text-muted); }

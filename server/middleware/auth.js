@@ -1,6 +1,6 @@
 const { verifyToken } = require('../config/auth');
-const { sql, getMasterPool } = require('../config/database');
-const { resolveSchoolDbName, getSchoolPool } = require('../config/tenantPool');
+const { getMasterPool } = require('../config/database');
+const { getSchoolPool } = require('../config/tenantPool');
 
 /**
  * JWT Auth middleware — replaces Supabase Auth.
@@ -27,25 +27,23 @@ const protect = async (req, res, next) => {
     if (decoded.role === 'super_admin') {
       // Super Admins are stored in the master database
       const masterPool = await getMasterPool();
-      const result = await masterPool.request()
-        .input('id', sql.UniqueIdentifier, decoded.id)
-        .query('SELECT * FROM super_admin_profiles WHERE id = @id');
+      const [rows] = await masterPool.execute('SELECT * FROM super_admin_profiles WHERE id = ?', [decoded.id]);
 
-      if (!result.recordset || result.recordset.length === 0) {
+      if (rows.length === 0) {
         return res.status(401).json({
           success: false,
           message: 'Not authorized — super admin profile not found',
         });
       }
 
-      const profile = result.recordset[0];
+      const profile = rows[0];
 
       req.user = {
         id: profile.id,
         email: profile.email,
         name: profile.name,
         role: 'super_admin',
-        schoolId: null,
+        tenantDb: null,
         mustChangePassword: profile.must_change_password,
         isSuperAdmin: true,
       };
@@ -56,9 +54,9 @@ const protect = async (req, res, next) => {
       return next();
     }
 
-    // Regular school user — resolve their school's database
-    const schoolId = decoded.schoolId;
-    if (!schoolId) {
+    // Regular school user — connect to their tenant database
+    const tenantDb = decoded.tenantDb;
+    if (!tenantDb) {
       return res.status(403).json({
         success: false,
         message: 'Your account has not yet been assigned to a school.',
@@ -66,22 +64,19 @@ const protect = async (req, res, next) => {
     }
 
     // Get the school's database connection
-    const dbName = await resolveSchoolDbName(schoolId);
-    const schoolPool = await getSchoolPool(dbName);
+    const schoolPool = await getSchoolPool(tenantDb);
 
     // Fetch user profile from the school's database
-    const profileResult = await schoolPool.request()
-      .input('id', sql.UniqueIdentifier, decoded.id)
-      .query('SELECT * FROM profiles WHERE id = @id');
+    const [profileRows] = await schoolPool.execute('SELECT * FROM profiles WHERE id = ?', [decoded.id]);
 
-    const profile = profileResult.recordset[0];
+    const profile = profileRows[0];
 
     req.user = {
       id: decoded.id,
       email: decoded.email,
       name: profile?.name || decoded.email,
       role: profile?.role || decoded.role || 'teacher',
-      schoolId: schoolId,
+      tenantDb: tenantDb,
       mustChangePassword: profile?.must_change_password || false,
       isSuperAdmin: false,
     };

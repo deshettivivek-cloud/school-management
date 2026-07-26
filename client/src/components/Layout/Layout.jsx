@@ -12,7 +12,7 @@ const Layout = ({ title }) => {
   const [schoolData, setSchoolData] = useState(null);
 
   useEffect(() => {
-    if (user?.schoolId) {
+    if (user?.tenantDb) {
       api.get('/schools')
         .then(res => {
           if (res.data.data) {

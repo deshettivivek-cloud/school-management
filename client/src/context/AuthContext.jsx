@@ -54,13 +54,23 @@ export const AuthProvider = ({ children }) => {
       const response = await api.get('/auth/me');
       const userData = response.data.data;
       
+      // Decode token to get tenantDb if not provided by backend
+      const token = localStorage.getItem('token');
+      let tokenTenantDb = null;
+      try {
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          tokenTenantDb = payload.tenantDb;
+        }
+      } catch(e) {}
+
       const userObj = {
         id: userData.id,
         email: userData.email,
         name: userData.name,
         role: userData.role,
         assigned_classes: userData.assigned_classes || [],
-        schoolId: userData.school_id || userData.schoolId || null,
+        tenantDb: userData.tenantDb || tokenTenantDb || null,
         mustChangePassword: userData.must_change_password || userData.mustChangePassword || false,
         isSuperAdmin: userData.role === 'super_admin',
       };
@@ -91,7 +101,8 @@ export const AuthProvider = ({ children }) => {
               setPortalType(userObj.role === 'super_admin' ? PORTAL_SUPER_ADMIN : PORTAL_SCHOOL);
               storePortal(userObj.role === 'super_admin' ? PORTAL_SUPER_ADMIN : PORTAL_SCHOOL);
             } else {
-              console.warn(`Session role "\${userObj.role}" does not match expected portal "\${expectedPortal}".`);
+              console.warn(`Session role "${userObj.role}" does not match expected portal "${expectedPortal}".`);
+              console.log('Clearing token because of invalid session for portal');
               setUser(null);
               setSession(null);
               clearPortal();
@@ -99,6 +110,7 @@ export const AuthProvider = ({ children }) => {
             }
           } else {
             // Token is invalid
+            console.log('Clearing token because fetchProfile returned null');
             localStorage.removeItem('token');
           }
         }
@@ -147,7 +159,7 @@ export const AuthProvider = ({ children }) => {
       email: userData.email,
       name: userData.name,
       role: userData.role,
-      schoolId: userData.schoolId,
+      tenantDb: userData.tenantDb,
       mustChangePassword: userData.mustChangePassword,
       isSuperAdmin: userData.role === 'super_admin',
       assigned_classes: [],
@@ -172,7 +184,7 @@ export const AuthProvider = ({ children }) => {
       email: userData.email,
       name: userData.name,
       role: userData.role,
-      schoolId: null,
+      tenantDb: null,
       mustChangePassword: userData.mustChangePassword,
       isSuperAdmin: true,
       assigned_classes: [],

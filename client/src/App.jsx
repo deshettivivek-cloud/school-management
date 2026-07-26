@@ -130,7 +130,7 @@ const SchoolUserRoute = ({ children }) => {
 // School requirement wrapper
 const RequireSchool = ({ children }) => {
   const { user } = useAuth();
-  if (user && !user.schoolId) {
+  if (user && !user.tenantDb) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-default)', padding: '2rem' }}>
         <div className="card" style={{ maxWidth: 500, textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>

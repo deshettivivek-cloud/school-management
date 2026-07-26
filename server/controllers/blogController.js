@@ -1,14 +1,13 @@
-const { sql } = require('../config/database');
+const crypto = require('crypto');
 
 // @desc    Get all blog posts for the user's school
 // @route   GET /api/blog
 // @access  Auth (All Staff)
 exports.getBlogPosts = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .query('SELECT * FROM blog_posts ORDER BY created_at DESC');
+    const [rows] = await req.db.query('SELECT * FROM blog_posts ORDER BY created_at DESC');
 
-    res.json({ success: true, data: result.recordset });
+    res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -19,15 +18,13 @@ exports.getBlogPosts = async (req, res) => {
 // @access  Auth (All Staff)
 exports.getBlogPost = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .query('SELECT * FROM blog_posts WHERE id = @id');
+    const [rows] = await req.db.execute('SELECT * FROM blog_posts WHERE id = ?', [req.params.id]);
 
-    if (result.recordset.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Blog post not found' });
     }
 
-    res.json({ success: true, data: result.recordset[0] });
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -44,20 +41,19 @@ exports.createBlogPost = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Title and content are required' });
     }
 
-    const result = await req.db.request()
-      .input('title', sql.NVarChar, title)
-      .input('content', sql.NVarChar, content)
-      .input('authorId', sql.UniqueIdentifier, req.user.id)
-      .input('authorName', sql.NVarChar, req.user.name)
-      .input('coverImageUrl', sql.NVarChar, coverImageUrl || '')
-      .input('isPublished', sql.Bit, isPublished !== undefined ? isPublished : 1)
-      .query(`
-        INSERT INTO blog_posts (title, content, author_id, author_name, cover_image_url, is_published)
-        OUTPUT INSERTED.*
-        VALUES (@title, @content, @authorId, @authorName, @coverImageUrl, @isPublished)
-      `);
+    const postId = crypto.randomUUID();
 
-    res.status(201).json({ success: true, data: result.recordset[0] });
+    await req.db.execute(`
+        INSERT INTO blog_posts (id, title, content, author_id, author_name, cover_image_url, is_published)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `, [
+        postId, title, content, req.user.id, req.user.name, 
+        coverImageUrl || '', isPublished !== undefined ? (isPublished ? 1 : 0) : 1
+      ]);
+
+    const [rows] = await req.db.execute('SELECT * FROM blog_posts WHERE id = ?', [postId]);
+
+    res.status(201).json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -70,46 +66,45 @@ exports.updateBlogPost = async (req, res) => {
   try {
     const { title, content, coverImageUrl, isPublished } = req.body;
 
-    const request = req.db.request();
     let setClauses = [];
+    let params = [];
 
     if (title !== undefined) {
-      setClauses.push('title = @title');
-      request.input('title', sql.NVarChar, title);
+      setClauses.push('title = ?');
+      params.push(title);
     }
     if (content !== undefined) {
-      setClauses.push('content = @content');
-      request.input('content', sql.NVarChar, content);
+      setClauses.push('content = ?');
+      params.push(content);
     }
     if (coverImageUrl !== undefined) {
-      setClauses.push('cover_image_url = @coverImageUrl');
-      request.input('coverImageUrl', sql.NVarChar, coverImageUrl);
+      setClauses.push('cover_image_url = ?');
+      params.push(coverImageUrl);
     }
     if (isPublished !== undefined) {
-      setClauses.push('is_published = @isPublished');
-      request.input('isPublished', sql.Bit, isPublished ? 1 : 0);
+      setClauses.push('is_published = ?');
+      params.push(isPublished ? 1 : 0);
     }
 
     if (setClauses.length === 0) {
       return res.status(400).json({ success: false, message: 'No fields provided for update' });
     }
+    
+    params.push(req.params.id);
 
-    setClauses.push('updated_at = SYSDATETIMEOFFSET()');
-
-    request.input('id', sql.UniqueIdentifier, req.params.id);
-
-    const result = await request.query(`
+    await req.db.execute(`
       UPDATE blog_posts 
       SET ${setClauses.join(', ')} 
-      OUTPUT INSERTED.* 
-      WHERE id = @id
-    `);
+      WHERE id = ?
+    `, params);
 
-    if (result.recordset.length === 0) {
+    const [rows] = await req.db.execute('SELECT * FROM blog_posts WHERE id = ?', [req.params.id]);
+
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Blog post not found' });
     }
 
-    res.json({ success: true, data: result.recordset[0] });
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -120,11 +115,9 @@ exports.updateBlogPost = async (req, res) => {
 // @access  Auth (All Staff)
 exports.deleteBlogPost = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .query('DELETE FROM blog_posts WHERE id = @id');
+    const [result] = await req.db.execute('DELETE FROM blog_posts WHERE id = ?', [req.params.id]);
 
-    if (result.rowsAffected[0] === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Blog post not found' });
     }
 
@@ -188,7 +181,7 @@ const searchDuckDuckGo = async (topic) => {
 
     return {
       title: data.Heading || topic,
-      content: sections.join('\\n\\n'),
+      content: sections.join('\n\n'),
       imageUrl: data.Image ? `https://duckduckgo.com${data.Image}` : '',
     };
   } catch (err) {
@@ -199,7 +192,7 @@ const searchDuckDuckGo = async (topic) => {
 
 const formatBlogContent = (topic, rawContent, source) => {
   let content = rawContent.trim();
-  let paragraphs = content.split('\\n').filter(p => p.trim().length > 20);
+  let paragraphs = content.split('\n').filter(p => p.trim().length > 20);
 
   let result = [];
   let totalLen = 0;
@@ -210,10 +203,10 @@ const formatBlogContent = (topic, rawContent, source) => {
   }
 
   const intro = `This article explores the topic of "${topic}" — a subject of great interest for students, educators, and the wider school community.`;
-  const body = result.join('\\n\\n');
-  const outro = `\\n\\nWe hope this article helps our school community understand more about "${topic}". If you have questions or would like to discuss this topic further, please reach out to our staff.\\n\\nSource: ${source}`;
+  const body = result.join('\n\n');
+  const outro = `\n\nWe hope this article helps our school community understand more about "${topic}". If you have questions or would like to discuss this topic further, please reach out to our staff.\n\nSource: ${source}`;
 
-  return `${intro}\\n\\n${body}${outro}`;
+  return `${intro}\n\n${body}${outro}`;
 };
 
 // @desc    Auto-generate a blog post by searching online

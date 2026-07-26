@@ -56,7 +56,7 @@ const YearEndPromotion = () => {
     try {
       const res = await api.get(`/promotion/check/${grade}?academicYear=${academicYear}`);
       setCheckData(res.data.data);
-      setSelectedIds(res.data.data.students.map((s) => s.student._id));
+      setSelectedIds(res.data.data.students.map((s) => s.student.id));
       setSelectAll(true);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to check');
@@ -75,7 +75,7 @@ const YearEndPromotion = () => {
     if (selectAll) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(checkData.students.map((s) => s.student._id));
+      setSelectedIds(checkData.students.map((s) => s.student.id));
     }
     setSelectAll(!selectAll);
   };
@@ -190,17 +190,17 @@ const YearEndPromotion = () => {
 
           <div className="promotion-student-list">
             {checkData.students.map(({ student, feeStatus, balance, hasPendingFees }) => (
-              <div key={student._id} className={`promotion-student-item ${hasPendingFees ? 'has-pending' : ''}`}>
+              <div key={student.id} className={`promotion-student-item ${hasPendingFees ? 'has-pending' : ''}`}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <input
                     type="checkbox"
-                    checked={selectedIds.includes(student._id)}
-                    onChange={() => toggleStudent(student._id)}
+                    checked={selectedIds.includes(student.id)}
+                    onChange={() => toggleStudent(student.id)}
                     style={{ accentColor: 'var(--primary-500)' }}
                   />
                   <div>
                     <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{student.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{student.admissionNo}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{student.admission_no}</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

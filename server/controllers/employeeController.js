@@ -1,4 +1,4 @@
-const { sql } = require('../config/database');
+const crypto = require('crypto');
 
 // @desc    Get all employees
 // @route   GET /api/employees
@@ -13,32 +13,32 @@ exports.getEmployees = async (req, res) => {
       LEFT JOIN profiles p ON e.user_id = p.id
       WHERE 1=1
     `;
-    const request = req.db.request();
+    let params = [];
 
     if (department) {
-      query += ' AND e.department = @department';
-      request.input('department', sql.NVarChar, department);
+      query += ' AND e.department = ?';
+      params.push(department);
     }
     if (designation) {
-      query += ' AND e.designation = @designation';
-      request.input('designation', sql.NVarChar, designation);
+      query += ' AND e.designation = ?';
+      params.push(designation);
     }
     if (status) {
-      const isActive = status === 'active' ? 1 : 0;
-      query += ' AND e.is_active = @isActive';
-      request.input('isActive', sql.Bit, isActive);
+      const isActive = status.toLowerCase() === 'active' ? 1 : 0;
+      query += ' AND e.is_active = ?';
+      params.push(isActive);
     }
     if (search) {
-      query += ' AND (e.name LIKE @search OR e.employee_id LIKE @search OR e.department LIKE @search)';
-      request.input('search', sql.NVarChar, `%${search}%`);
+      query += ' AND (e.name LIKE ? OR e.employee_id LIKE ? OR e.department LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     query += ' ORDER BY e.created_at DESC';
 
-    const result = await request.query(query);
+    const [rows] = await req.db.query(query, params);
 
     // Format nested user object to match previous Supabase structure
-    const formattedData = result.recordset.map(row => {
+    const formattedData = rows.map(row => {
       const data = { ...row };
       if (data.email) {
         data.user = { email: data.email, role: data.role };
@@ -65,37 +65,56 @@ exports.getEmployees = async (req, res) => {
 exports.createEmployee = async (req, res) => {
   try {
     const {
-      employee_id, name, designation, department, phone, email,
-      class_teacher_of, joining_date, basic_salary, user_id, is_active
+      emp_id, employee_id, name, designation, department, phone, mobile, email,
+      class_teacher_of, joining_date, basic_salary, user_id, is_active,
+      gender, dob, blood_group, alt_mobile, aadhaar_no, pan_no,
+      address, city, state, pincode, employment_type, qualification, experience,
+      hra, da, medical_allowance, special_allowance, bonus,
+      pf, professional_tax, other_deductions,
+      bank_name, account_no, ifsc_code, remarks
     } = req.body;
 
-    const result = await req.db.request()
-      .input('employeeId', sql.NVarChar, employee_id)
-      .input('name', sql.NVarChar, name)
-      .input('designation', sql.NVarChar, designation || '')
-      .input('department', sql.NVarChar, department || '')
-      .input('phone', sql.NVarChar, phone || '')
-      .input('email', sql.NVarChar, email || '')
-      .input('classTeacherOf', sql.NVarChar, class_teacher_of || '')
-      .input('joiningDate', sql.Date, joining_date || new Date().toISOString().split('T')[0])
-      .input('basicSalary', sql.Decimal(12,2), basic_salary || 0)
-      .input('userId', sql.UniqueIdentifier, user_id || null)
-      .input('isActive', sql.Bit, is_active !== undefined ? (is_active ? 1 : 0) : 1)
-      .query(`
+    const newEmpId = crypto.randomUUID();
+    
+    // Map fields from frontend payload
+    const finalEmployeeId = employee_id || emp_id || `EMP-${Math.floor(Math.random() * 1000000)}`;
+    const finalPhone = phone || mobile || '';
+
+    await req.db.query(`
         INSERT INTO employees (
-          employee_id, name, designation, department, phone, email, 
-          class_teacher_of, joining_date, basic_salary, user_id, is_active
+          id, employee_id, name, designation, department, phone, email, 
+          class_teacher_of, joining_date, basic_salary, user_id, is_active,
+          gender, dob, blood_group, alt_mobile, aadhaar_no, pan_no,
+          address, city, state, pincode, employment_type, qualification, experience,
+          hra, da, medical_allowance, special_allowance, bonus,
+          pf, professional_tax, other_deductions,
+          bank_name, account_no, ifsc_code, remarks
         )
-        OUTPUT INSERTED.*
         VALUES (
-          @employeeId, @name, @designation, @department, @phone, @email,
-          @classTeacherOf, @joiningDate, @basicSalary, @userId, @isActive
+          ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
+          ?, ?, ?,
+          ?, ?, ?, ?
         )
-      `);
+      `, [
+        newEmpId, finalEmployeeId, name, designation || '', department || '', finalPhone, email || '',
+        class_teacher_of || '', joining_date || new Date().toISOString().split('T')[0], basic_salary || 0,
+        user_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1,
+        gender || '', dob || null, blood_group || '', alt_mobile || '', aadhaar_no || '', pan_no || '',
+        address || '', city || '', state || '', pincode || '', employment_type || 'Full Time', qualification || '', experience || '',
+        hra || 0, da || 0, medical_allowance || 0, special_allowance || 0, bonus || 0,
+        pf || 0, professional_tax || 0, other_deductions || 0,
+        bank_name || '', account_no || '', ifsc_code || '', remarks || ''
+      ]);
+
+    const [rows] = await req.db.query('SELECT * FROM employees WHERE id = ?', [newEmpId]);
 
     res.status(201).json({
       success: true,
-      data: result.recordset[0]
+      data: rows[0]
     });
   } catch (error) {
     console.error('Error creating employee:', error);
@@ -108,17 +127,19 @@ exports.createEmployee = async (req, res) => {
 // @access  Private
 exports.getEmployee = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .query('SELECT * FROM employees WHERE id = @id');
+    const [rows] = await req.db.query('SELECT * FROM employees WHERE id = ?', [req.params.id]);
 
-    if (result.recordset.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Employee not found' });
     }
 
+    const employeeData = rows[0];
+    employeeData.emp_id = employeeData.employee_id;
+    employeeData.mobile = employeeData.phone;
+
     res.json({
       success: true,
-      data: result.recordset[0]
+      data: employeeData
     });
   } catch (error) {
     console.error('Error getting employee:', error);
@@ -131,28 +152,36 @@ exports.getEmployee = async (req, res) => {
 // @access  Private
 exports.updateEmployee = async (req, res) => {
   try {
+    if (req.body.emp_id !== undefined && req.body.employee_id === undefined) {
+      req.body.employee_id = req.body.emp_id;
+    }
+    if (req.body.mobile !== undefined && req.body.phone === undefined) {
+      req.body.phone = req.body.mobile;
+    }
+
     const fields = [
       'employee_id', 'name', 'designation', 'department', 'phone', 'email',
-      'class_teacher_of', 'joining_date', 'basic_salary', 'user_id', 'is_active'
+      'class_teacher_of', 'joining_date', 'basic_salary', 'user_id', 'is_active',
+      'gender', 'dob', 'blood_group', 'alt_mobile', 'aadhaar_no', 'pan_no',
+      'address', 'city', 'state', 'pincode', 'employment_type', 'qualification', 'experience',
+      'hra', 'da', 'medical_allowance', 'special_allowance', 'bonus',
+      'pf', 'professional_tax', 'other_deductions',
+      'bank_name', 'account_no', 'ifsc_code', 'remarks'
     ];
     
     let setClauses = [];
-    const request = req.db.request();
+    let params = [];
 
     fields.forEach(field => {
       if (req.body[field] !== undefined) {
-        setClauses.push(`${field} = @${field}`);
+        setClauses.push(`${field} = ?`);
         
-        if (field === 'joining_date') {
-          request.input(field, sql.Date, req.body[field]);
-        } else if (field === 'basic_salary') {
-          request.input(field, sql.Decimal(12,2), req.body[field]);
-        } else if (field === 'is_active') {
-          request.input(field, sql.Bit, req.body[field] ? 1 : 0);
-        } else if (field === 'user_id') {
-          request.input(field, sql.UniqueIdentifier, req.body[field]);
+        if (field === 'is_active') {
+          params.push(req.body[field] ? 1 : 0);
+        } else if (field === 'user_id' && !req.body[field]) {
+          params.push(null);
         } else {
-          request.input(field, sql.NVarChar, req.body[field]);
+          params.push(req.body[field]);
         }
       }
     });
@@ -161,22 +190,21 @@ exports.updateEmployee = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No fields to update' });
     }
 
-    setClauses.push('updated_at = SYSDATETIMEOFFSET()');
+    params.push(req.params.id);
     
-    request.input('id', sql.UniqueIdentifier, req.params.id);
-    
-    const result = await request.query(`
+    await req.db.query(`
       UPDATE employees 
       SET ${setClauses.join(', ')} 
-      OUTPUT INSERTED.*
-      WHERE id = @id
-    `);
+      WHERE id = ?
+    `, params);
 
-    if (result.recordset.length === 0) {
+    const [rows] = await req.db.query('SELECT * FROM employees WHERE id = ?', [req.params.id]);
+
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Employee not found' });
     }
 
-    res.json({ success: true, data: result.recordset[0] });
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     console.error('Error updating employee:', error);
     res.status(500).json({ success: false, message: 'Failed to update employee' });
@@ -188,11 +216,9 @@ exports.updateEmployee = async (req, res) => {
 // @access  Private
 exports.deleteEmployee = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .query('DELETE FROM employees WHERE id = @id');
+    const [result] = await req.db.query('DELETE FROM employees WHERE id = ?', [req.params.id]);
 
-    if (result.rowsAffected[0] === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Employee not found' });
     }
 
@@ -208,19 +234,14 @@ exports.deleteEmployee = async (req, res) => {
 // @access  Auth
 exports.getEmployeeTimeline = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .input('resourceId', sql.NVarChar, req.params.id)
-      .query(`
+    const [rows] = await req.db.query(`
         SELECT * FROM audit_logs 
-        WHERE resource_id = @resourceId
+        WHERE resource_id = ?
         ORDER BY created_at DESC
-      `);
+      `, [req.params.id]);
 
-    res.json({ success: true, data: result.recordset });
+    res.json({ success: true, data: rows });
   } catch (error) {
-    if (error.message.includes('Invalid object name')) {
-       return res.json({ success: true, data: [] });
-    }
     res.status(500).json({ success: false, message: error.message });
   }
 };

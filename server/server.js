@@ -27,7 +27,7 @@ const app = express();
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    
+
     const clientUrl = process.env.CLIENT_URL || '';
     if (
       origin === clientUrl ||
@@ -78,9 +78,10 @@ app.get('/api/health', (req, res) => {
   res.json({
     success: true,
     message: 'School Management API is running 🏫',
-    database: 'SQL Server',
+    database: 'MySQL',
   });
 });
+
 app.get('/', (req, res) => {
   res.json({
     success: true,
@@ -103,9 +104,21 @@ app.get('/api/debug-env', (req, res) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+const { getMasterPool } = require('./config/database');
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🏫 School Management Server running on port ${PORT}`);
-  console.log(`📡 Database: Microsoft SQL Server (Multi-Tenant)`);
-  console.log(`🔐 Auth: Native JWT Auth`);
-});
+async function startServer() {
+  try {
+    await getMasterPool();
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🏫 School Management Server running on port ${PORT}`);
+      console.log(`📡 Database: MySQL (Multi-Tenant)`);
+      console.log(`🔐 Auth: Native JWT Auth`);
+    });
+  } catch (err) {
+    console.error("❌ Failed to connect to MySQL:", err.message);
+    process.exit(1);
+  }
+}
+
+startServer();

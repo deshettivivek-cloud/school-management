@@ -332,7 +332,7 @@ const FeeCollection = () => {
               )}
 
               {/* Payment History */}
-              {feeRecord.payments.length > 0 && (
+              {feeRecord.payments?.length > 0 && (
                 <div className="table-container" style={{ background: 'transparent', border: 'none' }}>
                   <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem' }}>Payment History</h4>
                   <table>

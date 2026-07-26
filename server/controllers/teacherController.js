@@ -1,20 +1,12 @@
-const { sql } = require('../config/database');
-
 /**
  * GET /api/teachers
  * Fetch all teachers for the current school with computed stats.
  */
 const getTeachers = async (req, res) => {
   try {
-    const teachersResult = await req.db.request()
-      .query("SELECT * FROM profiles WHERE role = 'teacher' ORDER BY name");
-    
-    const teachers = teachersResult.recordset;
+    const [teachers] = await req.db.execute("SELECT * FROM profiles WHERE role = 'teacher' ORDER BY name");
 
-    const studentsResult = await req.db.request()
-      .query("SELECT grade FROM students WHERE is_active = 1");
-    
-    const students = studentsResult.recordset;
+    const [students] = await req.db.execute("SELECT grade FROM students WHERE is_active = 1");
 
     // Build a map: grade -> student count
     const gradeCountMap = {};
@@ -92,37 +84,38 @@ const updateTeacher = async (req, res) => {
     const { subject, teacher_id_code } = req.body;
 
     let setClauses = [];
-    const request = req.db.request();
+    let values = [];
     
     if (subject !== undefined) {
-      setClauses.push('subject = @subject');
-      request.input('subject', sql.NVarChar, subject);
+      setClauses.push('subject = ?');
+      values.push(subject);
     }
     if (teacher_id_code !== undefined) {
-      setClauses.push('teacher_id_code = @teacherIdCode');
-      request.input('teacherIdCode', sql.NVarChar, teacher_id_code);
+      setClauses.push('teacher_id_code = ?');
+      values.push(teacher_id_code);
     }
 
     if (setClauses.length === 0) {
       return res.status(400).json({ success: false, message: 'No fields to update' });
     }
 
-    request.input('id', sql.UniqueIdentifier, id);
+    values.push(id);
     
-    const result = await request.query(`
+    await req.db.execute(`
       UPDATE profiles 
       SET ${setClauses.join(', ')} 
-      OUTPUT INSERTED.*
-      WHERE id = @id
-    `);
+      WHERE id = ?
+    `, values);
 
-    if (result.recordset.length === 0) {
+    const [rows] = await req.db.execute('SELECT * FROM profiles WHERE id = ?', [id]);
+
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Teacher not found' });
     }
 
     res.json({
       success: true,
-      data: result.recordset[0],
+      data: rows[0],
       message: 'Teacher updated successfully',
     });
   } catch (error) {

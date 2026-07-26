@@ -24,22 +24,26 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response) {
-      const { status, data, config } = error.response;
-      
-      // Do not trigger global signout/redirect for auth endpoints
-      const isAuthRequest = config.url?.includes('/auth/login') || config.url?.includes('/auth/super-admin/login');
+    const status = error.response ? error.response.status : null;
+    const data = error.response ? error.response.data : null;
+    
+    // Bypass interceptor for specific endpoints to handle errors in components
+    const isAuthRequest = error.config && error.config.url && error.config.url.includes('/auth/login');
+    const isMeRequest = error.config && error.config.url && error.config.url.includes('/auth/me');
 
-      if (status === 401 && !isAuthRequest) {
-        // Clear token on Unauthorized response
-        localStorage.removeItem('token');
-        window.dispatchEvent(new Event('auth:unauthorized'));
-      }
+    console.error(`[Axios Interceptor] URL: ${error.config?.url}, Status: ${status}, Message: ${data?.message || error.message}`);
 
-      if (status === 403 && data?.mustChangePassword) {
-        window.location.href = '/change-password';
-      }
+    if (status === 401 && !isAuthRequest && !isMeRequest) {
+      console.log('[Axios Interceptor] Clearing token due to 401 on', error.config?.url, 'Message:', data?.message);
+      // Clear token on Unauthorized response
+      localStorage.removeItem('token');
+      window.dispatchEvent(new Event('auth:unauthorized'));
     }
+
+    if (status === 403 && data?.mustChangePassword) {
+      window.location.href = '/change-password';
+    }
+
     return Promise.reject(error);
   }
 );

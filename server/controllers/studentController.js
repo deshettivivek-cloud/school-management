@@ -1,22 +1,19 @@
-const { sql } = require('../config/database');
-
 // Helper: generate admission number
 const generateAdmissionNo = async (db, academicYear) => {
   const yearCode = academicYear.replace('-', '');
   const prefix = `ADM-${yearCode}`;
 
-  const result = await db.request()
-    .input('prefix', sql.NVarChar, `${prefix}%`)
-    .query(`
-      SELECT TOP 1 admission_no 
+  const [rows] = await db.execute(`
+      SELECT admission_no 
       FROM students 
-      WHERE admission_no LIKE @prefix 
+      WHERE admission_no LIKE ? 
       ORDER BY admission_no DESC
-    `);
+      LIMIT 1
+    `, [`${prefix}%`]);
 
   let seq = 1;
-  if (result.recordset && result.recordset.length > 0) {
-    const lastSeq = parseInt(result.recordset[0].admission_no.split('-').pop(), 10);
+  if (rows && rows.length > 0) {
+    const lastSeq = parseInt(rows[0].admission_no.split('-').pop(), 10);
     seq = lastSeq + 1;
   }
 
@@ -31,34 +28,34 @@ exports.getStudents = async (req, res) => {
     const { grade, academicYear, status, search, active } = req.query;
     
     let query = 'SELECT * FROM students WHERE 1=1';
-    const request = req.db.request();
+    let params = [];
 
     if (grade) {
-      query += ' AND grade = @grade';
-      request.input('grade', sql.NVarChar, grade);
+      query += ' AND grade = ?';
+      params.push(grade);
     }
     if (academicYear) {
-      query += ' AND academic_year = @academicYear';
-      request.input('academicYear', sql.NVarChar, academicYear);
+      query += ' AND academic_year = ?';
+      params.push(academicYear);
     }
     if (status) {
-      query += ' AND admission_status = @status';
-      request.input('status', sql.NVarChar, status);
+      query += ' AND admission_status = ?';
+      params.push(status);
     }
     if (active !== undefined) {
-      query += ' AND is_active = @active';
-      request.input('active', sql.Bit, active === 'true' ? 1 : 0);
+      query += ' AND is_active = ?';
+      params.push(active === 'true' ? 1 : 0);
     }
     if (search) {
-      query += ' AND (name LIKE @search OR admission_no LIKE @search OR parent_name LIKE @search)';
-      request.input('search', sql.NVarChar, `%${search}%`);
+      query += ' AND (name LIKE ? OR admission_no LIKE ? OR parent_name LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     query += ' ORDER BY created_at DESC';
 
-    const result = await request.query(query);
+    const [rows] = await req.db.execute(query, params);
 
-    res.json({ success: true, count: result.recordset.length, data: result.recordset });
+    res.json({ success: true, count: rows.length, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -69,15 +66,13 @@ exports.getStudents = async (req, res) => {
 // @access  Auth
 exports.getStudent = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .query('SELECT * FROM students WHERE id = @id');
+    const [rows] = await req.db.execute('SELECT * FROM students WHERE id = ?', [req.params.id]);
 
-    if (!result.recordset || result.recordset.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
 
-    res.json({ success: true, data: result.recordset[0] });
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -98,34 +93,7 @@ exports.createStudent = async (req, res) => {
 
     const finalAdmissionNo = admissionNo || await generateAdmissionNo(req.db, academicYear);
 
-    const result = await req.db.request()
-      .input('admissionNo', sql.NVarChar, finalAdmissionNo)
-      .input('name', sql.NVarChar, name)
-      .input('dob', sql.Date, dob)
-      .input('gender', sql.NVarChar, gender)
-      .input('grade', sql.NVarChar, grade)
-      .input('section', sql.NVarChar, section || '')
-      .input('parentName', sql.NVarChar, parentName)
-      .input('parentPhone', sql.NVarChar, parentPhone)
-      .input('parentEmail', sql.NVarChar, parentEmail || '')
-      .input('address', sql.NVarChar, address || '')
-      .input('academicYear', sql.NVarChar, academicYear)
-      .input('admissionDate', sql.Date, admissionDate || new Date().toISOString().split('T')[0])
-      .input('photoUrl', sql.NVarChar, photoUrl || '')
-      .input('aadharNo', sql.NVarChar, aadharNo || null)
-      .input('penNumber', sql.NVarChar, penNumber || null)
-      .input('caste', sql.NVarChar, caste || '')
-      .input('subCaste', sql.NVarChar, subCaste || '')
-      .input('motherName', sql.NVarChar, motherName || '')
-      .input('motherTongue', sql.NVarChar, motherTongue || '')
-      .input('motherPhone', sql.NVarChar, motherPhone || '')
-      .input('guardianPhone', sql.NVarChar, guardianPhone || '')
-      .input('permanentAddress', sql.NVarChar, permanentAddress || '')
-      .input('fatherOccupation', sql.NVarChar, fatherOccupation || '')
-      .input('motherOccupation', sql.NVarChar, motherOccupation || '')
-      .input('fatherOccupationDesc', sql.NVarChar, fatherOccupationDesc || '')
-      .input('motherOccupationDesc', sql.NVarChar, motherOccupationDesc || '')
-      .query(`
+    await req.db.execute(`
         INSERT INTO students (
           admission_no, name, dob, gender, grade, section, parent_name, parent_phone,
           parent_email, address, academic_year, admission_date, photo_url, aadhar_no,
@@ -133,38 +101,41 @@ exports.createStudent = async (req, res) => {
           guardian_phone, permanent_address, father_occupation, mother_occupation,
           father_occupation_desc, mother_occupation_desc
         )
-        OUTPUT INSERTED.*
         VALUES (
-          @admissionNo, @name, @dob, @gender, @grade, @section, @parentName, @parentPhone,
-          @parentEmail, @address, @academicYear, @admissionDate, @photoUrl, @aadharNo,
-          @penNumber, @caste, @subCaste, @motherName, @motherTongue, @motherPhone,
-          @guardianPhone, @permanentAddress, @fatherOccupation, @motherOccupation,
-          @fatherOccupationDesc, @motherOccupationDesc
+          ?, ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?,
+          ?, ?
         )
-      `);
+      `, [
+        finalAdmissionNo, name, dob, gender, grade, section || '', parentName, parentPhone,
+        parentEmail || '', address || '', academicYear, admissionDate || new Date().toISOString().split('T')[0], photoUrl || '', aadharNo || null,
+        penNumber || null, caste || '', subCaste || '', motherName || '', motherTongue || '', motherPhone || '',
+        guardianPhone || '', permanentAddress || '', fatherOccupation || '', motherOccupation || '',
+        fatherOccupationDesc || '', motherOccupationDesc || ''
+      ]);
 
-    const student = result.recordset[0];
+    const [rows] = await req.db.execute('SELECT * FROM students WHERE admission_no = ?', [finalAdmissionNo]);
+    const student = rows[0];
 
     // Auto-assign fee if a fee structure exists for the student's grade
     try {
-      const feeResult = await req.db.request()
-        .input('academicYear', sql.NVarChar, academicYear)
-        .input('grade', sql.NVarChar, grade)
-        .query('SELECT * FROM fee_structures WHERE academic_year = @academicYear AND grade = @grade');
+      const [feeResult] = await req.db.execute(
+        'SELECT * FROM fee_structures WHERE academic_year = ? AND grade = ?',
+        [academicYear, grade]
+      );
 
-      if (feeResult.recordset.length > 0) {
-        const feeStructure = feeResult.recordset[0];
+      if (feeResult.length > 0) {
+        const feeStructure = feeResult[0];
         
-        await req.db.request()
-          .input('studentId', sql.UniqueIdentifier, student.id)
-          .input('academicYear', sql.NVarChar, academicYear)
-          .input('committedFee', sql.Decimal(12,2), feeStructure.total_standard_fee)
-          .input('feeBreakdown', sql.NVarChar, feeStructure.fee_heads || '[]')
-          .input('balance', sql.Decimal(12,2), feeStructure.total_standard_fee)
-          .query(`
+        await req.db.execute(`
             INSERT INTO fee_collections (student_id, academic_year, committed_fee, fee_breakdown, balance, status)
-            VALUES (@studentId, @academicYear, @committedFee, @feeBreakdown, @balance, 'pending')
-          `);
+            VALUES (?, ?, ?, ?, ?, 'pending')
+          `, [
+            student.id, academicYear, feeStructure.total_standard_fee, 
+            feeStructure.fee_heads || '[]', feeStructure.total_standard_fee
+          ]);
       }
     } catch (feeErr) {
       console.error('Auto-assign fee on admission (non-fatal):', feeErr.message);
@@ -189,7 +160,6 @@ exports.updateStudent = async (req, res) => {
       'fatherOccupationDesc', 'motherOccupationDesc', 'penNumber', 'caste', 'subCaste'
     ];
     
-    // Map JSON keys to DB column names
     const dbFields = {
       parentName: 'parent_name', parentPhone: 'parent_phone', parentEmail: 'parent_email',
       academicYear: 'academic_year', admissionDate: 'admission_date', photoUrl: 'photo_url',
@@ -201,18 +171,17 @@ exports.updateStudent = async (req, res) => {
     };
 
     let setClauses = [];
-    const request = req.db.request();
+    let values = [];
 
     fields.forEach(field => {
       if (req.body[field] !== undefined) {
         const dbCol = dbFields[field] || field;
-        setClauses.push(`${dbCol} = @${field}`);
+        setClauses.push(`${dbCol} = ?`);
         
-        // Basic type inference for SQL Server
         if (field === 'dob' || field === 'admissionDate') {
-          request.input(field, sql.Date, req.body[field]);
+          values.push(req.body[field]);
         } else {
-          request.input(field, sql.NVarChar, req.body[field] === null ? '' : String(req.body[field]));
+          values.push(req.body[field] === null ? '' : String(req.body[field]));
         }
       }
     });
@@ -221,24 +190,21 @@ exports.updateStudent = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No fields to update' });
     }
 
-    setClauses.push('updated_at = SYSDATETIMEOFFSET()');
+    values.push(req.params.id);
     
-    const query = `
+    await req.db.execute(`
       UPDATE students 
       SET ${setClauses.join(', ')} 
-      OUTPUT INSERTED.*
-      WHERE id = @id
-    `;
+      WHERE id = ?
+    `, values);
     
-    request.input('id', sql.UniqueIdentifier, req.params.id);
-    
-    const result = await request.query(query);
+    const [rows] = await req.db.execute('SELECT * FROM students WHERE id = ?', [req.params.id]);
 
-    if (result.recordset.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
 
-    res.json({ success: true, data: result.recordset[0] });
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -255,21 +221,19 @@ exports.updateAdmissionStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid status' });
     }
 
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .input('status', sql.NVarChar, admissionStatus)
-      .query(`
+    await req.db.execute(`
         UPDATE students 
-        SET admission_status = @status, updated_at = SYSDATETIMEOFFSET()
-        OUTPUT INSERTED.*
-        WHERE id = @id
-      `);
+        SET admission_status = ?
+        WHERE id = ?
+      `, [admissionStatus, req.params.id]);
 
-    if (result.recordset.length === 0) {
+    const [rows] = await req.db.execute('SELECT * FROM students WHERE id = ?', [req.params.id]);
+
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
 
-    res.json({ success: true, data: result.recordset[0] });
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -283,15 +247,14 @@ exports.getStudentStats = async (req, res) => {
     const { academicYear } = req.query;
 
     let query = 'SELECT admission_status, grade FROM students WHERE is_active = 1';
-    const request = req.db.request();
+    let params = [];
 
     if (academicYear) {
-      query += ' AND academic_year = @academicYear';
-      request.input('academicYear', sql.NVarChar, academicYear);
+      query += ' AND academic_year = ?';
+      params.push(academicYear);
     }
 
-    const result = await request.query(query);
-    const students = result.recordset;
+    const [students] = await req.db.execute(query, params);
 
     const total = students.length;
     const pending = students.filter((s) => s.admission_status === 'pending').length;
@@ -322,20 +285,15 @@ exports.getStudentStats = async (req, res) => {
 // @access  Auth
 exports.getStudentMarks = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .input('studentId', sql.UniqueIdentifier, req.params.id)
-      .query(`
+    const [rows] = await req.db.execute(`
         SELECT em.*, e.name as exam_name, e.term 
         FROM exam_marks em
         JOIN exams e ON em.exam_id = e.id
-        WHERE em.student_id = @studentId
-      `);
+        WHERE em.student_id = ?
+      `, [req.params.id]);
 
-    res.json({ success: true, data: result.recordset });
+    res.json({ success: true, data: rows });
   } catch (error) {
-    if (error.message.includes('Invalid object name')) {
-       return res.json({ success: true, data: [] });
-    }
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -345,19 +303,14 @@ exports.getStudentMarks = async (req, res) => {
 // @access  Auth
 exports.getStudentTimeline = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .input('studentId', sql.NVarChar, req.params.id) // resource_id is varchar in audit_logs
-      .query(`
+    const [rows] = await req.db.execute(`
         SELECT * FROM audit_logs 
-        WHERE resource_id = @studentId
+        WHERE resource_id = ?
         ORDER BY created_at DESC
-      `);
+      `, [req.params.id]);
 
-    res.json({ success: true, data: result.recordset });
+    res.json({ success: true, data: rows });
   } catch (error) {
-    if (error.message.includes('Invalid object name')) {
-       return res.json({ success: true, data: [] });
-    }
     res.status(500).json({ success: false, message: error.message });
   }
 };

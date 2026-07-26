@@ -1,5 +1,3 @@
-const { sql } = require('../config/database');
-
 const MODULE_CONFIG = {
   students: {
     table: 'students',
@@ -95,50 +93,49 @@ exports.generateReport = async (req, res) => {
     
     let selectFields = config.select || `${config.table}.*`;
     let queryBase = `FROM ${config.table} ${config.join || ''} WHERE 1=1`;
-    const request = req.db.request();
+    let params = [];
 
     // Academic Year Filter
     if (filters.academicYear) {
       if (['students', 'fee_collections', 'expenditures'].includes(config.table)) {
-        queryBase += ` AND ${tablePrefix}academic_year = @academicYear`;
+        queryBase += ` AND ${tablePrefix}academic_year = ?`;
       } else if (['attendance', 'exam_marks', 'transfer_certificates'].includes(config.table)) {
-        queryBase += ` AND ${studentPrefix}academic_year = @academicYear`;
+        queryBase += ` AND ${studentPrefix}academic_year = ?`;
       }
-      request.input('academicYear', sql.NVarChar, filters.academicYear);
+      params.push(filters.academicYear);
     }
 
     // Student Filters
     const hasStudentJoin = ['students', 'fee_collections', 'attendance', 'exam_marks', 'transfer_certificates'].includes(config.table);
     if (hasStudentJoin) {
-      if (filters.grade) { queryBase += ` AND ${studentPrefix}grade = @grade`; request.input('grade', sql.NVarChar, filters.grade); }
-      if (filters.section) { queryBase += ` AND ${studentPrefix}section = @section`; request.input('section', sql.NVarChar, filters.section); }
-      if (filters.gender) { queryBase += ` AND ${studentPrefix}gender = @gender`; request.input('gender', sql.NVarChar, filters.gender); }
-      if (filters.admissionStatus) { queryBase += ` AND ${studentPrefix}admission_status = @admissionStatus`; request.input('admissionStatus', sql.NVarChar, filters.admissionStatus); }
-      if (filters.admissionNo) { queryBase += ` AND ${studentPrefix}admission_no LIKE @admissionNo`; request.input('admissionNo', sql.NVarChar, `%${filters.admissionNo}%`); }
-      if (filters.studentName) { queryBase += ` AND ${studentPrefix}name LIKE @studentName`; request.input('studentName', sql.NVarChar, `%${filters.studentName}%`); }
-      if (filters.fatherName) { queryBase += ` AND ${studentPrefix}parent_name LIKE @fatherName`; request.input('fatherName', sql.NVarChar, `%${filters.fatherName}%`); }
-      if (filters.motherName) { queryBase += ` AND ${studentPrefix}mother_name LIKE @motherName`; request.input('motherName', sql.NVarChar, `%${filters.motherName}%`); }
-      if (filters.mobileNumber) { queryBase += ` AND ${studentPrefix}parent_phone LIKE @mobileNumber`; request.input('mobileNumber', sql.NVarChar, `%${filters.mobileNumber}%`); }
+      if (filters.grade) { queryBase += ` AND ${studentPrefix}grade = ?`; params.push(filters.grade); }
+      if (filters.section) { queryBase += ` AND ${studentPrefix}section = ?`; params.push(filters.section); }
+      if (filters.gender) { queryBase += ` AND ${studentPrefix}gender = ?`; params.push(filters.gender); }
+      if (filters.admissionStatus) { queryBase += ` AND ${studentPrefix}admission_status = ?`; params.push(filters.admissionStatus); }
+      if (filters.admissionNo) { queryBase += ` AND ${studentPrefix}admission_no LIKE ?`; params.push(`%${filters.admissionNo}%`); }
+      if (filters.studentName) { queryBase += ` AND ${studentPrefix}name LIKE ?`; params.push(`%${filters.studentName}%`); }
+      if (filters.fatherName) { queryBase += ` AND ${studentPrefix}parent_name LIKE ?`; params.push(`%${filters.fatherName}%`); }
+      if (filters.motherName) { queryBase += ` AND ${studentPrefix}mother_name LIKE ?`; params.push(`%${filters.motherName}%`); }
+      if (filters.mobileNumber) { queryBase += ` AND ${studentPrefix}parent_phone LIKE ?`; params.push(`%${filters.mobileNumber}%`); }
     }
 
     if (filters.feeStatus && config.table === 'fee_collections') {
-      queryBase += ' AND fee_collections.status = @feeStatus';
-      request.input('feeStatus', sql.NVarChar, filters.feeStatus);
+      queryBase += ' AND fee_collections.status = ?';
+      params.push(filters.feeStatus);
     }
     
     // Date Filters
     if (filters.startDate && filters.endDate) {
       const dateCol = config.defaultSort.includes('date') ? config.defaultSort : `${tablePrefix}created_at`;
-      queryBase += ` AND ${dateCol} >= @startDate AND ${dateCol} <= @endDate`;
-      request.input('startDate', sql.Date, filters.startDate);
-      request.input('endDate', sql.Date, filters.endDate);
+      queryBase += ` AND ${dateCol} >= ? AND ${dateCol} <= ?`;
+      params.push(filters.startDate, filters.endDate);
     }
 
     // Search
     if (filters.search && config.searchColumns) {
-      const orClauses = config.searchColumns.map((col, idx) => {
-        request.input(`search${idx}`, sql.NVarChar, `%${filters.search}%`);
-        return `${col} LIKE @search${idx}`;
+      const orClauses = config.searchColumns.map((col) => {
+        params.push(`%${filters.search}%`);
+        return `${col} LIKE ?`;
       });
       if (orClauses.length > 0) {
         queryBase += ` AND (${orClauses.join(' OR ')})`;
@@ -147,8 +144,8 @@ exports.generateReport = async (req, res) => {
 
     // First, get the total count for pagination
     const countQuery = `SELECT COUNT(*) as total ${queryBase}`;
-    const countResult = await request.query(countQuery);
-    const totalCount = countResult.recordset[0].total;
+    const [countResult] = await req.db.query(countQuery, params);
+    const totalCount = countResult[0].total;
 
     // Then, get the paginated data
     let dataQuery = `SELECT ${selectFields} ${queryBase}`;
@@ -163,14 +160,15 @@ exports.generateReport = async (req, res) => {
 
     if (limit > 0) {
       const offset = (page - 1) * limit;
-      dataQuery += ` OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
+      dataQuery += ` LIMIT ? OFFSET ?`;
+      params.push(limit, offset);
     }
 
-    const dataResult = await request.query(dataQuery);
+    const [dataResult] = await req.db.query(dataQuery, params);
 
     res.json({
       success: true,
-      data: dataResult.recordset,
+      data: dataResult,
       pagination: limit > 0 ? {
         total: totalCount,
         page,
@@ -187,17 +185,16 @@ exports.generateReport = async (req, res) => {
 
 const getDashboardMetrics = async (req, res) => {
   try {
-    // Fire parallel requests on the db pool
-    const [studentsResult, teachersResult, feesResult] = await Promise.all([
-      req.db.request().query("SELECT COUNT(*) as count FROM students WHERE is_active = 1"),
-      req.db.request().query("SELECT COUNT(*) as count FROM employees WHERE is_active = 1"),
-      req.db.request().query("SELECT SUM(committed_fee) as committed, SUM(total_paid) as paid FROM fee_collections")
+    const [[studentsResult], [teachersResult], [feesResult]] = await Promise.all([
+      req.db.query("SELECT COUNT(*) as count FROM students WHERE is_active = 1"),
+      req.db.query("SELECT COUNT(*) as count FROM employees WHERE is_active = 1"),
+      req.db.query("SELECT SUM(committed_fee) as committed, SUM(total_paid) as paid FROM fee_collections")
     ]);
 
-    const studentCount = studentsResult.recordset[0].count || 0;
-    const teacherCount = teachersResult.recordset[0].count || 0;
+    const studentCount = studentsResult[0].count || 0;
+    const teacherCount = teachersResult[0].count || 0;
     
-    const feesData = feesResult.recordset[0];
+    const feesData = feesResult[0];
     const totalFeesCommitted = feesData.committed || 0;
     const totalFeesPaid = feesData.paid || 0;
     const pendingFees = totalFeesCommitted - totalFeesPaid;

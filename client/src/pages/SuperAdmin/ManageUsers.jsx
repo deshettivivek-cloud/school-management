@@ -81,13 +81,13 @@ const ManageUsers = () => {
     }
   };
 
-  const handleDelete = async (userId, userName) => {
+  const handleDelete = async (userId, userName, schoolId, email) => {
     if (!window.confirm(`Are you sure you want to delete "${userName}"? This action cannot be undone.`)) {
       return;
     }
 
     try {
-      await api.delete(`/super-admin/users/${userId}`);
+      await api.delete(`/super-admin/users/${userId}`, { data: { schoolId, email } });
       toast.success('User deleted');
       setUsers(users.filter(u => u.id !== userId));
     } catch (error) {
@@ -95,10 +95,10 @@ const ManageUsers = () => {
     }
   };
 
-  const handleResetPassword = async (userId, userName) => {
+  const handleResetPassword = async (userId, userName, schoolId) => {
     if (!window.confirm(`Are you sure you want to reset the password for "${userName}"?`)) return;
     try {
-      const res = await api.post(`/super-admin/users/${userId}/reset-password`);
+      const res = await api.post(`/super-admin/users/${userId}/reset-password`, { schoolId });
       toast.success(`Password reset! New Temp Password: ${res.data.data.temporaryPassword}`, { duration: 8000 });
       fetchData(); // Refresh to show pending change
     } catch (error) {
@@ -106,10 +106,10 @@ const ManageUsers = () => {
     }
   };
 
-  const handleUpdateStatus = async (userId, status, userName) => {
+  const handleUpdateStatus = async (userId, status, userName, schoolId) => {
     if (!window.confirm(`Are you sure you want to mark "${userName}" as ${status}?`)) return;
     try {
-      await api.patch(`/super-admin/users/${userId}/status`, { status });
+      await api.patch(`/super-admin/users/${userId}/status`, { status, schoolId });
       toast.success(`User ${status} successfully`);
       fetchData();
     } catch (error) {
@@ -337,16 +337,16 @@ const ManageUsers = () => {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button className="btn btn-ghost btn-sm" style={{ color: '#f59e0b' }} onClick={() => handleResetPassword(user.id, user.name)} title="Reset Password">
+                        <button className="btn btn-ghost btn-sm" style={{ color: '#f59e0b' }} onClick={() => handleResetPassword(user.id, user.name, user.school_id)} title="Reset Password">
                           <HiOutlineKey size={16} />
                         </button>
-                        <button className="btn btn-ghost btn-sm" style={{ color: '#f97316' }} onClick={() => handleUpdateStatus(user.id, 'suspended', user.name)} title="Suspend User">
+                        <button className="btn btn-ghost btn-sm" style={{ color: '#f97316' }} onClick={() => handleUpdateStatus(user.id, 'suspended', user.name, user.school_id)} title="Suspend User">
                           <HiOutlineBan size={16} />
                         </button>
-                        <button className="btn btn-ghost btn-sm" style={{ color: '#10b981' }} onClick={() => handleUpdateStatus(user.id, 'active', user.name)} title="Activate User">
+                        <button className="btn btn-ghost btn-sm" style={{ color: '#10b981' }} onClick={() => handleUpdateStatus(user.id, 'active', user.name, user.school_id)} title="Activate User">
                           <HiOutlineCheckCircle size={16} />
                         </button>
-                        <button className="btn btn-ghost btn-sm" style={{ color: '#ef4444' }} onClick={() => handleDelete(user.id, user.name)} title="Delete user">
+                        <button className="btn btn-ghost btn-sm" style={{ color: '#ef4444' }} onClick={() => handleDelete(user.id, user.name, user.school_id, user.email)} title="Delete user">
                           <HiOutlineTrash size={16} />
                         </button>
                       </div>

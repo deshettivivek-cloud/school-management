@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { sql, getMasterPool } = require('./config/database');
+const { getMasterPool } = require('./config/database');
 const { hashPassword } = require('./config/auth');
 
 const seedSuperAdmin = async () => {
@@ -13,27 +13,24 @@ const seedSuperAdmin = async () => {
     const masterPool = await getMasterPool();
 
     // Check if user already exists
-    const checkResult = await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .query('SELECT * FROM super_admin_profiles WHERE email = @email');
+    const [rows] = await masterPool.execute(
+      'SELECT * FROM super_admin_profiles WHERE email = ?',
+      [email]
+    );
 
-    if (checkResult.recordset.length > 0) {
+    if (rows.length > 0) {
       console.log('⚠️  Super Admin user already exists in DB.');
       process.exit(0);
     }
 
     const passwordHash = await hashPassword(password);
 
-    // Create user via MSSQL
-    await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .input('passwordHash', sql.NVarChar, passwordHash)
-      .input('name', sql.NVarChar, name)
-      .input('role', sql.NVarChar, 'super_admin')
-      .query(`
-        INSERT INTO super_admin_profiles (email, password_hash, name, role, must_change_password)
-        VALUES (@email, @passwordHash, @name, @role, 1)
-      `);
+    // Create user via MySQL
+    await masterPool.execute(
+      `INSERT INTO super_admin_profiles (email, password_hash, name, role, must_change_password)
+       VALUES (?, ?, ?, ?, ?)`,
+      [email, passwordHash, name, 'super_admin', 1]
+    );
 
     console.log('\n✅ Super Admin created successfully:');
     console.log(`   Email: ${email}`);

@@ -1,4 +1,5 @@
-const { sql, getMasterPool } = require('../config/database');
+const { getMasterPool } = require('../config/database');
+const crypto = require('crypto');
 
 /**
  * Logs an action to the audit_logs table.
@@ -23,22 +24,23 @@ exports.logAuditAction = async (req, { action, resource_type, resource_id, old_v
     const actualUserId = userId || (req.user ? req.user.id : null);
 
     const masterPool = await getMasterPool();
-    const request = masterPool.request();
+    const auditId = crypto.randomUUID();
 
-    request.input('schoolId', sql.UniqueIdentifier, actualSchoolId);
-    request.input('userId', sql.UniqueIdentifier, actualUserId);
-    request.input('action', sql.NVarChar, action);
-    request.input('resourceType', sql.NVarChar, resource_type);
-    request.input('resourceId', sql.NVarChar, resource_id ? String(resource_id) : null);
-    request.input('oldValues', sql.NVarChar, old_values ? JSON.stringify(old_values) : null);
-    request.input('newValues', sql.NVarChar, new_values ? JSON.stringify(new_values) : null);
-    request.input('ipAddress', sql.NVarChar, ip_address ? String(ip_address).substring(0, 50) : null);
-    request.input('userAgent', sql.NVarChar, user_agent ? String(user_agent).substring(0, 500) : null);
-
-    await request.query(`
-      INSERT INTO audit_logs (school_id, user_id, action, resource_type, resource_id, old_values, new_values, ip_address, user_agent)
-      VALUES (@schoolId, @userId, @action, @resourceType, @resourceId, @oldValues, @newValues, @ipAddress, @userAgent)
-    `);
+    await masterPool.execute(`
+      INSERT INTO audit_logs (id, school_id, user_id, action, resource_type, resource_id, old_values, new_values, ip_address, user_agent)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      auditId ?? null,
+      actualSchoolId ?? null,
+      actualUserId ?? null,
+      action ?? null,
+      resource_type ?? null,
+      resource_id ? String(resource_id) : null,
+      old_values ? JSON.stringify(old_values) : null,
+      new_values ? JSON.stringify(new_values) : null,
+      ip_address ? String(ip_address).substring(0, 50) : null,
+      user_agent ? String(user_agent).substring(0, 500) : null
+    ]);
 
   } catch (err) {
     console.error('Audit Logger Error:', err.message);

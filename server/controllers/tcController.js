@@ -1,4 +1,4 @@
-const { sql } = require('../config/database');
+const crypto = require('crypto');
 
 // @desc    Get all transfer certificates
 // @route   GET /api/tc
@@ -16,18 +16,18 @@ exports.getTCs = async (req, res) => {
       LEFT JOIN profiles p ON tc.issued_by = p.id
       WHERE 1=1
     `;
-    const request = req.db.request();
+    let params = [];
 
     if (search) {
-      query += ' AND (s.name LIKE @search OR s.admission_no LIKE @search OR tc.tc_number LIKE @search)';
-      request.input('search', sql.NVarChar, `%${search}%`);
+      query += ' AND (s.name LIKE ? OR s.admission_no LIKE ? OR tc.tc_number LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     query += ' ORDER BY tc.issued_date DESC';
 
-    const result = await request.query(query);
+    const [rows] = await req.db.query(query, params);
 
-    let results = result.recordset.map((row) => {
+    let results = rows.map((row) => {
       const tc = { ...row };
       
       tc.student = {
@@ -61,23 +61,21 @@ exports.getTCs = async (req, res) => {
 // @access  Auth
 exports.getTC = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .query(`
+    const [rows] = await req.db.execute(`
         SELECT tc.*, 
                s.name as student_name, s.admission_no, s.grade, s.section, s.dob, s.gender, s.parent_name, s.parent_phone, s.address, s.admission_date, s.academic_year,
                p.name as issued_by_name
         FROM transfer_certificates tc
         JOIN students s ON tc.student_id = s.id
         LEFT JOIN profiles p ON tc.issued_by = p.id
-        WHERE tc.id = @id
-      `);
+        WHERE tc.id = ?
+      `, [req.params.id]);
 
-    if (result.recordset.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'TC not found' });
     }
 
-    const row = result.recordset[0];
+    const row = rows[0];
     const data = { ...row };
     
     data.student = {
@@ -126,81 +124,64 @@ exports.issueTC = async (req, res) => {
     const { studentId, dateOfLeaving, reason, conduct, remarks } = req.body;
 
     // Verify student exists and is active
-    const sResult = await req.db.request()
-      .input('id', sql.UniqueIdentifier, studentId)
-      .query('SELECT * FROM students WHERE id = @id');
+    const [students] = await req.db.execute('SELECT * FROM students WHERE id = ?', [studentId]);
 
-    if (sResult.recordset.length === 0) {
+    if (students.length === 0) {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
     
-    const student = sResult.recordset[0];
+    const student = students[0];
     if (!student.is_active) {
       return res.status(400).json({ success: false, message: 'TC already issued — student is inactive' });
     }
 
     // Check for pending fees
-    const feesResult = await req.db.request()
-      .input('studentId', sql.UniqueIdentifier, studentId)
-      .query('SELECT balance FROM fee_collections WHERE student_id = @studentId AND balance > 0');
+    const [feesResult] = await req.db.execute('SELECT balance FROM fee_collections WHERE student_id = ? AND balance > 0', [studentId]);
 
-    if (feesResult.recordset.length > 0) {
+    if (feesResult.length > 0) {
       return res.status(400).json({ success: false, message: 'Cannot issue TC — student has pending fees' });
     }
 
     // Check existing TC
-    const existingTC = await req.db.request()
-      .input('studentId', sql.UniqueIdentifier, studentId)
-      .query('SELECT id FROM transfer_certificates WHERE student_id = @studentId');
+    const [existingTC] = await req.db.execute('SELECT id FROM transfer_certificates WHERE student_id = ?', [studentId]);
 
-    if (existingTC.recordset.length > 0) {
+    if (existingTC.length > 0) {
       return res.status(400).json({ success: false, message: 'TC already issued for this student' });
     }
 
     // Generate TC number
     const year = new Date().getFullYear();
-    const countResult = await req.db.request()
-      .query('SELECT COUNT(*) as count FROM transfer_certificates');
+    const [countResult] = await req.db.query('SELECT COUNT(*) as count FROM transfer_certificates');
       
-    const count = countResult.recordset[0].count;
+    const count = countResult[0].count;
     const tcNumber = `TC-${year}-${String(count + 1).padStart(4, '0')}`;
 
-    // Create TC
-    const tcResult = await req.db.request()
-      .input('studentId', sql.UniqueIdentifier, studentId)
-      .input('tcNumber', sql.NVarChar, tcNumber)
-      .input('dateOfLeaving', sql.Date, dateOfLeaving)
-      .input('reason', sql.NVarChar, reason)
-      .input('conduct', sql.NVarChar, conduct || 'Good')
-      .input('remarks', sql.NVarChar, remarks || '')
-      .input('issuedBy', sql.UniqueIdentifier, req.user.id)
-      .query(`
-        INSERT INTO transfer_certificates (student_id, tc_number, date_of_leaving, reason, conduct, remarks, issued_by)
-        OUTPUT INSERTED.*
-        VALUES (@studentId, @tcNumber, @dateOfLeaving, @reason, @conduct, @remarks, @issuedBy)
-      `);
+    const tcId = crypto.randomUUID();
 
-    const tc = tcResult.recordset[0];
+    // Create TC
+    await req.db.execute(`
+        INSERT INTO transfer_certificates (id, student_id, tc_number, date_of_leaving, reason, conduct, remarks, issued_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        tcId, studentId, tcNumber, dateOfLeaving, reason, 
+        conduct || 'Good', remarks || '', req.user.id
+      ]);
 
     // Mark student inactive
-    await req.db.request()
-      .input('id', sql.UniqueIdentifier, studentId)
-      .query('UPDATE students SET is_active = 0, updated_at = SYSDATETIMEOFFSET() WHERE id = @id');
+    await req.db.execute('UPDATE students SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [studentId]);
 
     // Get the final joined data for the response
-    const finalResult = await req.db.request()
-      .input('id', sql.UniqueIdentifier, tc.id)
-      .query(`
+    const [finalRows] = await req.db.execute(`
         SELECT tc.*, 
                s.name as student_name, s.admission_no, s.grade, s.section, s.parent_name,
                p.name as issued_by_name
         FROM transfer_certificates tc
         JOIN students s ON tc.student_id = s.id
         LEFT JOIN profiles p ON tc.issued_by = p.id
-        WHERE tc.id = @id
-      `);
+        WHERE tc.id = ?
+      `, [tcId]);
 
-    const finalRow = finalResult.recordset[0];
+    const finalRow = finalRows[0];
     const data = { ...finalRow };
     data.student = {
       name: finalRow.student_name,

@@ -1,5 +1,3 @@
-const { sql } = require('../config/database');
-
 // @desc    Check promotion eligibility for a grade
 // @route   GET /api/promotion/check/:grade
 // @access  Admin
@@ -12,16 +10,11 @@ exports.checkPromotion = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Academic year is required' });
     }
 
-    const studentsResult = await req.db.request()
-      .input('grade', sql.NVarChar, grade)
-      .input('academicYear', sql.NVarChar, academicYear)
-      .query(`
+    const [students] = await req.db.execute(`
         SELECT * FROM students 
-        WHERE grade = @grade AND academic_year = @academicYear AND is_active = 1
+        WHERE grade = ? AND academic_year = ? AND is_active = 1
         ORDER BY name ASC
-      `);
-
-    const students = studentsResult.recordset;
+      `, [grade, academicYear]);
 
     if (students.length === 0) {
       return res.json({
@@ -32,20 +25,16 @@ exports.checkPromotion = async (req, res) => {
 
     // Get fee records for these students
     const studentIds = students.map((s) => s.id);
-    const idsList = studentIds.map((_, i) => `@id${i}`).join(',');
+    const idsList = studentIds.map(() => '?').join(',');
     
-    const feesReq = req.db.request();
-    feesReq.input('academicYear', sql.NVarChar, academicYear);
-    studentIds.forEach((id, i) => feesReq.input(`id${i}`, sql.UniqueIdentifier, id));
-
-    const feeRecords = await feesReq.query(`
+    const [feeRecords] = await req.db.query(`
       SELECT student_id, status, balance 
       FROM fee_collections 
-      WHERE academic_year = @academicYear AND student_id IN (${idsList})
-    `);
+      WHERE academic_year = ? AND student_id IN (${idsList})
+    `, [academicYear, ...studentIds]);
 
     const feeMap = {};
-    feeRecords.recordset.forEach((f) => { feeMap[f.student_id] = f; });
+    feeRecords.forEach((f) => { feeMap[f.student_id] = f; });
 
     const studentsWithFeeStatus = students.map((student) => {
       const feeRecord = feeMap[student.id];
@@ -88,19 +77,16 @@ exports.promoteStudents = async (req, res) => {
       });
     }
 
-    let query = `SELECT id FROM students WHERE grade = @fromGrade AND academic_year = @academicYear AND is_active = 1`;
-    const request = req.db.request();
-    request.input('fromGrade', sql.NVarChar, fromGrade);
-    request.input('academicYear', sql.NVarChar, academicYear);
+    let query = `SELECT id FROM students WHERE grade = ? AND academic_year = ? AND is_active = 1`;
+    let params = [fromGrade, academicYear];
 
     if (studentIds && studentIds.length > 0) {
-      const idsList = studentIds.map((_, i) => `@s_id${i}`).join(',');
+      const idsList = studentIds.map(() => '?').join(',');
       query += ` AND id IN (${idsList})`;
-      studentIds.forEach((id, i) => request.input(`s_id${i}`, sql.UniqueIdentifier, id));
+      params.push(...studentIds);
     }
 
-    const studentsResult = await request.query(query);
-    const students = studentsResult.recordset;
+    const [students] = await req.db.query(query, params);
 
     if (students.length === 0) {
       return res.status(404).json({ success: false, message: 'No students found to promote' });
@@ -110,26 +96,23 @@ exports.promoteStudents = async (req, res) => {
 
     // Check pending fees
     if (!force) {
-      const idsList = ids.map((_, i) => `@id${i}`).join(',');
-      const pendingReq = req.db.request();
-      pendingReq.input('academicYear', sql.NVarChar, academicYear);
-      ids.forEach((id, i) => pendingReq.input(`id${i}`, sql.UniqueIdentifier, id));
-
-      const pendingFees = await pendingReq.query(`
+      const idsList = ids.map(() => '?').join(',');
+      
+      const [pendingFees] = await req.db.query(`
         SELECT fc.balance, s.name, s.admission_no
         FROM fee_collections fc
         JOIN students s ON fc.student_id = s.id
-        WHERE fc.academic_year = @academicYear 
+        WHERE fc.academic_year = ? 
           AND fc.status IN ('pending', 'partial', 'overdue')
           AND fc.student_id IN (${idsList})
-      `);
+      `, [academicYear, ...ids]);
 
-      if (pendingFees.recordset.length > 0) {
+      if (pendingFees.length > 0) {
         return res.status(400).json({
           success: false,
-          message: `${pendingFees.recordset.length} student(s) have pending fees. Use force=true to override.`,
+          message: `${pendingFees.length} student(s) have pending fees. Use force=true to override.`,
           data: {
-            studentsWithPendingFees: pendingFees.recordset.map((f) => ({
+            studentsWithPendingFees: pendingFees.map((f) => ({
               name: f.name,
               admissionNo: f.admission_no,
               balance: f.balance,
@@ -140,19 +123,14 @@ exports.promoteStudents = async (req, res) => {
     }
 
     // Promote: update grade and academic year
-    const idsList = ids.map((_, i) => `@uid${i}`).join(',');
-    const updateReq = req.db.request();
-    updateReq.input('toGrade', sql.NVarChar, toGrade);
-    updateReq.input('newAcademicYear', sql.NVarChar, newAcademicYear);
-    ids.forEach((id, i) => updateReq.input(`uid${i}`, sql.UniqueIdentifier, id));
+    const idsList = ids.map(() => '?').join(',');
 
-    await updateReq.query(`
+    await req.db.query(`
       UPDATE students 
-      SET grade = @toGrade, 
-          academic_year = @newAcademicYear, 
-          updated_at = SYSDATETIMEOFFSET()
+      SET grade = ?, 
+          academic_year = ?
       WHERE id IN (${idsList})
-    `);
+    `, [toGrade, newAcademicYear, ...ids]);
 
     res.json({
       success: true,

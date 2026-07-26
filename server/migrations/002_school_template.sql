@@ -1,298 +1,272 @@
--- ═══════════════════════════════════════════════════════════════
--- SCHOOL DATABASE TEMPLATE
--- This is used as a template when creating a new school database.
--- Each school gets its own copy of this schema.
--- NOTE: No school_id column — the entire database IS the tenant.
--- ═══════════════════════════════════════════════════════════════
-
--- ── Profiles (users of this school) ───────────────────────────
-CREATE TABLE profiles (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    email NVARCHAR(255) UNIQUE NOT NULL,
-    password_hash NVARCHAR(255) NOT NULL,
-    name NVARCHAR(255) NOT NULL DEFAULT 'User',
-    role NVARCHAR(20) NOT NULL DEFAULT 'teacher'
-        CHECK (role IN ('principal', 'clerk', 'teacher')),
-    assigned_classes NVARCHAR(MAX) DEFAULT '[]',  -- JSON array of class names
-    must_change_password BIT DEFAULT 1,
-    password_changed_at DATETIMEOFFSET,
-    is_active BIT DEFAULT 1,
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+CREATE TABLE IF NOT EXISTS profiles (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL DEFAULT 'User',
+    role VARCHAR(20) NOT NULL DEFAULT 'teacher' CHECK (role IN ('principal', 'clerk', 'teacher')),
+    assigned_classes LONGTEXT,
+    must_change_password BOOLEAN DEFAULT TRUE,
+    password_changed_at TIMESTAMP NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-GO
 
--- ── Students ──────────────────────────────────────────────────
-CREATE TABLE students (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    admission_no NVARCHAR(50) NOT NULL UNIQUE,
-    name NVARCHAR(255) NOT NULL,
+CREATE TABLE IF NOT EXISTS students (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    admission_no VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
     dob DATE NOT NULL,
-    gender NVARCHAR(10) NOT NULL CHECK (gender IN ('male', 'female', 'other')),
-    aadhar_no NVARCHAR(20),
-    pen_number NVARCHAR(50),
-    caste NVARCHAR(100) DEFAULT '',
-    sub_caste NVARCHAR(100) DEFAULT '',
-    photo_url NVARCHAR(500) DEFAULT '',
-    grade NVARCHAR(20) NOT NULL,
-    section NVARCHAR(10) DEFAULT '',
-    parent_name NVARCHAR(255) NOT NULL,
-    mother_name NVARCHAR(255) DEFAULT '',
-    mother_tongue NVARCHAR(50) DEFAULT '',
-    parent_phone NVARCHAR(20) NOT NULL,
-    mother_phone NVARCHAR(20) DEFAULT '',
-    guardian_phone NVARCHAR(20) DEFAULT '',
-    parent_email NVARCHAR(255) DEFAULT '',
-    address NVARCHAR(500) DEFAULT '',
-    permanent_address NVARCHAR(500) DEFAULT '',
-    father_occupation NVARCHAR(100) DEFAULT '',
-    mother_occupation NVARCHAR(100) DEFAULT '',
-    father_occupation_desc NVARCHAR(255) DEFAULT '',
-    mother_occupation_desc NVARCHAR(255) DEFAULT '',
-    admission_date DATE DEFAULT GETDATE(),
-    admission_status NVARCHAR(20) DEFAULT 'pending'
-        CHECK (admission_status IN ('pending', 'confirmed')),
-    academic_year NVARCHAR(20) NOT NULL,
-    is_active BIT DEFAULT 1,
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    updated_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+    gender VARCHAR(10) NOT NULL CHECK (gender IN ('male', 'female', 'other')),
+    aadhar_no VARCHAR(20),
+    pen_number VARCHAR(50),
+    caste VARCHAR(100) DEFAULT '',
+    sub_caste VARCHAR(100) DEFAULT '',
+    photo_url VARCHAR(500) DEFAULT '',
+    grade VARCHAR(20) NOT NULL,
+    section VARCHAR(10) DEFAULT '',
+    parent_name VARCHAR(255) NOT NULL,
+    mother_name VARCHAR(255) DEFAULT '',
+    mother_tongue VARCHAR(50) DEFAULT '',
+    parent_phone VARCHAR(20) NOT NULL,
+    mother_phone VARCHAR(20) DEFAULT '',
+    guardian_phone VARCHAR(20) DEFAULT '',
+    parent_email VARCHAR(255) DEFAULT '',
+    address VARCHAR(500) DEFAULT '',
+    permanent_address VARCHAR(500) DEFAULT '',
+    father_occupation VARCHAR(100) DEFAULT '',
+    mother_occupation VARCHAR(100) DEFAULT '',
+    father_occupation_desc VARCHAR(255) DEFAULT '',
+    mother_occupation_desc VARCHAR(255) DEFAULT '',
+    admission_date DATE DEFAULT (CURRENT_DATE),
+    admission_status VARCHAR(20) DEFAULT 'pending' CHECK (admission_status IN ('pending', 'confirmed')),
+    academic_year VARCHAR(20) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_students_grade (grade, academic_year),
+    INDEX idx_students_active (is_active),
+    INDEX idx_students_admission (admission_no)
 );
-GO
 
--- ── Fee Structures ────────────────────────────────────────────
-CREATE TABLE fee_structures (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    academic_year NVARCHAR(20) NOT NULL,
-    grade NVARCHAR(20) NOT NULL,
-    fee_heads NVARCHAR(MAX) NOT NULL DEFAULT '[]',  -- JSON array
+CREATE TABLE IF NOT EXISTS fee_structures (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    academic_year VARCHAR(20) NOT NULL,
+    grade VARCHAR(20) NOT NULL,
+    fee_heads LONGTEXT,
     total_standard_fee DECIMAL(12,2) DEFAULT 0,
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    UNIQUE(academic_year, grade)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(academic_year, grade),
+    INDEX idx_fee_structures_year (academic_year, grade)
 );
-GO
 
--- ── Fee Collections ───────────────────────────────────────────
-CREATE TABLE fee_collections (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    student_id UNIQUEIDENTIFIER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-    academic_year NVARCHAR(20) NOT NULL,
+CREATE TABLE IF NOT EXISTS fee_collections (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    student_id VARCHAR(36) NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    academic_year VARCHAR(20) NOT NULL,
     committed_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
-    fee_breakdown NVARCHAR(MAX) DEFAULT '[]',  -- JSON
-    payments NVARCHAR(MAX) DEFAULT '[]',        -- JSON
+    fee_breakdown LONGTEXT,
+    payments LONGTEXT,
     total_paid DECIMAL(12,2) DEFAULT 0,
     balance DECIMAL(12,2) DEFAULT 0,
-    status NVARCHAR(20) DEFAULT 'pending'
-        CHECK (status IN ('paid', 'partial', 'pending', 'overdue')),
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    updated_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    UNIQUE(student_id, academic_year)
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('paid', 'partial', 'pending', 'overdue')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE(student_id, academic_year),
+    INDEX idx_fee_collections_student (student_id),
+    INDEX idx_fee_collections_year (academic_year)
 );
-GO
 
--- ── Transfer Certificates ─────────────────────────────────────
-CREATE TABLE transfer_certificates (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    student_id UNIQUEIDENTIFIER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-    tc_number NVARCHAR(50) NOT NULL UNIQUE,
+CREATE TABLE IF NOT EXISTS transfer_certificates (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    student_id VARCHAR(36) NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    tc_number VARCHAR(50) NOT NULL UNIQUE,
     date_of_leaving DATE NOT NULL,
-    reason NVARCHAR(500) NOT NULL,
-    conduct NVARCHAR(50) DEFAULT 'Good',
-    remarks NVARCHAR(500) DEFAULT '',
-    issued_by UNIQUEIDENTIFIER REFERENCES profiles(id),
-    issued_date DATE DEFAULT GETDATE(),
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+    reason VARCHAR(500) NOT NULL,
+    conduct VARCHAR(50) DEFAULT 'Good',
+    remarks VARCHAR(500) DEFAULT '',
+    issued_by VARCHAR(36) REFERENCES profiles(id),
+    issued_date DATE DEFAULT (CURRENT_DATE),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-GO
 
--- ── Blog Posts ────────────────────────────────────────────────
-CREATE TABLE blog_posts (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    title NVARCHAR(500) NOT NULL,
-    content NVARCHAR(MAX) NOT NULL,
-    author_id UNIQUEIDENTIFIER REFERENCES profiles(id),
-    author_name NVARCHAR(255) DEFAULT '',
-    cover_image_url NVARCHAR(500) DEFAULT '',
-    is_published BIT DEFAULT 1,
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    updated_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+CREATE TABLE IF NOT EXISTS blog_posts (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    title VARCHAR(500) NOT NULL,
+    content LONGTEXT NOT NULL,
+    author_id VARCHAR(36) REFERENCES profiles(id),
+    author_name VARCHAR(255) DEFAULT '',
+    cover_image_url VARCHAR(500) DEFAULT '',
+    is_published BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_blog_published (is_published)
 );
-GO
 
--- ── Expenditures ──────────────────────────────────────────────
-CREATE TABLE expenditures (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    title NVARCHAR(255) NOT NULL,
+CREATE TABLE IF NOT EXISTS expenditures (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    title VARCHAR(255) NOT NULL,
     amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-    category NVARCHAR(50) NOT NULL DEFAULT 'other',
-    date DATE NOT NULL DEFAULT GETDATE(),
-    description NVARCHAR(500) DEFAULT '',
-    payment_mode NVARCHAR(20) DEFAULT 'cash',
-    vendor_name NVARCHAR(255) DEFAULT '',
-    academic_year NVARCHAR(20) DEFAULT '',
-    created_by UNIQUEIDENTIFIER REFERENCES profiles(id),
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    updated_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+    category VARCHAR(50) NOT NULL DEFAULT 'other',
+    date DATE DEFAULT (CURRENT_DATE),
+    description VARCHAR(500) DEFAULT '',
+    payment_mode VARCHAR(20) DEFAULT 'cash',
+    vendor_name VARCHAR(255) DEFAULT '',
+    academic_year VARCHAR(20) DEFAULT '',
+    created_by VARCHAR(36) REFERENCES profiles(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_expenditures_date (date),
+    INDEX idx_expenditures_year (academic_year)
 );
-GO
 
--- ── Teachers ──────────────────────────────────────────────────
-CREATE TABLE teachers (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    employee_id NVARCHAR(50) NOT NULL UNIQUE,
-    name NVARCHAR(255) NOT NULL,
-    department NVARCHAR(100) DEFAULT '',
-    email NVARCHAR(255) DEFAULT '',
-    phone NVARCHAR(20) DEFAULT '',
-    joining_date DATE DEFAULT GETDATE(),
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    updated_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+CREATE TABLE IF NOT EXISTS teachers (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    employee_id VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    department VARCHAR(100) DEFAULT '',
+    email VARCHAR(255) DEFAULT '',
+    phone VARCHAR(20) DEFAULT '',
+    joining_date DATE DEFAULT (CURRENT_DATE),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-GO
 
--- ── Staff ─────────────────────────────────────────────────────
-CREATE TABLE staff (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    employee_id NVARCHAR(50) NOT NULL UNIQUE,
-    name NVARCHAR(255) NOT NULL,
-    role NVARCHAR(50) NOT NULL,
-    department NVARCHAR(100) DEFAULT '',
-    phone NVARCHAR(20) DEFAULT '',
-    joining_date DATE DEFAULT GETDATE(),
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    updated_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+CREATE TABLE IF NOT EXISTS staff (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    employee_id VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    department VARCHAR(100) DEFAULT '',
+    phone VARCHAR(20) DEFAULT '',
+    joining_date DATE DEFAULT (CURRENT_DATE),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-GO
 
--- ── Employees (unified employee table) ────────────────────────
-CREATE TABLE employees (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    user_id UNIQUEIDENTIFIER REFERENCES profiles(id),
-    employee_id NVARCHAR(50) NOT NULL UNIQUE,
-    name NVARCHAR(255) NOT NULL,
-    designation NVARCHAR(100) DEFAULT '',
-    department NVARCHAR(100) DEFAULT '',
-    phone NVARCHAR(20) DEFAULT '',
-    email NVARCHAR(255) DEFAULT '',
-    class_teacher_of NVARCHAR(20) DEFAULT '',
-    joining_date DATE DEFAULT GETDATE(),
+CREATE TABLE IF NOT EXISTS employees (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    user_id VARCHAR(36) REFERENCES profiles(id),
+    employee_id VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    designation VARCHAR(100) DEFAULT '',
+    department VARCHAR(100) DEFAULT '',
+    phone VARCHAR(20) DEFAULT '',
+    email VARCHAR(255) DEFAULT '',
+    class_teacher_of VARCHAR(20) DEFAULT '',
+    joining_date DATE DEFAULT (CURRENT_DATE),
     basic_salary DECIMAL(12,2) DEFAULT 0,
-    is_active BIT DEFAULT 1,
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    updated_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+    gender VARCHAR(20) DEFAULT '',
+    dob DATE,
+    blood_group VARCHAR(10) DEFAULT '',
+    alt_mobile VARCHAR(20) DEFAULT '',
+    aadhaar_no VARCHAR(20) DEFAULT '',
+    pan_no VARCHAR(20) DEFAULT '',
+    address VARCHAR(255) DEFAULT '',
+    city VARCHAR(100) DEFAULT '',
+    state VARCHAR(100) DEFAULT '',
+    pincode VARCHAR(20) DEFAULT '',
+    employment_type VARCHAR(50) DEFAULT 'Full Time',
+    qualification VARCHAR(255) DEFAULT '',
+    experience VARCHAR(255) DEFAULT '',
+    hra DECIMAL(12,2) DEFAULT 0,
+    da DECIMAL(12,2) DEFAULT 0,
+    medical_allowance DECIMAL(12,2) DEFAULT 0,
+    special_allowance DECIMAL(12,2) DEFAULT 0,
+    bonus DECIMAL(12,2) DEFAULT 0,
+    pf DECIMAL(12,2) DEFAULT 0,
+    professional_tax DECIMAL(12,2) DEFAULT 0,
+    other_deductions DECIMAL(12,2) DEFAULT 0,
+    bank_name VARCHAR(100) DEFAULT '',
+    account_no VARCHAR(100) DEFAULT '',
+    ifsc_code VARCHAR(20) DEFAULT '',
+    remarks VARCHAR(255) DEFAULT '',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_employees_user (user_id)
 );
-GO
 
--- ── Salary Records ────────────────────────────────────────────
-CREATE TABLE salary_records (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    employee_id UNIQUEIDENTIFIER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
-    month NVARCHAR(7) NOT NULL,  -- e.g. '2025-07'
+CREATE TABLE IF NOT EXISTS salary_records (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    employee_id VARCHAR(36) NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    month VARCHAR(7) NOT NULL,
     basic_salary DECIMAL(12,2) DEFAULT 0,
-    allowances NVARCHAR(MAX) DEFAULT '[]',  -- JSON
-    deductions NVARCHAR(MAX) DEFAULT '[]',  -- JSON
+    allowances LONGTEXT,
+    deductions LONGTEXT,
     net_salary DECIMAL(12,2) DEFAULT 0,
-    status NVARCHAR(20) DEFAULT 'pending'
-        CHECK (status IN ('pending', 'paid', 'on_hold')),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'on_hold')),
     paid_date DATE,
-    payment_mode NVARCHAR(20) DEFAULT 'bank_transfer',
-    remarks NVARCHAR(500) DEFAULT '',
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    updated_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    UNIQUE(employee_id, month)
+    payment_mode VARCHAR(20) DEFAULT 'bank_transfer',
+    remarks VARCHAR(500) DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE(employee_id, month),
+    INDEX idx_salary_employee (employee_id)
 );
-GO
 
--- ── Exams ─────────────────────────────────────────────────────
-CREATE TABLE exams (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    name NVARCHAR(255) NOT NULL,
-    term NVARCHAR(50) NOT NULL DEFAULT 'general',
-    academic_year NVARCHAR(20) NOT NULL DEFAULT '',
-    exam_type NVARCHAR(50) DEFAULT 'general',
-    is_published BIT DEFAULT 1,
+CREATE TABLE IF NOT EXISTS exams (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    name VARCHAR(255) NOT NULL,
+    term VARCHAR(50) NOT NULL DEFAULT 'general',
+    academic_year VARCHAR(20) NOT NULL DEFAULT '',
+    exam_type VARCHAR(50) DEFAULT 'general',
+    is_published BOOLEAN DEFAULT TRUE,
     start_date DATE,
     end_date DATE,
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(name, term, academic_year)
 );
-GO
 
--- ── Exam Marks ────────────────────────────────────────────────
-CREATE TABLE exam_marks (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    exam_id UNIQUEIDENTIFIER NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
-    student_id UNIQUEIDENTIFIER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-    subject NVARCHAR(100) NOT NULL,
+CREATE TABLE IF NOT EXISTS exam_marks (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    exam_id VARCHAR(36) NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+    student_id VARCHAR(36) NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    subject VARCHAR(100) NOT NULL,
     marks_obtained DECIMAL(6,2) DEFAULT 0,
     max_marks DECIMAL(6,2) DEFAULT 100,
-    grade NVARCHAR(10) DEFAULT '',
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    UNIQUE(exam_id, student_id, subject)
+    grade VARCHAR(10) DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(exam_id, student_id, subject),
+    INDEX idx_exam_marks_exam (exam_id),
+    INDEX idx_exam_marks_student (student_id)
 );
-GO
 
--- ── Attendance ────────────────────────────────────────────────
-CREATE TABLE attendance (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    student_id UNIQUEIDENTIFIER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-    class_reference NVARCHAR(20) DEFAULT '',
-    date DATE NOT NULL DEFAULT GETDATE(),
-    status NVARCHAR(20) NOT NULL CHECK (status IN ('present', 'absent', 'late', 'half_day')),
-    remarks NVARCHAR(500) DEFAULT '',
-    marked_by UNIQUEIDENTIFIER REFERENCES profiles(id),
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    updated_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
-    UNIQUE(student_id, date)
+CREATE TABLE IF NOT EXISTS attendance (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    student_id VARCHAR(36) NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    class_reference VARCHAR(20) DEFAULT '',
+    date DATE DEFAULT (CURRENT_DATE),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('present', 'absent', 'late', 'half_day')),
+    remarks VARCHAR(500) DEFAULT '',
+    marked_by VARCHAR(36) REFERENCES profiles(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE(student_id, date),
+    INDEX idx_attendance_student (student_id, date),
+    INDEX idx_attendance_class (class_reference, date)
 );
-GO
 
--- ── Calendar Events ───────────────────────────────────────────
-CREATE TABLE calendar_events (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    title NVARCHAR(255) NOT NULL,
-    description NVARCHAR(500) DEFAULT '',
-    type NVARCHAR(50) NOT NULL DEFAULT 'event',
+CREATE TABLE IF NOT EXISTS calendar_events (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    title VARCHAR(255) NOT NULL,
+    description VARCHAR(500) DEFAULT '',
+    type VARCHAR(50) NOT NULL DEFAULT 'event',
     start_date DATE NOT NULL,
     end_date DATE,
-    created_by UNIQUEIDENTIFIER REFERENCES profiles(id),
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+    created_by VARCHAR(36) REFERENCES profiles(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-GO
 
--- ── Audit Logs (per school) ───────────────────────────────────
-CREATE TABLE audit_logs (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    user_id UNIQUEIDENTIFIER,
-    action NVARCHAR(100) NOT NULL,
-    resource_type NVARCHAR(100) NOT NULL,
-    resource_id NVARCHAR(100),
-    old_values NVARCHAR(MAX),  -- JSON
-    new_values NVARCHAR(MAX),  -- JSON
-    ip_address NVARCHAR(50),
-    user_agent NVARCHAR(500),
-    created_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    user_id VARCHAR(36),
+    action VARCHAR(100) NOT NULL,
+    resource_type VARCHAR(100) NOT NULL,
+    resource_id VARCHAR(100),
+    old_values LONGTEXT,
+    new_values LONGTEXT,
+    ip_address VARCHAR(50),
+    user_agent VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_audit_created (created_at DESC)
 );
-GO
-
--- ═══════════════════════════════════════════════════════════════
--- INDEXES
--- ═══════════════════════════════════════════════════════════════
-CREATE INDEX idx_students_grade ON students(grade, academic_year);
-CREATE INDEX idx_students_active ON students(is_active);
-CREATE INDEX idx_students_admission ON students(admission_no);
-CREATE INDEX idx_fee_collections_student ON fee_collections(student_id);
-CREATE INDEX idx_fee_collections_year ON fee_collections(academic_year);
-CREATE INDEX idx_fee_structures_year ON fee_structures(academic_year, grade);
-CREATE INDEX idx_expenditures_date ON expenditures(date);
-CREATE INDEX idx_expenditures_year ON expenditures(academic_year);
-CREATE INDEX idx_attendance_student ON attendance(student_id, date);
-CREATE INDEX idx_attendance_class ON attendance(class_reference, date);
-CREATE INDEX idx_exam_marks_exam ON exam_marks(exam_id);
-CREATE INDEX idx_exam_marks_student ON exam_marks(student_id);
-CREATE INDEX idx_blog_published ON blog_posts(is_published);
-CREATE INDEX idx_employees_user ON employees(user_id);
-CREATE INDEX idx_salary_employee ON salary_records(employee_id);
-CREATE INDEX idx_audit_created ON audit_logs(created_at DESC);
-GO
-
-PRINT '✅ School database template applied successfully!';
-GO

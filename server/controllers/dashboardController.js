@@ -1,4 +1,4 @@
-const { sql } = require('../config/database');
+const crypto = require('crypto');
 
 // Fetch data for all widgets and calendar
 exports.getDashboardWidgets = async (req, res) => {
@@ -37,9 +37,8 @@ exports.getDashboardWidgets = async (req, res) => {
     // 1. Recent Admissions (Super Admin, Principal, Clerk)
     if (['super_admin', 'principal', 'clerk'].includes(role)) {
       tasks.push(
-        db.request()
-          .query('SELECT TOP 5 id, name, grade, created_at FROM students ORDER BY created_at DESC')
-          .then(result => { recentAdmissions = { data: result.recordset, error: null }; })
+        db.execute('SELECT id, name, grade, created_at FROM students ORDER BY created_at DESC LIMIT 5')
+          .then(([rows]) => { recentAdmissions = { data: rows, error: null }; })
           .catch(err => { recentAdmissions = { data: [], error: err.message }; })
       );
     }
@@ -47,16 +46,16 @@ exports.getDashboardWidgets = async (req, res) => {
     // 2. Recent Payments (Super Admin, Principal, Clerk)
     if (['super_admin', 'principal', 'clerk'].includes(role)) {
       tasks.push(
-        db.request()
-          .query(`
-            SELECT TOP 5 fc.id, fc.academic_year, fc.total_paid, fc.updated_at, s.name as student_name
+        db.execute(`
+            SELECT fc.id, fc.academic_year, fc.total_paid, fc.updated_at, s.name as student_name
             FROM fee_collections fc
             JOIN students s ON fc.student_id = s.id
             WHERE fc.total_paid > 0
             ORDER BY fc.updated_at DESC
+            LIMIT 5
           `)
-          .then(result => {
-            const data = result.recordset.map(r => ({
+          .then(([rows]) => {
+            const data = rows.map(r => ({
               id: r.id, academic_year: r.academic_year, total_paid: r.total_paid, updated_at: r.updated_at,
               students: { name: r.student_name }
             }));
@@ -69,19 +68,17 @@ exports.getDashboardWidgets = async (req, res) => {
     // 3. Pending Approvals (Super Admin, Principal)
     if (['super_admin', 'principal'].includes(role)) {
       tasks.push(
-        db.request()
-          .query("SELECT TOP 5 id, name, grade, admission_status FROM students WHERE admission_status = 'pending' ORDER BY created_at DESC")
-          .then(result => { pendingApprovals = { data: result.recordset, error: null }; })
+        db.execute("SELECT id, name, grade, admission_status FROM students WHERE admission_status = 'pending' ORDER BY created_at DESC LIMIT 5")
+          .then(([rows]) => { pendingApprovals = { data: rows, error: null }; })
           .catch(err => { pendingApprovals = { data: [], error: err.message }; })
       );
     }
 
     // 4. Upcoming Exams (All Roles)
     tasks.push(
-      db.request()
-        .query('SELECT id, name, start_date, end_date FROM exams ORDER BY start_date ASC')
-        .then(result => {
-          const allExams = result.recordset;
+      db.execute('SELECT id, name, start_date, end_date FROM exams ORDER BY start_date ASC')
+        .then(([rows]) => {
+          const allExams = rows;
           const filtered = allExams.filter(e => {
             const d = typeof e.start_date === 'string' ? e.start_date : e.start_date.toISOString().split('T')[0];
             return d >= today && d <= nextMonth;
@@ -97,11 +94,10 @@ exports.getDashboardWidgets = async (req, res) => {
 
     // 5. Announcements (All Roles)
     tasks.push(
-      db.request()
-        .query('SELECT TOP 5 id, title, created_at FROM blog_posts WHERE is_published = 1 ORDER BY created_at DESC')
-        .then(result => {
-          latestAnnouncements = { data: result.recordset, error: null };
-          result.recordset.forEach(ann => {
+      db.execute('SELECT id, title, created_at FROM blog_posts WHERE is_published = 1 ORDER BY created_at DESC LIMIT 5')
+        .then(([rows]) => {
+          latestAnnouncements = { data: rows, error: null };
+          rows.forEach(ann => {
             if (ann.created_at) {
               const dt = typeof ann.created_at === 'string' ? ann.created_at.split('T')[0] : ann.created_at.toISOString().split('T')[0];
               calendarEvents.push({ id: `ann-${ann.id}`, title: `Announcement: ${ann.title}`, date: dt, type: 'announcement' });
@@ -113,10 +109,9 @@ exports.getDashboardWidgets = async (req, res) => {
 
     // 6. Custom Calendar Events (Holidays & Custom Events)
     tasks.push(
-      db.request()
-        .query('SELECT id, title, type, start_date, end_date FROM calendar_events')
-        .then(result => {
-          result.recordset.forEach(ev => {
+      db.execute('SELECT id, title, type, start_date, end_date FROM calendar_events')
+        .then(([rows]) => {
+          rows.forEach(ev => {
             addDateRangeEvents(calendarEvents, ev, 'custom', ev.title, ev.type);
           });
         })
@@ -150,33 +145,25 @@ exports.createCalendarEvent = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Title, type, and start_date are required' });
     }
 
-    let result;
-    if (type === 'exam') {
-      result = await req.db.request()
-        .input('name', sql.NVarChar, title)
-        .input('startDate', sql.Date, start_date)
-        .input('endDate', sql.Date, end_date || null)
-        .query(`
-          INSERT INTO exams (name, start_date, end_date, exam_type, is_published)
-          OUTPUT INSERTED.*
-          VALUES (@name, @startDate, @endDate, 'general', 1)
-        `);
-    } else {
-      result = await req.db.request()
-        .input('title', sql.NVarChar, title)
-        .input('description', sql.NVarChar, description || '')
-        .input('type', sql.NVarChar, type)
-        .input('startDate', sql.Date, start_date)
-        .input('endDate', sql.Date, end_date || null)
-        .input('createdBy', sql.UniqueIdentifier, req.user.id)
-        .query(`
-          INSERT INTO calendar_events (title, description, type, start_date, end_date, created_by)
-          OUTPUT INSERTED.*
-          VALUES (@title, @description, @type, @startDate, @endDate, @createdBy)
-        `);
-    }
+    const eventId = crypto.randomUUID();
 
-    res.status(201).json({ success: true, data: result.recordset[0] });
+    if (type === 'exam') {
+      await req.db.execute(`
+          INSERT INTO exams (id, name, start_date, end_date, exam_type, is_published)
+          VALUES (?, ?, ?, ?, 'general', 1)
+        `, [eventId, title, start_date, end_date || null]);
+      
+      const [rows] = await req.db.execute('SELECT * FROM exams WHERE id = ?', [eventId]);
+      res.status(201).json({ success: true, data: rows[0] });
+    } else {
+      await req.db.execute(`
+          INSERT INTO calendar_events (id, title, description, type, start_date, end_date, created_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [eventId, title, description || '', type, start_date, end_date || null, req.user.id]);
+        
+      const [rows] = await req.db.execute('SELECT * FROM calendar_events WHERE id = ?', [eventId]);
+      res.status(201).json({ success: true, data: rows[0] });
+    }
   } catch (error) {
     console.error('Create Calendar Event Error:', error);
     res.status(500).json({ success: false, message: 'Server error creating event', error: error.message });

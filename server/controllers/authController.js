@@ -1,8 +1,9 @@
-const { sql, getMasterPool } = require('../config/database');
+const { getMasterPool } = require('../config/database');
 const { resolveSchoolDbName, getSchoolPool } = require('../config/tenantPool');
 const { hashPassword, comparePassword, generateToken, generateTempPassword } = require('../config/auth');
 const { logAuditAction } = require('../utils/auditLogger');
 const { z } = require('zod');
+const crypto = require('crypto');
 const AuthRateLimiter = require('../services/authRateLimiter');
 const { sendEmail } = require('../services/emailService');
 
@@ -50,32 +51,32 @@ exports.login = async (req, res) => {
     const masterPool = await getMasterPool();
 
     // 1. Find school mapping for this email
-    const routeResult = await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .query('SELECT school_id FROM global_users WHERE email = @email');
+    const [routeResult] = await masterPool.execute(`
+      SELECT s.db_name 
+      FROM global_users gu 
+      JOIN schools s ON gu.school_id = s.id 
+      WHERE gu.email = ?
+    `, [email]);
 
-    if (!routeResult.recordset || routeResult.recordset.length === 0) {
+    if (routeResult.length === 0) {
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
       await AuthRateLimiter.delay(delayMs);
       return res.status(401).json({ success: false, message: 'Incorrect email or password' });
     }
 
-    const schoolId = routeResult.recordset[0].school_id;
-    const dbName = await resolveSchoolDbName(schoolId);
+    const dbName = routeResult[0].db_name;
     const schoolPool = await getSchoolPool(dbName);
 
     // 2. Fetch user from school DB
-    const profileResult = await schoolPool.request()
-      .input('email', sql.NVarChar, email)
-      .query('SELECT * FROM profiles WHERE email = @email AND is_active = 1');
+    const [profileResult] = await schoolPool.execute('SELECT * FROM profiles WHERE email = ? AND is_active = 1', [email]);
 
-    if (!profileResult.recordset || profileResult.recordset.length === 0) {
+    if (profileResult.length === 0) {
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
       await AuthRateLimiter.delay(delayMs);
       return res.status(401).json({ success: false, message: 'Incorrect email or password' });
     }
 
-    const user = profileResult.recordset[0];
+    const user = profileResult[0];
 
     // 3. Verify password
     const isMatch = await comparePassword(password, user.password_hash);
@@ -85,7 +86,6 @@ exports.login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Incorrect email or password' });
     }
 
-    // Block super_admin from school login (shouldn't happen, but just in case)
     if (user.role === 'super_admin') {
       return res.status(403).json({ success: false, message: 'Super Admin accounts must use the admin portal.' });
     }
@@ -97,31 +97,30 @@ exports.login = async (req, res) => {
       id: user.id,
       email: user.email,
       role: user.role,
-      schoolId: schoolId,
+      tenantDb: dbName,
     });
 
     res.json({
       success: true,
       data: {
-        session: { access_token: token }, // Wrap in session object for frontend compat
+        session: { access_token: token },
         user: {
           id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,
-          schoolId: schoolId,
+          tenantDb: dbName,
           mustChangePassword: user.must_change_password || false,
         },
       },
     });
 
-    req.user = { id: user.id, schoolId }; // Mock for audit
+    req.user = { id: user.id, tenantDb: dbName }; // Mock for audit
     await logAuditAction(req, {
       action: 'LOGIN',
       resource_type: 'user',
       resource_id: user.id,
-      userId: user.id,
-      schoolId: schoolId
+      userId: user.id
     });
 
   } catch (error) {
@@ -148,17 +147,15 @@ exports.superAdminLogin = async (req, res) => {
 
     const masterPool = await getMasterPool();
 
-    const profileResult = await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .query('SELECT * FROM super_admin_profiles WHERE email = @email');
+    const [profileResult] = await masterPool.execute('SELECT * FROM super_admin_profiles WHERE email = ?', [email]);
 
-    if (!profileResult.recordset || profileResult.recordset.length === 0) {
+    if (profileResult.length === 0) {
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
       await AuthRateLimiter.delay(delayMs);
       return res.status(401).json({ success: false, message: 'Incorrect email or password' });
     }
 
-    const admin = profileResult.recordset[0];
+    const admin = profileResult[0];
 
     const isMatch = await comparePassword(password, admin.password_hash);
     if (!isMatch) {
@@ -173,7 +170,7 @@ exports.superAdminLogin = async (req, res) => {
       id: admin.id,
       email: admin.email,
       role: 'super_admin',
-      schoolId: null, // Super admin
+      tenantDb: null,
     });
 
     res.json({
@@ -218,15 +215,15 @@ exports.changePassword = async (req, res) => {
     const passwordHash = await hashPassword(newPassword);
 
     if (req.user.isSuperAdmin) {
-      await req.db.request()
-        .input('id', sql.UniqueIdentifier, req.user.id)
-        .input('hash', sql.NVarChar, passwordHash)
-        .query('UPDATE super_admin_profiles SET password_hash = @hash, must_change_password = 0, password_changed_at = SYSDATETIMEOFFSET() WHERE id = @id');
+      await req.db.execute(
+        'UPDATE super_admin_profiles SET password_hash = ?, must_change_password = 0, password_changed_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [passwordHash, req.user.id]
+      );
     } else {
-      await req.db.request()
-        .input('id', sql.UniqueIdentifier, req.user.id)
-        .input('hash', sql.NVarChar, passwordHash)
-        .query('UPDATE profiles SET password_hash = @hash, must_change_password = 0, password_changed_at = SYSDATETIMEOFFSET() WHERE id = @id');
+      await req.db.execute(
+        'UPDATE profiles SET password_hash = ?, must_change_password = 0, password_changed_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [passwordHash, req.user.id]
+      );
     }
 
     res.json({ success: true, message: 'Password changed successfully' });
@@ -248,46 +245,40 @@ exports.forgotPassword = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email is required' });
     }
 
-    // Always return a success response immediately to prevent email enumeration
     res.json({ success: true, message: 'If that email is registered, you\'ll receive an email with instructions.' });
 
     const masterPool = await getMasterPool();
 
-    // 1. Check if email exists in global_users (school users) or super_admin_profiles
-    const globalUserResult = await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .query('SELECT school_id FROM global_users WHERE email = @email');
+    const [globalUserResult] = await masterPool.execute(`
+      SELECT s.db_name 
+      FROM global_users gu 
+      JOIN schools s ON gu.school_id = s.id 
+      WHERE gu.email = ?
+    `, [email]);
+    const [superAdminResult] = await masterPool.execute('SELECT id FROM super_admin_profiles WHERE email = ?', [email]);
 
-    const superAdminResult = await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .query('SELECT id FROM super_admin_profiles WHERE email = @email');
-
-    if (globalUserResult.recordset.length === 0 && superAdminResult.recordset.length === 0) {
-      return; // Stop execution silently
+    if (globalUserResult.length === 0 && superAdminResult.length === 0) {
+      return; 
     }
 
-    // 2. Generate new temp password
     const tempPassword = generateTempPassword(12);
     const passwordHash = await hashPassword(tempPassword);
 
-    // 3. Update the corresponding profile
-    if (superAdminResult.recordset.length > 0) {
-      await masterPool.request()
-        .input('email', sql.NVarChar, email)
-        .input('hash', sql.NVarChar, passwordHash)
-        .query('UPDATE super_admin_profiles SET password_hash = @hash, must_change_password = 1 WHERE email = @email');
-    } else if (globalUserResult.recordset.length > 0) {
-      const schoolId = globalUserResult.recordset[0].school_id;
-      const dbName = await resolveSchoolDbName(schoolId);
+    if (superAdminResult.length > 0) {
+      await masterPool.execute(
+        'UPDATE super_admin_profiles SET password_hash = ?, must_change_password = 1 WHERE email = ?',
+        [passwordHash, email]
+      );
+    } else if (globalUserResult.length > 0) {
+      const dbName = globalUserResult[0].db_name;
       const schoolPool = await getSchoolPool(dbName);
 
-      await schoolPool.request()
-        .input('email', sql.NVarChar, email)
-        .input('hash', sql.NVarChar, passwordHash)
-        .query('UPDATE profiles SET password_hash = @hash, must_change_password = 1 WHERE email = @email');
+      await schoolPool.execute(
+        'UPDATE profiles SET password_hash = ?, must_change_password = 1 WHERE email = ?',
+        [passwordHash, email]
+      );
     }
 
-    // 4. Send email
     const emailText = `
 Hello,
 
@@ -312,7 +303,6 @@ School Management System
 
   } catch (error) {
     console.error('Forgot password error:', error);
-    // Don't send 500 error to client to prevent timing attacks/enumeration
   }
 };
 
@@ -321,22 +311,25 @@ School Management System
 // @access  Auth
 exports.getMe = async (req, res) => {
   try {
-    let query, table;
+    let query;
     if (req.user.isSuperAdmin) {
-      query = 'SELECT id, email, name, role, must_change_password FROM super_admin_profiles WHERE id = @id';
+      query = 'SELECT id, email, name, role, must_change_password FROM super_admin_profiles WHERE id = ?';
     } else {
-      query = 'SELECT id, email, name, role, assigned_classes, must_change_password FROM profiles WHERE id = @id';
+      query = 'SELECT id, email, name, role, assigned_classes, must_change_password FROM profiles WHERE id = ?';
     }
 
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.user.id)
-      .query(query);
+    const [rows] = await req.db.execute(query, [req.user.id]);
 
-    if (!result.recordset || result.recordset.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Profile not found' });
     }
 
-    res.json({ success: true, data: result.recordset[0] });
+    const userData = rows[0];
+    if (req.user.tenantDb) {
+      userData.tenantDb = req.user.tenantDb;
+    }
+
+    res.json({ success: true, data: userData });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -347,10 +340,9 @@ exports.getMe = async (req, res) => {
 // @access  Admin
 exports.getUsers = async (req, res) => {
   try {
-    const result = await req.db.request()
-      .query('SELECT id, name, email, role, assigned_classes, created_at, is_active FROM profiles ORDER BY created_at DESC');
+    const [rows] = await req.db.execute('SELECT id, name, email, role, assigned_classes, created_at, is_active FROM profiles ORDER BY created_at DESC');
 
-    res.json({ success: true, count: result.recordset.length, data: result.recordset });
+    res.json({ success: true, count: rows.length, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -367,46 +359,33 @@ exports.register = async (req, res) => {
     }
     const { name, email, password, role } = parseResult.data;
 
-    // 1. Check if email exists globally
     const masterPool = await getMasterPool();
-    const existing = await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .query('SELECT email FROM global_users WHERE email = @email');
+    const [existing] = await masterPool.execute('SELECT email FROM global_users WHERE email = ?', [email]);
 
-    if (existing.recordset.length > 0) {
+    if (existing.length > 0) {
       return res.status(400).json({ success: false, message: 'A user with this email already exists in the system' });
     }
 
-    const existingAdmin = await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .query('SELECT email FROM super_admin_profiles WHERE email = @email');
+    const [existingAdmin] = await masterPool.execute('SELECT email FROM super_admin_profiles WHERE email = ?', [email]);
 
-    if (existingAdmin.recordset.length > 0) {
+    if (existingAdmin.length > 0) {
       return res.status(400).json({ success: false, message: 'A user with this email already exists in the system' });
     }
 
     const passwordHash = await hashPassword(password);
     const assignedRole = role || 'clerk';
+    const newUserId = crypto.randomUUID();
 
-    // 2. Insert into school DB
-    const profileResult = await req.db.request()
-      .input('email', sql.NVarChar, email)
-      .input('passwordHash', sql.NVarChar, passwordHash)
-      .input('name', sql.NVarChar, name)
-      .input('role', sql.NVarChar, assignedRole)
-      .query(`
-        INSERT INTO profiles (email, password_hash, name, role, must_change_password)
-        OUTPUT INSERTED.id, INSERTED.email, INSERTED.name, INSERTED.role
-        VALUES (@email, @passwordHash, @name, @role, 1)
-      `);
+    await req.db.execute(`
+        INSERT INTO profiles (id, email, password_hash, name, role, must_change_password)
+        VALUES (?, ?, ?, ?, ?, 1)
+      `, [newUserId, email, passwordHash, name, assignedRole]);
 
-    const newUser = profileResult.recordset[0];
+    const newUser = { id: newUserId, email, name, role: assignedRole };
 
-    // 3. Add to global routing table
-    await masterPool.request()
-      .input('email', sql.NVarChar, email)
-      .input('schoolId', sql.UniqueIdentifier, req.user.schoolId)
-      .query('INSERT INTO global_users (email, school_id) VALUES (@email, @schoolId)');
+    const [schoolRows] = await masterPool.execute('SELECT id FROM schools WHERE db_name = ?', [req.user.tenantDb]);
+    const schoolId = schoolRows[0].id;
+    await masterPool.execute('INSERT INTO global_users (email, school_id) VALUES (?, ?)', [email, schoolId]);
 
     res.status(201).json({
       success: true,
@@ -429,16 +408,14 @@ exports.updateRole = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Role must be "principal", "clerk" or "teacher"' });
     }
 
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .input('role', sql.NVarChar, role)
-      .query('UPDATE profiles SET role = @role OUTPUT INSERTED.* WHERE id = @id');
+    await req.db.execute('UPDATE profiles SET role = ? WHERE id = ?', [role, req.params.id]);
+    const [rows] = await req.db.execute('SELECT * FROM profiles WHERE id = ?', [req.params.id]);
 
-    if (result.recordset.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    res.json({ success: true, data: result.recordset[0] });
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -451,21 +428,17 @@ exports.updateClasses = async (req, res) => {
   try {
     const { assigned_classes } = req.body;
     
-    // Convert to JSON string for SQL Server if it's an array
     const classesStr = Array.isArray(assigned_classes) ? JSON.stringify(assigned_classes) : '[]';
 
-    const result = await req.db.request()
-      .input('id', sql.UniqueIdentifier, req.params.id)
-      .input('classes', sql.NVarChar, classesStr)
-      .query('UPDATE profiles SET assigned_classes = @classes OUTPUT INSERTED.* WHERE id = @id');
+    await req.db.execute('UPDATE profiles SET assigned_classes = ? WHERE id = ?', [classesStr, req.params.id]);
+    const [rows] = await req.db.execute('SELECT * FROM profiles WHERE id = ?', [req.params.id]);
 
-    if (result.recordset.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    res.json({ success: true, data: result.recordset[0] });
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-

@@ -1,69 +1,36 @@
-const sql = require('mssql');
+const mysql = require('mysql2/promise');
 
 function buildDbConfig(database) {
-  let serverName = process.env.DB_SERVER || 'localhost';
-  let instanceName;
-  
-  // Strip 'tcp:' prefix if present (Azure/Standard SQL Server style)
-  if (serverName.startsWith('tcp:')) {
-    serverName = serverName.substring(4);
-  }
-  
-  if (serverName.includes('\\')) {
-    const parts = serverName.split('\\');
-    serverName = parts[0];
-    instanceName = parts[1];
-  } else if (serverName.includes(':')) {
-    const parts = serverName.split(':');
-    serverName = parts[0];
-    // If DB_PORT wasn't explicitly set, fallback to the port in the URL
-    if (!process.env.DB_PORT && parts[1]) {
-      process.env.DB_PORT = parts[1];
-    }
-  } else if (serverName.includes(',')) {
-    // Handle comma separated ports (e.g. server.database.windows.net,1433)
-    const parts = serverName.split(',');
-    serverName = parts[0];
-    if (!process.env.DB_PORT && parts[1]) {
-      process.env.DB_PORT = parts[1];
-    }
-  }
+  let host = process.env.DB_HOST || '127.0.0.1';
+  let port = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306;
 
   const config = {
-    server: serverName,
-    database: database || process.env.DB_MASTER_NAME || 'school_master_db',
+    host,
+    port,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    options: {
-      encrypt: process.env.DB_ENCRYPT === 'true', // Default false to prevent ECONNRESET on unencrypted Docker/Railway DBs
-      trustServerCertificate: true,
-    },
-    pool: { max: 10, min: 2, idleTimeoutMillis: 30000 },
+    database: database || process.env.DB_MASTER_NAME || 'school_master_db',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    multipleStatements: true,
   };
-
-  if (instanceName) {
-    config.options.instanceName = instanceName;
-  }
-  if (process.env.DB_PORT) {
-    config.port = parseInt(process.env.DB_PORT, 10);
-  } else if (!instanceName) {
-    config.port = 1433;
-  }
 
   return config;
 }
 
 const masterConfig = buildDbConfig();
-
 let masterPool = null;
 
 async function getMasterPool() {
-  if (masterPool && masterPool.connected) {
+  if (masterPool) {
     return masterPool;
   }
   try {
-    masterPool = new sql.ConnectionPool(masterConfig);
-    await masterPool.connect();
+    masterPool = mysql.createPool(masterConfig);
+    // Test the connection
+    const connection = await masterPool.getConnection();
+    connection.release();
     console.log('✅ Connected to master database');
     return masterPool;
   } catch (err) {
@@ -78,10 +45,10 @@ function buildSchoolConfig(dbName) {
 
 async function closeAll() {
   if (masterPool) {
-    await masterPool.close();
+    await masterPool.end();
     masterPool = null;
     console.log('🔌 Master database connection closed');
   }
 }
 
-module.exports = { sql, getMasterPool, buildSchoolConfig, closeAll };
+module.exports = { mysql, getMasterPool, buildSchoolConfig, closeAll };

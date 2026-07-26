@@ -49,7 +49,7 @@ const HallTicket = () => {
   
   // New States for Redesign
   const [fnTiming, setFnTiming] = useState('09:30 AM – 12:30 PM');
-  const [anTiming, setAnTiming] = useState('01:30 PM – 04:30 PM');
+  const [anTiming, setAnTiming] = useState('');
   const [issueDate, setIssueDate] = useState(format(new Date(), 'dd-MM-yyyy'));
 
   // Class/section options
@@ -157,7 +157,7 @@ const HallTicket = () => {
       flex-direction: row !important;
       justify-content: space-between !important;
       align-items: center !important;
-      border-bottom: 2px solid #295F48;
+      border-bottom: 2px solid #1E293B;
       padding-bottom: 15px;
       margin-bottom: 20px;
       width: 100%;
@@ -171,7 +171,7 @@ const HallTicket = () => {
     .hall-logo {
       width: 70px;
       height: 70px;
-      background-color: #295F48;
+      background-color: #1E293B;
       color: white;
       border-radius: 50%;
       display: flex;
@@ -187,7 +187,7 @@ const HallTicket = () => {
       text-align: left;
     }
     .hall-school-info h1 {
-      color: #295F48;
+      color: #1E293B;
       font-family: 'Outfit', sans-serif;
       font-size: 24px;
       margin-bottom: 4px;
@@ -230,14 +230,17 @@ const HallTicket = () => {
       padding-right: 20px;
     }
     .hall-details-grid > div {
-      border-bottom: 1px dashed #ccc;
+      border-bottom: 1px solid #e2e8f0;
       padding-bottom: 5px;
     }
     .hall-label {
-      color: #555;
+      color: #64748b;
       font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .hall-value {
+      color: #0f172a;
       font-weight: 600;
       font-size: 12px;
       text-align: right;
@@ -245,46 +248,62 @@ const HallTicket = () => {
     .hall-photo-box {
       width: 120px;
       height: 150px;
-      background-color: #e8f5e9;
-      border: 1px solid #295F48;
+      background-color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
       font-size: 10px;
-      color: #295F48;
+      color: #64748b;
       padding: 10px;
       flex-shrink: 0;
+      overflow: hidden;
     }
     
     /* Schedule Table */
     .hall-section-title {
-      background-color: #295F48;
+      background-color: #1E293B;
       color: white;
-      padding: 8px 15px;
+      padding: 10px 15px;
       font-size: 12px;
       font-weight: 600;
       letter-spacing: 1px;
       margin-bottom: 0;
       display: block;
       width: 100%;
+      border-radius: 6px 6px 0 0;
     }
     .hall-table {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 30px;
       display: table !important;
+      border: 1px solid #e2e8f0;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
     }
     .hall-table th, .hall-table td {
-      border: 1px solid #b2dfdb;
-      padding: 10px 15px;
+      padding: 12px 15px;
       font-size: 11px;
       text-align: left;
     }
     .hall-table th {
-       background-color: #f0f7f4;
-       color: #295F48;
+       background-color: #f8fafc;
+       color: #1E293B;
+       border-bottom: 2px solid #e2e8f0;
+       text-transform: uppercase;
+       font-weight: 700;
+       font-size: 10px;
+    }
+    .hall-table td {
+       border-bottom: 1px solid #e2e8f0;
+       color: #0f172a;
+    }
+    .hall-table tr:last-child td {
+       border-bottom: none;
     }
     
     /* Footer Signatures */
@@ -551,12 +570,19 @@ const HallTicket = () => {
                         <div className="hall-label">Date of Birth</div>
                         <div className="hall-value">{dobDisplay}</div>
 
-                        <div className="hall-label">Exam Centre</div>
-                        <div className="hall-value" style={{ gridColumn: 'span 3', textAlign: 'left' }}>{anTiming || 'Main Block — Room 14'}</div>
+                        {anTiming && (
+                          <>
+                            <div className="hall-label">Exam Centre</div>
+                            <div className="hall-value" style={{ gridColumn: 'span 3', textAlign: 'left' }}>{anTiming}</div>
+                          </>
+                        )}
                       </div>
-                      
-                      <div className="hall-photo-box">
-                        Affix<br/>Passport-size<br/>Photograph<br/>(attested)
+                      <div className="hall-photo-box" style={{ padding: currentStudent.photo_url ? '0' : '10px' }}>
+                        {currentStudent.photo_url ? (
+                          <img src={currentStudent.photo_url} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <>Affix<br/>Passport-size<br/>Photograph<br/>(attested)</>
+                        )}
                       </div>
                     </div>
 
@@ -572,7 +598,7 @@ const HallTicket = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {subjects.filter(s => s.name.trim()).map((subject, idx) => (
+                        {subjects.filter(s => s.name.trim() && s.date).map((subject, idx) => (
                           <tr key={idx}>
                             <td>{formatDateForDisplay(subject.date)}</td>
                             <td>{getDayFromDate(subject.date)}</td>

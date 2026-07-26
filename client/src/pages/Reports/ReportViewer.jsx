@@ -21,6 +21,8 @@ import ReportFilterModal from './ReportFilterModal';
 const REPORT_CONFIG = {
   admissions_daily: {
     title: 'Daily Admissions Report',
+    backendModule: 'admissions',
+    defaultFilters: { startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] },
     columns: [
       { key: 'admission_date', header: 'Date' },
       { key: 'name', header: 'Student Name' },
@@ -30,6 +32,8 @@ const REPORT_CONFIG = {
   },
   fee_defaulters: {
     title: 'Fee Defaulters Report',
+    backendModule: 'fees',
+    defaultFilters: { feeStatus: 'pending' },
     columns: [
       { key: 'students.name', header: 'Student Name' },
       { key: 'students.grade', header: 'Grade' },
@@ -39,6 +43,8 @@ const REPORT_CONFIG = {
   },
   fee_collections_daily: {
     title: 'Daily Fee Collections Report',
+    backendModule: 'fees',
+    defaultFilters: { startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] },
     columns: [
       { key: 'payment_date', header: 'Date' },
       { key: 'amount', header: 'Amount' },
@@ -48,6 +54,8 @@ const REPORT_CONFIG = {
   },
   attendance_low: {
     title: 'Low Attendance Report',
+    backendModule: 'attendance',
+    defaultFilters: { attendanceLow: true },
     columns: [
       { key: 'students.name', header: 'Student Name' },
       { key: 'students.grade', header: 'Grade' },
@@ -57,6 +65,7 @@ const REPORT_CONFIG = {
   },
   expenditure_category: {
     title: 'Category-wise Expenditure',
+    backendModule: 'expenditure',
     columns: [
       { key: 'category', header: 'Category' },
       { key: 'amount', header: 'Amount' },
@@ -65,6 +74,7 @@ const REPORT_CONFIG = {
   },
   staff_attendance: {
     title: 'Staff Attendance Report',
+    backendModule: 'staff',
     columns: [
       { key: 'staff_name', header: 'Staff Name' },
       { key: 'days_present', header: 'Days Present' },
@@ -73,6 +83,7 @@ const REPORT_CONFIG = {
   },
   exam_toppers: {
     title: 'Exam Toppers Report',
+    backendModule: 'exams',
     columns: [
       { key: 'exams.name', header: 'Exam Name' },
       { key: 'students.name', header: 'Student Name' },
@@ -142,9 +153,9 @@ const ReportViewer = () => {
   }, [module, page, limit, filters]); // Trigger refetch on page/filter change
 
   const fetchSchoolInfo = async () => {
-    if (user?.schoolId) {
+    if (user?.tenantDb) {
       try {
-        const res = await api.get(`/schools/${user.schoolId}`);
+        const res = await api.get(`/schools`);
         setSchoolInfo(res.data.data);
       } catch (e) {
         console.error('Failed to fetch school info');
@@ -156,10 +167,13 @@ const ReportViewer = () => {
     setLoading(true);
     try {
       // Clean empty filters
-      const activeFilters = Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== ''));
+      const activeFilters = { 
+        ...(config.defaultFilters || {}), 
+        ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== '')) 
+      };
       if (search) activeFilters.search = search;
 
-      const res = await api.get(`/reports/${module}`, {
+      const res = await api.get(`/reports/${config.backendModule}`, {
         params: {
           page,
           limit,
@@ -183,10 +197,13 @@ const ReportViewer = () => {
     toast.loading(`Generating ${type}...`, { id: 'export' });
     try {
       // Fetch ALL data matching current filters for export (limit=0)
-      const activeFilters = Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== ''));
+      const activeFilters = { 
+        ...(config.defaultFilters || {}), 
+        ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== '')) 
+      };
       if (search) activeFilters.search = search;
 
-      const res = await api.get(`/reports/${module}`, {
+      const res = await api.get(`/reports/${config.backendModule}`, {
         params: { limit: 0, filters: JSON.stringify(activeFilters) }
       });
 

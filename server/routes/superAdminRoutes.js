@@ -10,6 +10,8 @@ const {
   getStats,
   deleteUser,
   createSchool,
+  updateSchool,
+  deleteSchool,
   resetUserPassword,
   updateUserStatus,
 } = require('../controllers/superAdminController');
@@ -24,6 +26,8 @@ router.get('/dashboard-stats', getStats);
 router.get('/schools', getAllSchools);
 router.get('/schools/:id', getSchoolById);
 router.post('/schools', createSchool);
+router.patch('/schools/:id', updateSchool);
+router.delete('/schools/:id', deleteSchool);
 
 // Users Management
 router.get('/users', getAllUsers);
@@ -33,3 +37,4 @@ router.patch('/users/:id/status', updateUserStatus);
 router.delete('/users/:id', deleteUser);
 
 module.exports = router;
+
