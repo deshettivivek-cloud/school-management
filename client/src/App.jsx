@@ -44,6 +44,7 @@ import ReportViewer from './pages/Reports/ReportViewer';
 import AttendanceRegister from './pages/Attendance/AttendanceRegister';
 import CalendarView from './pages/CalendarView';
 import AnnouncementsDashboard from './pages/Announcements/AnnouncementsDashboard';
+import BulkMessaging from './pages/Communications/BulkMessaging';
 
 // Protected route wrapper — requires authentication
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -267,6 +268,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/calendar" element={<CalendarView />} />
         <Route path="/announcements" element={<AnnouncementsDashboard />} />
+        <Route path="/communications" element={<BulkMessaging />} />
         <Route path="/students/directory" element={<StudentDirectory />} />
         <Route path="/students/:id" element={<StudentProfile />} />
         <Route path="/attendance" element={<AttendanceRegister />} />

@@ -12,6 +12,7 @@ const PendingFees = () => {
   const [totalPending, setTotalPending] = useState(0);
   const [academicYear, setAcademicYear] = useState('');
   const [inputYear, setInputYear] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     fetchSchoolYear();
@@ -45,6 +46,22 @@ const PendingFees = () => {
       toast.error('Failed to fetch pending fees');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendReminders = async () => {
+    if (records.length === 0) return;
+    if (!window.confirm(`Are you sure you want to send WhatsApp fee reminders to ${records.length} students?`)) return;
+
+    setSending(true);
+    try {
+      const studentIds = records.map(r => r.student_id);
+      const res = await api.post('/fees/collection/reminders', { studentIds });
+      toast.success(res.data?.message || 'Reminders sent successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send reminders');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -98,6 +115,17 @@ const PendingFees = () => {
             <option key={g} value={g}>Class {g}</option>
           ))}
         </select>
+        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+          <button 
+            className="btn btn-primary" 
+            onClick={handleSendReminders} 
+            disabled={sending || records.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#10b981', border: 'none' }}
+          >
+            <HiOutlineExclamationCircle />
+            {sending ? 'Sending...' : 'Send WhatsApp Reminders'}
+          </button>
+        </div>
       </div>
 
       {/* Table */}

@@ -20,6 +20,7 @@ const teacherRoutes = require('./routes/teacherRoutes');
 const superAdminRoutes = require('./routes/superAdminRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const salaryRoutes = require('./routes/salaryRoutes');
+const whatsappRoutes = require('./routes/whatsappRoutes');
 
 const app = express();
 
@@ -72,6 +73,7 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/salary', salaryRoutes);
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

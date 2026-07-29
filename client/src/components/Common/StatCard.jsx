@@ -53,16 +53,7 @@ const StatCard = ({ title, value, icon: Icon, color = 'blue', previousValue, per
       }}>
         {displayValue}
       </div>
-      <div className={`stat-card-trend ${trend}`}>
-        {!hideDelta && (
-          isNew ? (
-            <span className="badge badge-success" style={{ fontSize: '0.75rem', padding: '0.1rem 0.4rem', marginRight: '0.4rem' }}>New</span>
-          ) : (
-            <span style={{ fontWeight: 600, marginRight: '0.4rem' }}>{deltaStr}</span>
-          )
-        )}
-        <span>{periodLabel}</span>
-      </div>
+      
     </div>
   );
 };

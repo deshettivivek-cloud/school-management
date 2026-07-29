@@ -113,8 +113,18 @@ exports.markAttendance = async (req, res) => {
       const whatsappService = require('../services/whatsappService');
       for (const student of studentsResult) {
         if (student.parent_phone) {
-          const message = `Dear Parent, this is an automated message from the school. Your child ${student.name} has been marked absent today (${date}). Please contact the office if you have any questions.`;
-          whatsappService.sendTextMessage(student.parent_phone, message).catch(console.error);
+          // Send official template (Requires 'attendance_alert' approved in Meta)
+          const components = [
+            {
+              type: "body",
+              parameters: [
+                { type: "text", text: student.name },
+                { type: "text", text: date }
+              ]
+            }
+          ];
+          whatsappService.sendTemplateMessage(student.parent_phone, 'attendance_alert', 'en_US', components)
+            .catch(err => console.error('Failed to send attendance alert:', err));
         }
       }
     }

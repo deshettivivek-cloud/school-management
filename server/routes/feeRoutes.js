@@ -16,6 +16,7 @@ const {
   getPendingFees,
   getFeeStats,
   getReceipt,
+  sendFeeReminders
 } = require('../controllers/feeCollectionController');
 const { protect } = require('../middleware/auth');
 const { roleCheck } = require('../middleware/roleCheck');
@@ -33,6 +34,7 @@ router.get('/collection/:studentId', protect, getStudentFeeCollection);
 router.get('/history/:studentId', protect, getStudentFeeHistory);
 router.post('/collection/commit', protect, roleCheck('principal', 'clerk'), commitFee);
 router.post('/collection/pay', protect, recordPayment);
+router.post('/collection/reminders', protect, sendFeeReminders);
 
 // Pending fees
 router.get('/pending', protect, getPendingFees);

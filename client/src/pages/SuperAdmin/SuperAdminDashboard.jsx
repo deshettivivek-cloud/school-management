@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import {
   HiOutlineOfficeBuilding,
@@ -14,6 +15,11 @@ const SuperAdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [testPhone, setTestPhone] = useState('');
+  const [messageType, setMessageType] = useState('template'); // 'template' or 'text'
+  const [testTemplate, setTestTemplate] = useState('hello_world');
+  const [testText, setTestText] = useState('Hello from SchoolMS!');
+  const [testLoading, setTestLoading] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -41,6 +47,28 @@ const SuperAdminDashboard = () => {
       </div>
     );
   }
+
+  const handleSendTestMessage = async () => {
+    if (!testPhone) {
+      toast.error('Please enter a phone number');
+      return;
+    }
+    setTestLoading(true);
+    try {
+      const payload = { 
+        phone: testPhone, 
+        messageType,
+        template: testTemplate,
+        text: testText 
+      };
+      const res = await api.post('/whatsapp/test', payload);
+      toast.success('WhatsApp test message sent successfully!');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send WhatsApp message');
+    } finally {
+      setTestLoading(false);
+    }
+  };
 
   return (
     <motion.div
@@ -191,6 +219,77 @@ const SuperAdminDashboard = () => {
             {(stats?.recentSchools || []).length === 0 && (
               <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>No schools yet</p>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* WhatsApp Integration Test */}
+      <div className="card" style={{ marginTop: '1.5rem', border: '1px solid var(--border-color)' }}>
+        <h3 className="card-title" style={{ marginBottom: '1rem', color: '#10b981' }}>💬 WhatsApp API Integration (Test)</h3>
+        
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input type="radio" name="msgType" checked={messageType === 'template'} onChange={() => setMessageType('template')} />
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>Send Template</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input type="radio" name="msgType" checked={messageType === 'text'} onChange={() => setMessageType('text')} />
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>Send Free Text</span>
+          </label>
+        </div>
+
+        {messageType === 'template' ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem', background: '#fffbeb', padding: '10px', borderRadius: '6px', borderLeft: '4px solid #f59e0b' }}>
+            <strong>Note:</strong> Your live phone number cannot send the default "hello_world" template. You must type the name of a template you have explicitly approved in your Meta Dashboard.
+          </p>
+        ) : (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem', background: '#eff6ff', padding: '10px', borderRadius: '6px', borderLeft: '4px solid #3b82f6' }}>
+            <strong>Note:</strong> Free text messages can only be delivered if you have sent a WhatsApp message from your personal phone TO your business number within the last 24 hours. (This opens a 24-hour customer service window).
+          </p>
+        )}
+
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', maxWidth: '700px' }}>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <label className="form-label" style={{ fontSize: '0.8rem' }}>Phone Number (with country code)</label>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="e.g. 919876543210" 
+              value={testPhone} 
+              onChange={(e) => setTestPhone(e.target.value)}
+            />
+          </div>
+          
+          <div style={{ flex: 2, minWidth: '250px' }}>
+            <label className="form-label" style={{ fontSize: '0.8rem' }}>{messageType === 'template' ? 'Template Name' : 'Message Content'}</label>
+            {messageType === 'template' ? (
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="e.g. fee_receipt_en" 
+                value={testTemplate} 
+                onChange={(e) => setTestTemplate(e.target.value)}
+              />
+            ) : (
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="Type your message here..." 
+                value={testText} 
+                onChange={(e) => setTestText(e.target.value)}
+              />
+            )}
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSendTestMessage} 
+              disabled={testLoading}
+              style={{ background: '#10b981', border: 'none', minWidth: '120px' }}
+            >
+              {testLoading ? 'Sending...' : 'Send Test'}
+            </button>
           </div>
         </div>
       </div>

@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS school_master_db;
-USE school_master_db;
-
 CREATE TABLE IF NOT EXISTS schools (
     id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     name VARCHAR(255) NOT NULL,

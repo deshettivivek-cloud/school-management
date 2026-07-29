@@ -225,6 +225,30 @@ exports.updateSalaryStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Salary record not found' });
     }
 
+    const record = rows[0];
+
+    // WhatsApp Notification for Salary
+    if (status.toLowerCase() === 'paid') {
+      const [empResult] = await req.db.execute('SELECT name, phone FROM employees WHERE id = ?', [record.employee_id]);
+      if (empResult.length > 0 && empResult[0].phone) {
+        const employee = empResult[0];
+        const whatsappService = require('../services/whatsappService');
+        // Send official template (Requires 'salary_paid' approved in Meta)
+        const components = [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: employee.name },
+              { type: "text", text: record.month },
+              { type: "text", text: String(record.net_salary) }
+            ]
+          }
+        ];
+        whatsappService.sendTemplateMessage(employee.phone, 'salary_paid', 'en_US', components)
+          .catch(err => console.error('Failed to send salary notification:', err));
+      }
+    }
+
     res.json({
       success: true,
       data: rows[0]

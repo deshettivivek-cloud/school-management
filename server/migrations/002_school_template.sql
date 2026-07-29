@@ -197,6 +197,8 @@ CREATE TABLE IF NOT EXISTS salary_records (
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'on_hold')),
     paid_date DATE,
     payment_mode VARCHAR(20) DEFAULT 'bank_transfer',
+    leaves_taken INT DEFAULT 0,
+    paid_amount DECIMAL(12,2) DEFAULT 0,
     remarks VARCHAR(500) DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

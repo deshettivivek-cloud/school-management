@@ -22,7 +22,8 @@ import {
   Banknote,
   History,
   Calendar,
-  Megaphone
+  Megaphone,
+  MessageSquare
 } from 'lucide-react';
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
@@ -34,6 +35,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/calendar', icon: Calendar, label: 'Calendar' },
     { path: '/announcements', icon: Megaphone, label: 'Announcements' },
+    { path: '/communications', icon: MessageSquare, label: 'Communications' },
     { path: '/school-setup', icon: Settings, label: 'School Setup' },
 
     { section: 'Students' },

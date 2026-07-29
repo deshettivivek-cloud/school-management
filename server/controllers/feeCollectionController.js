@@ -291,8 +291,20 @@ exports.recordPayment = async (req, res) => {
     // WhatsApp Notification
     if (collection.parent_phone) {
       const whatsappService = require('../services/whatsappService');
-      const message = `Dear Parent, we have received a fee payment of ₹${newPayment.amount} for your child ${collection.student_name}. Receipt No: ${newPayment.receiptNo}. Balance remaining: ₹${calcs.balance}. Thank you.`;
-      whatsappService.sendTextMessage(collection.parent_phone, message).catch(console.error);
+      // Send official template (Requires 'fee_receipt' approved in Meta)
+      const components = [
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: collection.student_name },
+            { type: "text", text: String(newPayment.amount) },
+            { type: "text", text: newPayment.receiptNo },
+            { type: "text", text: String(calcs.balance) }
+          ]
+        }
+      ];
+      whatsappService.sendTemplateMessage(collection.parent_phone, 'fee_receipt', 'en_US', components)
+        .catch(err => console.error('Failed to send fee receipt:', err));
     }
 
     res.json({
@@ -376,9 +388,9 @@ exports.getFeeStats = async (req, res) => {
 
     const [collections] = await req.db.query(query, params);
 
-    const totalCommitted = collections.reduce((s, c) => s + (c.committed_fee || 0), 0);
-    const totalCollected = collections.reduce((s, c) => s + (c.total_paid || 0), 0);
-    const totalPending = collections.reduce((s, c) => s + (c.balance || 0), 0);
+    const totalCommitted = collections.reduce((s, c) => s + (Number(c.committed_fee) || 0), 0);
+    const totalCollected = collections.reduce((s, c) => s + (Number(c.total_paid) || 0), 0);
+    const totalPending = collections.reduce((s, c) => s + (Number(c.balance) || 0), 0);
 
     const paidCount = collections.filter((c) => c.status === 'paid').length;
     const partialCount = collections.filter((c) => c.status === 'partial').length;
@@ -439,6 +451,67 @@ exports.getReceipt = async (req, res) => {
         balance: collection.balance,
         payment,
       },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Send Fee Reminders (Bulk)
+// @route   POST /api/fees/reminders
+// @access  Auth
+exports.sendFeeReminders = async (req, res) => {
+  try {
+    const { studentIds } = req.body;
+    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Please provide an array of student IDs' });
+    }
+
+    const placeholders = studentIds.map(() => '?').join(',');
+    // We only need student details and their current balance
+    const [rows] = await req.db.query(`
+      SELECT s.id, s.name, s.parent_phone, fc.balance 
+      FROM students s
+      JOIN fee_collections fc ON s.id = fc.student_id
+      WHERE s.id IN (${placeholders}) AND fc.status IN ('pending', 'partial', 'overdue')
+    `, studentIds);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'No valid pending fee records found for the selected students' });
+    }
+
+    const whatsappService = require('../services/whatsappService');
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const student of rows) {
+      if (student.parent_phone && student.balance > 0) {
+        // template requires {name} and {balance}
+        const components = [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: student.name },
+              { type: "text", text: String(student.balance) }
+            ]
+          }
+        ];
+        
+        try {
+          await whatsappService.sendTemplateMessage(student.parent_phone, 'fee_reminder', 'en_US', components);
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to send fee reminder to ${student.parent_phone}:`, err);
+          failCount++;
+        }
+      } else {
+        failCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Reminders processed. Sent: ${successCount}, Failed: ${failCount}`
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

@@ -18,9 +18,7 @@ const { hashPassword } = require('../config/auth');
 async function createSchoolDatabase(schoolName, joinCode, academicYear, principalEmail, principalPassword, options = {}) {
   const masterPool = await getMasterPool();
   
-  // Sanitize join code for database name
-  const safeName = joinCode.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-  const dbName = `school_${safeName}_db`;
+  const dbName = "class16c_School_2";
 
   console.log(`\n📗 Creating school database: ${dbName}`);
   console.log(`   School: ${schoolName}`);
@@ -29,19 +27,22 @@ async function createSchoolDatabase(schoolName, joinCode, academicYear, principa
 
   try {
     // Step 1: Check if database already exists
-    const [existsResult] = await masterPool.query(
-      `SHOW DATABASES LIKE '${dbName}'`
-    );
-
-    if (existsResult.length > 0) {
-      console.error(`❌ Database '${dbName}' already exists!`);
-      return null;
-    }
+    // COMMENTED OUT: HostGator shared hosting doesn't allow SHOW DATABASES
+    // const [existsResult] = await masterPool.query(
+    //   `SHOW DATABASES LIKE '${dbName}'`
+    // );
+    //
+    // if (existsResult.length > 0) {
+    //   console.error(`❌ Database '${dbName}' already exists!`);
+    //   return null;
+    // }
 
     // Step 2: Create the database
-    console.log('   Creating database...');
-    await masterPool.query(`CREATE DATABASE \`${dbName}\``);
-    console.log(`   ✅ Database \`${dbName}\` created`);
+    // COMMENTED OUT: HostGator shared hosting doesn't allow CREATE DATABASE
+    // Database must be pre-created via phpMyAdmin
+    // console.log('   Creating database...');
+    // await masterPool.query(`CREATE DATABASE \`${dbName}\``);
+    // console.log(`   ✅ Database \`${dbName}\` created`);
 
     // Step 3: Wait briefly for the database to be fully available
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -115,8 +116,9 @@ async function createSchoolDatabase(schoolName, joinCode, academicYear, principa
     
     // Cleanup: try to drop the database if it was partially created
     try {
-      await masterPool.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
-      console.log(`   🧹 Cleaned up partial database: ${dbName}`);
+      // COMMENTED OUT: HostGator shared hosting doesn't allow DROP DATABASE
+      // await masterPool.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
+      // console.log(`   🧹 Cleaned up partial database: ${dbName}`);
       
       await masterPool.execute('DELETE FROM schools WHERE db_name = ?', [dbName]);
       console.log(`   🧹 Cleaned up master database records for: ${dbName}`);
