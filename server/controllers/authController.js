@@ -52,7 +52,7 @@ exports.login = async (req, res) => {
 
     // 1. Find school mapping for this email
     const [routeResult] = await masterPool.execute(`
-      SELECT s.db_name 
+      SELECT s.db_name, s.is_active, s.created_at
       FROM global_users gu 
       JOIN schools s ON gu.school_id = s.id 
       WHERE gu.email = ?
@@ -64,11 +64,30 @@ exports.login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Incorrect email or password' });
     }
 
-    const dbName = routeResult[0].db_name;
+    const schoolInfo = routeResult[0];
+
+    // Suspension and Expiration Check
+    const isSuspended = schoolInfo.is_active === 0 || schoolInfo.is_active === false;
+    
+    // Check if older than 365 days
+    const createdAt = new Date(schoolInfo.created_at);
+    const now = new Date();
+    const daysSinceCreation = (now - createdAt) / (1000 * 60 * 60 * 24);
+    const isExpired = daysSinceCreation > 365;
+
+    if (isSuspended || isExpired) {
+      AuthRateLimiter.clearAttempts(email);
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Your account is suspended due to low balance or it has been blocked by the super admin.' 
+      });
+    }
+
+    const dbName = schoolInfo.db_name;
     const schoolPool = await getSchoolPool(dbName);
 
     // 2. Fetch user from school DB
-    const [profileResult] = await schoolPool.execute('SELECT * FROM profiles WHERE email = ? AND is_active = 1', [email]);
+    const [profileResult] = await schoolPool.execute('SELECT * FROM profiles WHERE email = ?', [email]);
 
     if (profileResult.length === 0) {
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
@@ -77,6 +96,14 @@ exports.login = async (req, res) => {
     }
 
     const user = profileResult[0];
+
+    if (user.is_active === 0 || user.is_active === false) {
+      AuthRateLimiter.clearAttempts(email);
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Your account is suspended due to low balance or it has been blocked by the super admin.' 
+      });
+    }
 
     // 3. Verify password
     const isMatch = await comparePassword(password, user.password_hash);

@@ -35,6 +35,8 @@ router.get('/history/:studentId', protect, getStudentFeeHistory);
 router.post('/collection/commit', protect, roleCheck('principal', 'clerk'), commitFee);
 router.post('/collection/pay', protect, recordPayment);
 router.post('/collection/reminders', protect, sendFeeReminders);
+router.post('/send-sms-receipt', protect, require('../controllers/feeCollectionController').sendSmsReceipt);
+router.post('/send-whatsapp-receipt', protect, require('../controllers/feeCollectionController').sendWhatsappReceipt);
 
 // Pending fees
 router.get('/pending', protect, getPendingFees);

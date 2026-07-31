@@ -113,6 +113,9 @@ const FeeCollection = () => {
     }
   };
 
+  const [lastPayment, setLastPayment] = useState(null);
+  const [sendingReceipt, setSendingReceipt] = useState(false);
+
   const handlePayment = async () => {
     if (!payForm.amount || parseFloat(payForm.amount) <= 0) {
       toast.error('Enter a valid amount');
@@ -127,17 +130,38 @@ const FeeCollection = () => {
         remarks: payForm.remarks,
       });
       setFeeRecord(res.data.data.collection);
-      setShowPayModal(false);
       setPayForm({ amount: '', mode: 'cash', remarks: '' });
       toast.success('Payment recorded! 🎉');
 
-      // Navigate to receipt
       const payment = res.data.data.payment;
       if (payment) {
-        navigate(`/fees/receipt/${res.data.data.collection.id}/${payment._id}`);
+        setLastPayment({
+          studentId: selectedStudent.id,
+          amount: payment.amount,
+          receiptNo: payment.receiptNo,
+          balance: res.data.data.collection.balance,
+          collectionId: res.data.data.collection.id,
+          paymentId: payment._id
+        });
+      } else {
+        setShowPayModal(false);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Payment failed');
+    }
+  };
+
+  const sendReceipt = async (channel) => {
+    if (!lastPayment) return;
+    setSendingReceipt(true);
+    try {
+      const endpoint = channel === 'sms' ? '/fees/send-sms-receipt' : '/fees/send-whatsapp-receipt';
+      const res = await api.post(endpoint, lastPayment);
+      toast.success(res.data.message || `Receipt sent via ${channel.toUpperCase()}`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || `Failed to send ${channel.toUpperCase()}`);
+    } finally {
+      setSendingReceipt(false);
     }
   };
 
@@ -414,40 +438,80 @@ const FeeCollection = () => {
 
       {/* Payment Modal */}
       {showPayModal && (
-        <div className="modal-overlay" onClick={() => setShowPayModal(false)}>
+        <div className="modal-overlay" onClick={() => { setShowPayModal(false); setLastPayment(null); }}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 450 }}>
             <div className="modal-header">
-              <h3 className="modal-title">Record Payment</h3>
-              <button className="modal-close" onClick={() => setShowPayModal(false)}>×</button>
+              <h3 className="modal-title">{lastPayment ? 'Payment Successful' : 'Record Payment'}</h3>
+              <button className="modal-close" onClick={() => { setShowPayModal(false); setLastPayment(null); }}>×</button>
             </div>
-            <div className="modal-body">
-              <p className="form-help" style={{ marginBottom: '1rem' }}>
-                Balance: {formatCurrency(feeRecord?.balance)}
-              </p>
-              <div className="form-group">
-                <label className="form-label">Amount (₹) *</label>
-                <input className="form-input" type="number" value={payForm.amount} onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })} placeholder="Enter payment amount" />
+            {lastPayment ? (
+              <div className="modal-body" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success-500)', marginBottom: '0.5rem' }}>
+                  Payment Saved!
+                </h2>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                  Receipt No: <strong>{lastPayment.receiptNo}</strong><br />
+                  Amount: <strong>{formatCurrency(lastPayment.amount)}</strong>
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={() => sendReceipt('sms')}
+                    disabled={sendingReceipt}
+                    style={{ background: '#3b82f6', border: 'none' }}
+                  >
+                    {sendingReceipt ? 'Sending...' : '💬 Send SMS Receipt'}
+                  </button>
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={() => sendReceipt('whatsapp')}
+                    disabled={sendingReceipt}
+                    style={{ background: '#10b981', border: 'none' }}
+                  >
+                    {sendingReceipt ? 'Sending...' : '📱 Send WhatsApp Receipt'}
+                  </button>
+                  <button 
+                    className="btn btn-outline" 
+                    onClick={() => navigate(`/fees/receipt/${lastPayment.collectionId}/${lastPayment.paymentId}`)}
+                    style={{ marginTop: '0.5rem' }}
+                  >
+                    View Receipt
+                  </button>
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Payment Mode</label>
-                <select className="form-select" value={payForm.mode} onChange={(e) => setPayForm({ ...payForm, mode: e.target.value })}>
-                  <option value="cash">Cash</option>
-                  <option value="upi">UPI</option>
-                  <option value="bank_transfer">Bank Transfer</option>
-                  <option value="cheque">Cheque</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Remarks</label>
-                <input className="form-input" value={payForm.remarks} onChange={(e) => setPayForm({ ...payForm, remarks: e.target.value })} placeholder="Optional remarks" />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowPayModal(false)}>Cancel</button>
-              <button className="btn btn-success" onClick={handlePayment}>
-                <HiOutlineCurrencyRupee /> Record Payment
-              </button>
-            </div>
+            ) : (
+              <>
+                <div className="modal-body">
+                  <p className="form-help" style={{ marginBottom: '1rem' }}>
+                    Balance: {formatCurrency(feeRecord?.balance)}
+                  </p>
+                  <div className="form-group">
+                    <label className="form-label">Amount (₹) *</label>
+                    <input className="form-input" type="number" value={payForm.amount} onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })} placeholder="Enter payment amount" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Payment Mode</label>
+                    <select className="form-select" value={payForm.mode} onChange={(e) => setPayForm({ ...payForm, mode: e.target.value })}>
+                      <option value="cash">Cash</option>
+                      <option value="upi">UPI</option>
+                      <option value="bank_transfer">Bank Transfer</option>
+                      <option value="cheque">Cheque</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Remarks</label>
+                    <input className="form-input" value={payForm.remarks} onChange={(e) => setPayForm({ ...payForm, remarks: e.target.value })} placeholder="Optional remarks" />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={() => setShowPayModal(false)}>Cancel</button>
+                  <button className="btn btn-success" onClick={handlePayment}>
+                    <HiOutlineCurrencyRupee /> Record Payment
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

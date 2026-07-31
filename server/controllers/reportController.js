@@ -185,6 +185,20 @@ exports.generateReport = async (req, res) => {
 
 const getDashboardMetrics = async (req, res) => {
   try {
+    if (req.user && req.user.role === 'super_admin') {
+      return res.json({
+        success: true,
+        data: {
+          studentCount: 0,
+          teacherCount: 0,
+          totalFeesCommitted: 0,
+          totalFeesPaid: 0,
+          pendingFees: 0,
+          isSuperAdmin: true
+        }
+      });
+    }
+
     const [[studentsResult], [teachersResult], [feesResult]] = await Promise.all([
       req.db.query("SELECT COUNT(*) as count FROM students WHERE is_active = 1"),
       req.db.query("SELECT COUNT(*) as count FROM employees WHERE is_active = 1"),

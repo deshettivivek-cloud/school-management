@@ -4,7 +4,7 @@ class WhatsAppService {
   constructor() {
     this.token = process.env.WHATSAPP_API_TOKEN;
     this.phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-    this.apiUrl = `https://graph.facebook.com/v17.0`;
+    this.apiUrl = `https://api.wapost.click/api/meta/v19.0`;
   }
 
   /**
@@ -24,12 +24,12 @@ class WhatsAppService {
     if (!phone) return null;
     // Remove all non-numeric characters
     let cleaned = phone.replace(/\D/g, '');
-    
+
     // Assuming Indian numbers if 10 digits
     if (cleaned.length === 10) {
       cleaned = '91' + cleaned;
     }
-    
+
     return cleaned;
   }
 
@@ -55,14 +55,16 @@ class WhatsAppService {
 
     try {
       const url = `${this.apiUrl}/${this.phoneNumberId}/messages`;
-      
+
       const payload = {
         messaging_product: 'whatsapp',
+        recipient_type: 'individual',
         to: formattedPhone,
         type: 'template',
         template: {
           name: templateName,
           language: {
+            policy: 'deterministic',
             code: languageCode
           },
           components: components
@@ -111,7 +113,7 @@ class WhatsAppService {
 
     try {
       const url = `${this.apiUrl}/${this.phoneNumberId}/messages`;
-      
+
       const payload = {
         messaging_product: 'whatsapp',
         recipient_type: 'individual',

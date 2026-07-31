@@ -28,6 +28,7 @@ const ManageSchools = () => {
   const [form, setForm] = useState({
     schoolName: '',
     schoolCode: '',
+    dbName: '',
     address: '',
     phone: '',
     email: '',
@@ -97,7 +98,7 @@ const ManageSchools = () => {
       toast.success(res.data.message || 'School Created Successfully');
       setShowCreateModal(false);
       setForm({
-        schoolName: '', schoolCode: '', address: '', phone: '', email: '', academicYear: '2023-2024',
+        schoolName: '', schoolCode: '', dbName: '', address: '', phone: '', email: '', academicYear: '2023-2024',
         logo: '',
         principalName: '', principalEmail: '', temporaryPassword: '',
       });
@@ -119,6 +120,7 @@ const ManageSchools = () => {
         phone: editSchool.phone,
         email: editSchool.email,
         status: editSchool.status,
+        academicYear: editSchool.academic_year,
         updated_at: editSchool.updated_at
       };
       const res = await api.patch(`/super-admin/schools/${editSchool.id}`, payload);
@@ -197,6 +199,11 @@ const ManageSchools = () => {
                     <div className="form-group">
                       <label className="form-label">School Name *</label>
                       <input className="form-input" type="text" required value={form.schoolName} onChange={e => setForm({...form, schoolName: e.target.value})} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Database Name (cPanel) *</label>
+                      <input className="form-input" type="text" required placeholder="e.g. class16c_School_2" value={form.dbName} onChange={e => setForm({...form, dbName: e.target.value})} />
+                      <p style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '0.25rem' }}>⚠️ Must be pre-created in cPanel with user access granted</p>
                     </div>
                     <div className="form-group">
                       <label className="form-label">School Join Code (Optional)</label>
@@ -321,6 +328,10 @@ const ManageSchools = () => {
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Academic Year</label>
+                    <input className="form-input" type="text" value={editSchool.academic_year || ''} onChange={e => setEditSchool({...editSchool, academic_year: e.target.value})} />
                   </div>
                 </div>
                 <div className="form-group">

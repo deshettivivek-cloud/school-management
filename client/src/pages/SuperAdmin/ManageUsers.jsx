@@ -325,7 +325,11 @@ const ManageUsers = () => {
                       </span>
                     </td>
                     <td>
-                      {user.must_change_password ? (
+                      {user.is_active === 0 || user.is_active === false ? (
+                        <span style={{ padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-full)', fontSize: '0.7rem', fontWeight: 600, background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
+                          Suspended
+                        </span>
+                      ) : user.must_change_password ? (
                         <span style={{ padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-full)', fontSize: '0.7rem', fontWeight: 600, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
                           Pending Password Change
                         </span>

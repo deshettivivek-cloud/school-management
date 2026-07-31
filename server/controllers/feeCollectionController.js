@@ -1,3 +1,6 @@
+const { sendSMS } = require('../services/smsService');
+const whatsappService = require('../services/whatsappService');
+
 // Helper: generate receipt number
 const generateReceiptNo = async (db, academicYear) => {
   const yearCode = academicYear.replace('-', '');
@@ -513,6 +516,81 @@ exports.sendFeeReminders = async (req, res) => {
       success: true,
       message: `Reminders processed. Sent: ${successCount}, Failed: ${failCount}`
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Send fee receipt via SMS
+// @route   POST /api/fees/send-sms-receipt
+// @access  Auth
+exports.sendSmsReceipt = async (req, res) => {
+  try {
+    const { studentId, amount, receiptNo, balance } = req.body;
+    
+    if (!studentId || !amount || !receiptNo) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    const [students] = await req.db.query('SELECT name, parent_phone FROM students WHERE id = ?', [studentId]);
+    
+    if (students.length === 0) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+    
+    const student = students[0];
+    if (!student.parent_phone) {
+      return res.status(400).json({ success: false, message: 'Parent phone number not available' });
+    }
+
+    // Auto-generate the message text (Matches typical DLT template for fee receipt)
+    // Note: If DLT requires specific placeholders, adjust the template text here
+    const message = `STANCH SOFT APPLICATION- Dear ${student.name} Garu, Your Paid AMOUNT IS ${amount} Rs. and Receipt No.${receiptNo} -STANCH SOFT SOLUTIONS`;
+
+    const result = await sendSMS(student.parent_phone, message);
+    
+    if (result.success) {
+      res.json({ success: true, message: 'SMS receipt sent successfully' });
+    } else {
+      res.status(500).json({ success: false, message: result.error });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Send fee receipt via WhatsApp
+// @route   POST /api/fees/send-whatsapp-receipt
+// @access  Auth
+exports.sendWhatsappReceipt = async (req, res) => {
+  try {
+    const { studentId, amount, receiptNo, balance } = req.body;
+    
+    if (!studentId || !amount || !receiptNo) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    const [students] = await req.db.query('SELECT name, parent_phone FROM students WHERE id = ?', [studentId]);
+    
+    if (students.length === 0) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+    
+    const student = students[0];
+    if (!student.parent_phone) {
+      return res.status(400).json({ success: false, message: 'Parent phone number not available' });
+    }
+
+    const message = `Dear ${student.name} Garu,\n\nYour fee payment of ₹${amount} has been received successfully.\n\nReceipt No: ${receiptNo}\nBalance Amount: ₹${balance || 0}\n\nThank you.\nSchool Administration`;
+
+    // Assuming we want to send raw text. If template is required, adjust this call.
+    const result = await whatsappService.sendTextMessage(student.parent_phone, message);
+    
+    if (result.success) {
+      res.json({ success: true, message: 'WhatsApp receipt sent successfully' });
+    } else {
+      res.status(500).json({ success: false, message: result.error || 'WhatsApp API failed' });
+    }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -17,8 +17,13 @@ const { hashPassword } = require('../config/auth');
 
 async function createSchoolDatabase(schoolName, joinCode, academicYear, principalEmail, principalPassword, options = {}) {
   const masterPool = await getMasterPool();
-  
-  const dbName = "class16c_School_2";
+
+  // On shared hosting (BigRock/HostGator), databases must be pre-created via cPanel.
+  // The dbName must be provided by the admin and must already exist with user access granted.
+  const dbName = options.dbName;
+  if (!dbName) {
+    throw new Error('Database name is required. Please create the database in cPanel first and provide its name.');
+  }
 
   console.log(`\n📗 Creating school database: ${dbName}`);
   console.log(`   School: ${schoolName}`);
@@ -53,7 +58,7 @@ async function createSchoolDatabase(schoolName, joinCode, academicYear, principa
     const templateSQL = fs.readFileSync(templatePath, 'utf8');
 
     const schoolPool = await getSchoolPool(dbName);
-    
+
     // Execute the whole template file
     try {
       await schoolPool.query(templateSQL);
@@ -65,7 +70,7 @@ async function createSchoolDatabase(schoolName, joinCode, academicYear, principa
     // Step 5: Register in master database
     console.log('   Registering in master database...');
     const schoolId = crypto.randomUUID();
-    
+
     await masterPool.execute(
       `INSERT INTO schools (id, name, join_code, db_name, academic_year, address, phone, email, logo_url)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -113,13 +118,13 @@ async function createSchoolDatabase(schoolName, joinCode, academicYear, principa
     return { id: schoolId, name: schoolName, joinCode, dbName };
   } catch (err) {
     console.error(`\n❌ Failed to create school:`, err.message);
-    
+
     // Cleanup: try to drop the database if it was partially created
     try {
       // COMMENTED OUT: HostGator shared hosting doesn't allow DROP DATABASE
       // await masterPool.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
       // console.log(`   🧹 Cleaned up partial database: ${dbName}`);
-      
+
       await masterPool.execute('DELETE FROM schools WHERE db_name = ?', [dbName]);
       console.log(`   🧹 Cleaned up master database records for: ${dbName}`);
     } catch (cleanupErr) {
@@ -133,7 +138,7 @@ async function createSchoolDatabase(schoolName, joinCode, academicYear, principa
 // CLI mode
 if (require.main === module) {
   const args = process.argv.slice(2);
-  
+
   if (args.length < 5) {
     console.log('Usage: node scripts/createSchoolDb.js <schoolName> <joinCode> <academicYear> <principalEmail> <principalPassword>');
     console.log('Example: node scripts/createSchoolDb.js "Green Valley School" "GVS001" "2025-2026" "principal@gvs.in" "TempPass123!"');

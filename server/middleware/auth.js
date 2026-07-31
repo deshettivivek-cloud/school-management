@@ -8,6 +8,10 @@ const { getSchoolPool } = require('../config/tenantPool');
  * and resolves the school's database connection.
  */
 const protect = async (req, res, next) => {
+  // DEBUG: remove after confirming token flow works
+  console.log('🔍 [AUTH DEBUG] URL:', req.originalUrl);
+  console.log('🔍 [AUTH DEBUG] Authorization Header:', req.headers.authorization ? 'Bearer <present>' : 'MISSING');
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

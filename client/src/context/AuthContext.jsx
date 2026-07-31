@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.get('/auth/me');
       const userData = response.data.data;
-      
+
       // Decode token to get tenantDb if not provided by backend
       const token = localStorage.getItem('token');
       let tokenTenantDb = null;
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
           const payload = JSON.parse(atob(token.split('.')[1]));
           tokenTenantDb = payload.tenantDb;
         }
-      } catch(e) {}
+      } catch (e) { }
 
       const userObj = {
         id: userData.id,
@@ -74,12 +74,16 @@ export const AuthProvider = ({ children }) => {
         mustChangePassword: userData.must_change_password || userData.mustChangePassword || false,
         isSuperAdmin: userData.role === 'super_admin',
       };
-      
+
       setUser(userObj);
-      return userObj;
+      return { user: userObj, error: null };
     } catch (err) {
       console.error('Profile fetch failed:', err);
-      return null;
+      const status = err.response?.status;
+      // Return whether this was an auth error (token invalid/expired)
+      // vs a transient error (network/server issue)
+      const isAuthError = status === 401 || status === 403;
+      return { user: null, error: isAuthError ? 'auth' : 'network' };
     }
   }, []);
 
@@ -92,8 +96,10 @@ export const AuthProvider = ({ children }) => {
 
         if (token && isMounted) {
           const expectedPortal = getStoredPortal() || getPortalFromURL();
-          
-          const userObj = await fetchProfile();
+
+          const result = await fetchProfile();
+          const userObj = result?.user;
+          const fetchError = result?.error;
 
           if (userObj && isMounted) {
             if (isSessionValidForPortal(userObj.role, expectedPortal)) {
@@ -108,10 +114,41 @@ export const AuthProvider = ({ children }) => {
               clearPortal();
               localStorage.removeItem('token');
             }
-          } else {
-            // Token is invalid
-            console.log('Clearing token because fetchProfile returned null');
+          } else if (fetchError === 'auth') {
+            // Token is invalid or expired — clear it
+            console.log('Clearing token because of auth error (401/403)');
             localStorage.removeItem('token');
+          } else {
+            // Network / server error — keep the token, restore session from token
+            // so user is not logged out due to a transient server issue
+            console.warn('Profile fetch failed due to network/server error — keeping session alive');
+            try {
+              const payload = JSON.parse(atob(token.split('.')[1]));
+              // Check token expiry
+              if (payload.exp && payload.exp * 1000 > Date.now()) {
+                setSession({ access_token: token });
+                setUser({
+                  id: payload.id,
+                  email: payload.email,
+                  name: payload.email,
+                  role: payload.role,
+                  tenantDb: payload.tenantDb || null,
+                  mustChangePassword: false,
+                  isSuperAdmin: payload.role === 'super_admin',
+                  assigned_classes: [],
+                });
+                setPortalType(payload.role === 'super_admin' ? PORTAL_SUPER_ADMIN : PORTAL_SCHOOL);
+                storePortal(payload.role === 'super_admin' ? PORTAL_SUPER_ADMIN : PORTAL_SCHOOL);
+              } else {
+                // Token is expired — clear it
+                console.log('Token is expired — clearing');
+                localStorage.removeItem('token');
+              }
+            } catch {
+              // Malformed token — clear it
+              console.log('Token is malformed — clearing');
+              localStorage.removeItem('token');
+            }
           }
         }
       } catch (err) {
@@ -134,7 +171,7 @@ export const AuthProvider = ({ children }) => {
         clearPortal();
       }
     };
-    
+
     window.addEventListener('auth:unauthorized', handleUnauthorized);
 
     return () => {
@@ -149,7 +186,7 @@ export const AuthProvider = ({ children }) => {
     const { session: newSession, user: userData } = response.data.data;
 
     localStorage.setItem('token', newSession.access_token);
-    
+
     setPortalType(PORTAL_SCHOOL);
     storePortal(PORTAL_SCHOOL);
 
@@ -174,7 +211,7 @@ export const AuthProvider = ({ children }) => {
     const { session: newSession, user: userData } = response.data.data;
 
     localStorage.setItem('token', newSession.access_token);
-    
+
     setPortalType(PORTAL_SUPER_ADMIN);
     storePortal(PORTAL_SUPER_ADMIN);
 

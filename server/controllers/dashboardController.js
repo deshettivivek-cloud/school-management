@@ -3,6 +3,10 @@ const crypto = require('crypto');
 // Fetch data for all widgets and calendar
 exports.getDashboardWidgets = async (req, res) => {
   try {
+    if (req.user && req.user.role === 'super_admin') {
+      return res.json({ success: true, data: { isSuperAdmin: true } });
+    }
+
     const role = req.user.role;
     const db = req.db;
 
@@ -34,8 +38,8 @@ exports.getDashboardWidgets = async (req, res) => {
     let recentAdmissions = null, recentPayments = null, pendingApprovals = null, upcomingExams = null, latestAnnouncements = null;
     let calendarEvents = [];
 
-    // 1. Recent Admissions (Super Admin, Principal, Clerk)
-    if (['super_admin', 'principal', 'clerk'].includes(role)) {
+    // 1. Recent Admissions (Principal, Clerk)
+    if (['principal', 'clerk'].includes(role)) {
       tasks.push(
         db.execute('SELECT id, name, grade, created_at FROM students ORDER BY created_at DESC LIMIT 5')
           .then(([rows]) => { recentAdmissions = { data: rows, error: null }; })
@@ -43,8 +47,8 @@ exports.getDashboardWidgets = async (req, res) => {
       );
     }
 
-    // 2. Recent Payments (Super Admin, Principal, Clerk)
-    if (['super_admin', 'principal', 'clerk'].includes(role)) {
+    // 2. Recent Payments (Principal, Clerk)
+    if (['principal', 'clerk'].includes(role)) {
       tasks.push(
         db.execute(`
             SELECT fc.id, fc.academic_year, fc.total_paid, fc.updated_at, s.name as student_name
@@ -65,8 +69,8 @@ exports.getDashboardWidgets = async (req, res) => {
       );
     }
 
-    // 3. Pending Approvals (Super Admin, Principal)
-    if (['super_admin', 'principal'].includes(role)) {
+    // 3. Pending Approvals (Principal)
+    if (['principal'].includes(role)) {
       tasks.push(
         db.execute("SELECT id, name, grade, admission_status FROM students WHERE admission_status = 'pending' ORDER BY created_at DESC LIMIT 5")
           .then(([rows]) => { pendingApprovals = { data: rows, error: null }; })
