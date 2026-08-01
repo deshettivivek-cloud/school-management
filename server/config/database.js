@@ -22,14 +22,34 @@ function buildDbConfig(database) {
 const masterConfig = buildDbConfig();
 let masterPool = null;
 
+const RETRYABLE_ERRORS = new Set(['PROTOCOL_CONNECTION_LOST', 'ECONNRESET', 'ETIMEDOUT']);
+
+async function getConnectionWithRetry(pool, maxRetries = 3) {
+  let attempt = 0;
+  while (attempt < maxRetries) {
+    try {
+      return await pool.getConnection();
+    } catch (err) {
+      attempt++;
+      const isRetryable = err.code && RETRYABLE_ERRORS.has(err.code);
+      if (!isRetryable || attempt >= maxRetries) {
+        throw err;
+      }
+      const backoffMs = 500 * Math.pow(2, attempt - 1);
+      console.warn(`⚠️ DB connection attempt ${attempt} failed (${err.code}). Retrying in ${backoffMs}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, backoffMs));
+    }
+  }
+}
+
 async function getMasterPool() {
   if (masterPool) {
     return masterPool;
   }
   try {
     masterPool = mysql.createPool(masterConfig);
-    // Test the connection
-    const connection = await masterPool.getConnection();
+    // Test the connection with retry
+    const connection = await getConnectionWithRetry(masterPool);
     connection.release();
     console.log('✅ Connected to master database');
     return masterPool;
@@ -51,4 +71,4 @@ async function closeAll() {
   }
 }
 
-module.exports = { mysql, getMasterPool, buildSchoolConfig, closeAll };
+module.exports = { mysql, getMasterPool, buildSchoolConfig, closeAll, getConnectionWithRetry };

@@ -104,3 +104,22 @@ app.use((err, req, res, next) => {
 });
 
 app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+const { getMasterPool } = require('./config/database');
+
+const startServer = async () => {
+  try {
+    await getMasterPool();
+    app.listen(PORT, () => {
+      console.log(`🏫 School Management Server running on port ${PORT}`);
+      console.log(`📡 Database: MySQL (Multi-Tenant)`);
+      console.log(`🔐 Auth: Native JWT Auth`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error.message);
+    process.exit(1);
+  }
+};
+
+startServer();

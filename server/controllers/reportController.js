@@ -93,6 +93,13 @@ exports.generateReport = async (req, res) => {
     
     let selectFields = config.select || `${config.table}.*`;
     let queryBase = `FROM ${config.table} ${config.join || ''} WHERE 1=1`;
+
+    if (['students', 'employees', 'fee_structures', 'expenditures'].includes(config.table)) {
+      queryBase += ` AND ${tablePrefix}deleted_at IS NULL`;
+    }
+    if (config.join && config.join.includes('JOIN students s')) {
+      queryBase += ` AND s.deleted_at IS NULL`;
+    }
     let params = [];
 
     // Academic Year Filter

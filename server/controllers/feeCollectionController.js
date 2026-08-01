@@ -1,12 +1,14 @@
 const { sendSMS } = require('../services/smsService');
 const whatsappService = require('../services/whatsappService');
+const feeRepository = require('../repositories/feeRepository');
+const { logAuditAction } = require('../utils/auditLogger');
 
 // Helper: generate receipt number
 const generateReceiptNo = async (db, academicYear) => {
   const yearCode = academicYear.replace('-', '');
   const prefix = `REC-${yearCode}`;
 
-  const [rows] = await db.query('SELECT payments FROM fee_collections WHERE academic_year = ?', [academicYear]);
+  const rows = await feeRepository.getPaymentsByAcademicYear(db, academicYear);
 
   let maxSeq = 0;
   rows.forEach((fc) => {
@@ -50,32 +52,7 @@ exports.getFeeCollections = async (req, res) => {
   try {
     const { academicYear, status, grade } = req.query;
 
-    let query = `
-      SELECT fc.*, 
-             s.name as student_name, s.admission_no, s.grade, s.section, 
-             s.parent_name, s.parent_phone
-      FROM fee_collections fc
-      JOIN students s ON fc.student_id = s.id
-      WHERE 1=1
-    `;
-    let params = [];
-
-    if (academicYear) {
-      query += ' AND fc.academic_year = ?';
-      params.push(academicYear);
-    }
-    if (status) {
-      query += ' AND fc.status = ?';
-      params.push(status);
-    }
-    if (grade) {
-      query += ' AND s.grade = ?';
-      params.push(grade);
-    }
-
-    query += ' ORDER BY fc.updated_at DESC';
-
-    const [rows] = await req.db.query(query, params);
+    const rows = await feeRepository.findFeeCollections(req.db, { academicYear, status, grade });
 
     const shaped = rows.map((d) => {
       // Parse JSON fields
@@ -115,22 +92,7 @@ exports.getStudentFeeCollection = async (req, res) => {
   try {
     const { academicYear } = req.query;
 
-    let query = `
-      SELECT fc.*, 
-             s.name as student_name, s.admission_no, s.grade, s.section, 
-             s.parent_name, s.parent_phone, s.photo_url
-      FROM fee_collections fc
-      JOIN students s ON fc.student_id = s.id
-      WHERE fc.student_id = ?
-    `;
-    let params = [req.params.studentId];
-
-    if (academicYear) {
-      query += ' AND fc.academic_year = ?';
-      params.push(academicYear);
-    }
-
-    const [rows] = await req.db.query(query, params);
+    const rows = await feeRepository.findStudentFeeCollection(req.db, req.params.studentId, academicYear);
 
     if (rows.length === 0) {
       return res.json({ success: true, data: null, message: 'No fee record found' });
@@ -160,7 +122,7 @@ exports.getStudentFeeCollection = async (req, res) => {
 // @access  Auth
 exports.getStudentFeeHistory = async (req, res) => {
   try {
-    const [rows] = await req.db.query('SELECT * FROM fee_collections WHERE student_id = ? ORDER BY academic_year DESC', [req.params.studentId]);
+    const rows = await feeRepository.findFeeHistoryByStudent(req.db, req.params.studentId);
 
     const shaped = rows.map(d => {
       try { d.fee_breakdown = JSON.parse(d.fee_breakdown); } catch(e) { d.fee_breakdown = []; }
@@ -178,17 +140,21 @@ exports.getStudentFeeHistory = async (req, res) => {
 // @route   POST /api/fees/collection/commit
 // @access  Admin
 exports.commitFee = async (req, res) => {
+  const connection = await req.db.getConnection();
   try {
+    await connection.beginTransaction();
+
     const { studentId, academicYear, committedFee, feeBreakdown } = req.body;
 
-    const [students] = await req.db.query('SELECT id, name, admission_no, grade, section, parent_name, parent_phone FROM students WHERE id = ?', [studentId]);
+    const students = await feeRepository.findStudentById(connection, studentId);
 
     if (students.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
     const student = students[0];
 
-    const [existingResult] = await req.db.query('SELECT * FROM fee_collections WHERE student_id = ? AND academic_year = ?', [studentId, academicYear]);
+    const existingResult = await feeRepository.findFeeCollectionByStudentAndYear(connection, studentId, academicYear);
 
     const feeBreakdownJson = JSON.stringify(feeBreakdown || []);
     let data;
@@ -199,27 +165,40 @@ exports.commitFee = async (req, res) => {
       if (feeBreakdown) updated.fee_breakdown = feeBreakdownJson;
       const calcs = recalculate(updated);
 
-      await req.db.query(`
-          UPDATE fee_collections 
-          SET committed_fee = ?, fee_breakdown = ?,
-              total_paid = ?, balance = ?, status = ?,
-              updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?
-        `, [committedFee, feeBreakdownJson || existing.fee_breakdown, calcs.total_paid, calcs.balance, calcs.status, existing.id]);
+      await feeRepository.updateFeeCollection(connection, existing.id, {
+        committedFee,
+        feeBreakdownJson: feeBreakdownJson || existing.fee_breakdown,
+        totalPaid: calcs.total_paid,
+        balance: calcs.balance,
+        status: calcs.status,
+      });
         
-      const [updatedRows] = await req.db.query('SELECT * FROM fee_collections WHERE id = ?', [existing.id]);
+      const updatedRows = await feeRepository.findFeeCollectionById(connection, existing.id);
       data = updatedRows[0];
     } else {
       const crypto = require('crypto');
       const fcId = crypto.randomUUID();
-      await req.db.query(`
-          INSERT INTO fee_collections (id, student_id, academic_year, committed_fee, fee_breakdown, balance, status, total_paid, payments)
-          VALUES (?, ?, ?, ?, ?, ?, 'pending', 0, '[]')
-        `, [fcId, studentId, academicYear, committedFee, feeBreakdownJson, committedFee]);
+      await feeRepository.insertFeeCollection(connection, {
+        id: fcId,
+        studentId,
+        academicYear,
+        committedFee,
+        feeBreakdownJson,
+        balance: committedFee,
+      });
         
-      const [insertedRows] = await req.db.query('SELECT * FROM fee_collections WHERE id = ?', [fcId]);
+      const insertedRows = await feeRepository.findFeeCollectionById(connection, fcId);
       data = insertedRows[0];
     }
+
+    await connection.commit();
+
+    await logAuditAction(req, {
+      action: 'COMMIT_FEE',
+      resource_type: 'fee_collection',
+      resource_id: data.id,
+      new_values: { committedFee, studentId, academicYear }
+    });
 
     try { data.fee_breakdown = JSON.parse(data.fee_breakdown); } catch(e) { data.fee_breakdown = []; }
     try { data.payments = JSON.parse(data.payments); } catch(e) { data.payments = []; }
@@ -227,7 +206,10 @@ exports.commitFee = async (req, res) => {
 
     res.status(201).json({ success: true, data });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    connection.release();
   }
 };
 
@@ -235,31 +217,32 @@ exports.commitFee = async (req, res) => {
 // @route   POST /api/fees/collection/pay
 // @access  Auth
 exports.recordPayment = async (req, res) => {
+  const connection = await req.db.getConnection();
   try {
+    await connection.beginTransaction();
+
     const { studentId, academicYear, amount, mode, remarks } = req.body;
 
     if (!amount || amount <= 0) {
+      await connection.rollback();
       return res.status(400).json({ success: false, message: 'Amount must be > 0' });
     }
 
-    const [collResult] = await req.db.query(`
-        SELECT fc.*, s.name as student_name, s.parent_phone 
-        FROM fee_collections fc
-        JOIN students s ON fc.student_id = s.id
-        WHERE fc.student_id = ? AND fc.academic_year = ?
-      `, [studentId, academicYear]);
+    const collResult = await feeRepository.findFeeCollectionWithStudent(connection, studentId, academicYear);
 
     if (collResult.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ success: false, message: 'No fee record found. Set committed fee first.' });
     }
 
     const collection = collResult[0];
 
     if (collection.status === 'paid') {
+      await connection.rollback();
       return res.status(400).json({ success: false, message: 'Fee already fully paid' });
     }
 
-    const receiptNo = await generateReceiptNo(req.db, academicYear);
+    const receiptNo = await generateReceiptNo(connection, academicYear);
     
     let existingPayments = [];
     try { existingPayments = JSON.parse(collection.payments || '[]'); } catch(e) {}
@@ -279,14 +262,26 @@ exports.recordPayment = async (req, res) => {
     
     const calcs = recalculate(collection);
 
-    await req.db.query(`
-        UPDATE fee_collections 
-        SET payments = ?, total_paid = ?, balance = ?, status = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `, [JSON.stringify(updatedPayments), calcs.total_paid, calcs.balance, calcs.status, collection.id]);
+    await feeRepository.updateFeeCollectionPayments(
+      connection,
+      collection.id,
+      JSON.stringify(updatedPayments),
+      calcs.total_paid,
+      calcs.balance,
+      calcs.status
+    );
       
-    const [updatedRows] = await req.db.query('SELECT * FROM fee_collections WHERE id = ?', [collection.id]);
+    const updatedRows = await feeRepository.findFeeCollectionById(connection, collection.id);
     const data = updatedRows[0];
+
+    await connection.commit();
+
+    await logAuditAction(req, {
+      action: 'RECORD_PAYMENT',
+      resource_type: 'fee_collection',
+      resource_id: data.id,
+      new_values: { amount: newPayment.amount, receiptNo: newPayment.receiptNo, mode: newPayment.mode }
+    });
     
     try { data.fee_breakdown = JSON.parse(data.fee_breakdown); } catch(e) { data.fee_breakdown = []; }
     try { data.payments = JSON.parse(data.payments); } catch(e) { data.payments = []; }
@@ -318,7 +313,10 @@ exports.recordPayment = async (req, res) => {
       },
     });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    connection.release();
   }
 };
 
@@ -329,28 +327,7 @@ exports.getPendingFees = async (req, res) => {
   try {
     const { academicYear, grade } = req.query;
 
-    let query = `
-      SELECT fc.*, 
-             s.name as student_name, s.admission_no, s.grade, s.section, 
-             s.parent_name, s.parent_phone
-      FROM fee_collections fc
-      JOIN students s ON fc.student_id = s.id
-      WHERE fc.status IN ('pending', 'partial', 'overdue')
-    `;
-    let params = [];
-
-    if (academicYear) {
-      query += ' AND fc.academic_year = ?';
-      params.push(academicYear);
-    }
-    if (grade) {
-      query += ' AND s.grade = ?';
-      params.push(grade);
-    }
-
-    query += ' ORDER BY fc.balance DESC';
-
-    const [rows] = await req.db.query(query, params);
+    const rows = await feeRepository.findPendingFees(req.db, { academicYear, grade });
 
     const shaped = rows.map((d) => {
       try { d.fee_breakdown = JSON.parse(d.fee_breakdown); } catch(e) { d.fee_breakdown = []; }
@@ -381,15 +358,7 @@ exports.getFeeStats = async (req, res) => {
   try {
     const { academicYear } = req.query;
 
-    let query = 'SELECT committed_fee, total_paid, balance, status FROM fee_collections WHERE 1=1';
-    let params = [];
-
-    if (academicYear) {
-      query += ' AND academic_year = ?';
-      params.push(academicYear);
-    }
-
-    const [collections] = await req.db.query(query, params);
+    const collections = await feeRepository.getFeeStatsData(req.db, { academicYear });
 
     const totalCommitted = collections.reduce((s, c) => s + (Number(c.committed_fee) || 0), 0);
     const totalCollected = collections.reduce((s, c) => s + (Number(c.total_paid) || 0), 0);
@@ -418,13 +387,7 @@ exports.getFeeStats = async (req, res) => {
 // @access  Auth
 exports.getReceipt = async (req, res) => {
   try {
-    const [rows] = await req.db.query(`
-        SELECT fc.*, s.name as student_name, s.admission_no, s.grade, s.section, 
-               s.parent_name, s.parent_phone, s.photo_url
-        FROM fee_collections fc
-        JOIN students s ON fc.student_id = s.id
-        WHERE fc.id = ?
-      `, [req.params.collectionId]);
+    const rows = await feeRepository.findFeeCollectionDetailsById(req.db, req.params.collectionId);
 
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Fee record not found' });
@@ -470,14 +433,7 @@ exports.sendFeeReminders = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide an array of student IDs' });
     }
 
-    const placeholders = studentIds.map(() => '?').join(',');
-    // We only need student details and their current balance
-    const [rows] = await req.db.query(`
-      SELECT s.id, s.name, s.parent_phone, fc.balance 
-      FROM students s
-      JOIN fee_collections fc ON s.id = fc.student_id
-      WHERE s.id IN (${placeholders}) AND fc.status IN ('pending', 'partial', 'overdue')
-    `, studentIds);
+    const rows = await feeRepository.findPendingFeeStudentsByIds(req.db, studentIds);
 
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'No valid pending fee records found for the selected students' });
@@ -489,7 +445,6 @@ exports.sendFeeReminders = async (req, res) => {
 
     for (const student of rows) {
       if (student.parent_phone && student.balance > 0) {
-        // template requires {name} and {balance}
         const components = [
           {
             type: "body",
@@ -532,7 +487,7 @@ exports.sendSmsReceipt = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    const [students] = await req.db.query('SELECT name, parent_phone FROM students WHERE id = ?', [studentId]);
+    const students = await feeRepository.findStudentContactById(req.db, studentId);
     
     if (students.length === 0) {
       return res.status(404).json({ success: false, message: 'Student not found' });
@@ -543,8 +498,6 @@ exports.sendSmsReceipt = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Parent phone number not available' });
     }
 
-    // Auto-generate the message text (Matches typical DLT template for fee receipt)
-    // Note: If DLT requires specific placeholders, adjust the template text here
     const message = `STANCH SOFT APPLICATION- Dear ${student.name} Garu, Your Paid AMOUNT IS ${amount} Rs. and Receipt No.${receiptNo} -STANCH SOFT SOLUTIONS`;
 
     const result = await sendSMS(student.parent_phone, message);
@@ -570,7 +523,7 @@ exports.sendWhatsappReceipt = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    const [students] = await req.db.query('SELECT name, parent_phone FROM students WHERE id = ?', [studentId]);
+    const students = await feeRepository.findStudentContactById(req.db, studentId);
     
     if (students.length === 0) {
       return res.status(404).json({ success: false, message: 'Student not found' });
@@ -583,7 +536,6 @@ exports.sendWhatsappReceipt = async (req, res) => {
 
     const message = `Dear ${student.name} Garu,\n\nYour fee payment of ₹${amount} has been received successfully.\n\nReceipt No: ${receiptNo}\nBalance Amount: ₹${balance || 0}\n\nThank you.\nSchool Administration`;
 
-    // Assuming we want to send raw text. If template is required, adjust this call.
     const result = await whatsappService.sendTextMessage(student.parent_phone, message);
     
     if (result.success) {

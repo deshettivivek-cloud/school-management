@@ -6,6 +6,7 @@ const { z } = require('zod');
 const crypto = require('crypto');
 const AuthRateLimiter = require('../services/authRateLimiter');
 const { sendEmail } = require('../services/emailService');
+const authRepository = require('../repositories/authRepository');
 
 const sanitizeString = (val) => {
   if (typeof val !== 'string') return val;
@@ -51,12 +52,7 @@ exports.login = async (req, res) => {
     const masterPool = await getMasterPool();
 
     // 1. Find school mapping for this email
-    const [routeResult] = await masterPool.execute(`
-      SELECT s.db_name, s.is_active, s.created_at
-      FROM global_users gu 
-      JOIN schools s ON gu.school_id = s.id 
-      WHERE gu.email = ?
-    `, [email]);
+    const routeResult = await authRepository.findGlobalUserSchool(masterPool, email);
 
     if (routeResult.length === 0) {
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
@@ -87,7 +83,7 @@ exports.login = async (req, res) => {
     const schoolPool = await getSchoolPool(dbName);
 
     // 2. Fetch user from school DB
-    const [profileResult] = await schoolPool.execute('SELECT * FROM profiles WHERE email = ?', [email]);
+    const profileResult = await authRepository.findUserProfileByEmail(schoolPool, email);
 
     if (profileResult.length === 0) {
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
@@ -174,7 +170,7 @@ exports.superAdminLogin = async (req, res) => {
 
     const masterPool = await getMasterPool();
 
-    const [profileResult] = await masterPool.execute('SELECT * FROM super_admin_profiles WHERE email = ?', [email]);
+    const profileResult = await authRepository.findSuperAdminByEmail(masterPool, email);
 
     if (profileResult.length === 0) {
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
@@ -242,15 +238,9 @@ exports.changePassword = async (req, res) => {
     const passwordHash = await hashPassword(newPassword);
 
     if (req.user.isSuperAdmin) {
-      await req.db.execute(
-        'UPDATE super_admin_profiles SET password_hash = ?, must_change_password = 0, password_changed_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [passwordHash, req.user.id]
-      );
+      await authRepository.updateSuperAdminPassword(req.db, req.user.id, passwordHash);
     } else {
-      await req.db.execute(
-        'UPDATE profiles SET password_hash = ?, must_change_password = 0, password_changed_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [passwordHash, req.user.id]
-      );
+      await authRepository.updateUserProfilePassword(req.db, req.user.id, passwordHash);
     }
 
     res.json({ success: true, message: 'Password changed successfully' });
@@ -276,13 +266,8 @@ exports.forgotPassword = async (req, res) => {
 
     const masterPool = await getMasterPool();
 
-    const [globalUserResult] = await masterPool.execute(`
-      SELECT s.db_name 
-      FROM global_users gu 
-      JOIN schools s ON gu.school_id = s.id 
-      WHERE gu.email = ?
-    `, [email]);
-    const [superAdminResult] = await masterPool.execute('SELECT id FROM super_admin_profiles WHERE email = ?', [email]);
+    const globalUserResult = await authRepository.findGlobalUserSchool(masterPool, email);
+    const superAdminResult = await authRepository.findSuperAdminIdByEmail(masterPool, email);
 
     if (globalUserResult.length === 0 && superAdminResult.length === 0) {
       return; 
@@ -292,18 +277,12 @@ exports.forgotPassword = async (req, res) => {
     const passwordHash = await hashPassword(tempPassword);
 
     if (superAdminResult.length > 0) {
-      await masterPool.execute(
-        'UPDATE super_admin_profiles SET password_hash = ?, must_change_password = 1 WHERE email = ?',
-        [passwordHash, email]
-      );
+      await authRepository.resetSuperAdminPasswordByEmail(masterPool, email, passwordHash);
     } else if (globalUserResult.length > 0) {
       const dbName = globalUserResult[0].db_name;
       const schoolPool = await getSchoolPool(dbName);
 
-      await schoolPool.execute(
-        'UPDATE profiles SET password_hash = ?, must_change_password = 1 WHERE email = ?',
-        [passwordHash, email]
-      );
+      await authRepository.resetUserProfilePasswordByEmail(schoolPool, email, passwordHash);
     }
 
     const emailText = `
@@ -338,14 +317,12 @@ School Management System
 // @access  Auth
 exports.getMe = async (req, res) => {
   try {
-    let query;
+    let rows;
     if (req.user.isSuperAdmin) {
-      query = 'SELECT id, email, name, role, must_change_password FROM super_admin_profiles WHERE id = ?';
+      rows = await authRepository.findSuperAdminById(req.db, req.user.id);
     } else {
-      query = 'SELECT id, email, name, role, assigned_classes, must_change_password FROM profiles WHERE id = ?';
+      rows = await authRepository.findUserProfileById(req.db, req.user.id);
     }
-
-    const [rows] = await req.db.execute(query, [req.user.id]);
 
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Profile not found' });
@@ -367,7 +344,7 @@ exports.getMe = async (req, res) => {
 // @access  Admin
 exports.getUsers = async (req, res) => {
   try {
-    const [rows] = await req.db.execute('SELECT id, name, email, role, assigned_classes, created_at, is_active FROM profiles ORDER BY created_at DESC');
+    const rows = await authRepository.findAllUserProfiles(req.db);
 
     res.json({ success: true, count: rows.length, data: rows });
   } catch (error) {
@@ -387,13 +364,13 @@ exports.register = async (req, res) => {
     const { name, email, password, role } = parseResult.data;
 
     const masterPool = await getMasterPool();
-    const [existing] = await masterPool.execute('SELECT email FROM global_users WHERE email = ?', [email]);
+    const existing = await authRepository.findGlobalUserByEmail(masterPool, email);
 
     if (existing.length > 0) {
       return res.status(400).json({ success: false, message: 'A user with this email already exists in the system' });
     }
 
-    const [existingAdmin] = await masterPool.execute('SELECT email FROM super_admin_profiles WHERE email = ?', [email]);
+    const existingAdmin = await authRepository.findSuperAdminEmailByEmail(masterPool, email);
 
     if (existingAdmin.length > 0) {
       return res.status(400).json({ success: false, message: 'A user with this email already exists in the system' });
@@ -403,16 +380,19 @@ exports.register = async (req, res) => {
     const assignedRole = role || 'clerk';
     const newUserId = crypto.randomUUID();
 
-    await req.db.execute(`
-        INSERT INTO profiles (id, email, password_hash, name, role, must_change_password)
-        VALUES (?, ?, ?, ?, ?, 1)
-      `, [newUserId, email, passwordHash, name, assignedRole]);
+    await authRepository.insertUserProfile(req.db, {
+      id: newUserId,
+      email,
+      passwordHash,
+      name,
+      role: assignedRole,
+    });
 
     const newUser = { id: newUserId, email, name, role: assignedRole };
 
-    const [schoolRows] = await masterPool.execute('SELECT id FROM schools WHERE db_name = ?', [req.user.tenantDb]);
+    const schoolRows = await authRepository.findSchoolIdByDbName(masterPool, req.user.tenantDb);
     const schoolId = schoolRows[0].id;
-    await masterPool.execute('INSERT INTO global_users (email, school_id) VALUES (?, ?)', [email, schoolId]);
+    await authRepository.insertGlobalUser(masterPool, email, schoolId);
 
     res.status(201).json({
       success: true,
@@ -435,8 +415,8 @@ exports.updateRole = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Role must be "principal", "clerk" or "teacher"' });
     }
 
-    await req.db.execute('UPDATE profiles SET role = ? WHERE id = ?', [role, req.params.id]);
-    const [rows] = await req.db.execute('SELECT * FROM profiles WHERE id = ?', [req.params.id]);
+    await authRepository.updateUserProfileRole(req.db, req.params.id, role);
+    const rows = await authRepository.findUserProfileDetailsById(req.db, req.params.id);
 
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -457,8 +437,8 @@ exports.updateClasses = async (req, res) => {
     
     const classesStr = Array.isArray(assigned_classes) ? JSON.stringify(assigned_classes) : '[]';
 
-    await req.db.execute('UPDATE profiles SET assigned_classes = ? WHERE id = ?', [classesStr, req.params.id]);
-    const [rows] = await req.db.execute('SELECT * FROM profiles WHERE id = ?', [req.params.id]);
+    await authRepository.updateUserProfileClasses(req.db, req.params.id, classesStr);
+    const rows = await authRepository.findUserProfileDetailsById(req.db, req.params.id);
 
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });

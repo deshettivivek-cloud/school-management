@@ -1,3 +1,5 @@
+const { logAuditAction } = require('../utils/auditLogger');
+
 // @desc    Get Salary Dashboard Metrics
 // @route   GET /api/salary/dashboard
 // @access  Private (Principal)
@@ -5,7 +7,7 @@ exports.getSalaryDashboard = async (req, res) => {
   try {
     const { month, year } = req.query; // Optional filters
 
-    const [employees] = await req.db.execute('SELECT id, basic_salary FROM employees WHERE is_active = 1');
+    const [employees] = await req.db.execute('SELECT id, basic_salary FROM employees WHERE is_active = 1 AND deleted_at IS NULL');
     
     let totalMonthlyCommitment = employees.reduce((sum, emp) => sum + (Number(emp.basic_salary) || 0), 0);
     
@@ -44,10 +46,14 @@ exports.getSalaryDashboard = async (req, res) => {
 // @route   POST /api/salary/generate
 // @access  Private (Principal)
 exports.generateMonthlySalary = async (req, res) => {
+  const connection = await req.db.getConnection();
   try {
+    await connection.beginTransaction();
+
     const { month, year, employee_ids, employee_details } = req.body;
 
     if (!month || !year || !employee_ids || !employee_ids.length) {
+      await connection.rollback();
       return res.status(400).json({ success: false, message: 'Month, year and employee list required' });
     }
 
@@ -57,14 +63,15 @@ exports.generateMonthlySalary = async (req, res) => {
     const monthStr = `${year}-${monthNumStr}`;
     const empIdsList = employee_ids.map(() => '?').join(',');
 
-    const [employees] = await req.db.query(`SELECT * FROM employees WHERE id IN (${empIdsList})`, employee_ids);
+    const [employees] = await connection.query(`SELECT * FROM employees WHERE id IN (${empIdsList}) AND deleted_at IS NULL`, employee_ids);
     
-    const [existResult] = await req.db.query(`SELECT employee_id FROM salary_records WHERE month = ? AND employee_id IN (${empIdsList})`, [monthStr, ...employee_ids]);
+    const [existResult] = await connection.query(`SELECT employee_id FROM salary_records WHERE month = ? AND employee_id IN (${empIdsList})`, [monthStr, ...employee_ids]);
     const existingIds = existResult.map(e => e.employee_id);
     
     const toGenerate = employees.filter(emp => !existingIds.includes(emp.id));
 
     if (toGenerate.length === 0) {
+      await connection.rollback();
       return res.status(400).json({ success: false, message: 'Salaries already generated for selected employees for this month' });
     }
 
@@ -109,10 +116,19 @@ exports.generateMonthlySalary = async (req, res) => {
       params.push(emp.id, monthStr, basic, JSON.stringify(allowances), JSON.stringify(deductions), net_salary, leaves_taken, paid_amount);
     });
 
-    await req.db.query(`
+    await connection.query(`
       INSERT INTO salary_records (employee_id, month, basic_salary, allowances, deductions, net_salary, status, leaves_taken, paid_amount)
       VALUES ${valuesArr.join(', ')}
     `, params);
+
+    await connection.commit();
+
+    await logAuditAction(req, {
+      action: 'GENERATE_SALARY',
+      resource_type: 'salary_record',
+      resource_id: monthStr,
+      new_values: { count: toGenerate.length, month: monthStr }
+    });
 
     res.status(201).json({
       success: true,
@@ -120,8 +136,11 @@ exports.generateMonthlySalary = async (req, res) => {
       count: toGenerate.length
     });
   } catch (error) {
+    await connection.rollback();
     console.error('Error generating salary:', error);
     res.status(500).json({ success: false, message: 'Failed to generate salary' });
+  } finally {
+    connection.release();
   }
 };
 
@@ -135,7 +154,7 @@ exports.getSalaryHistory = async (req, res) => {
     let query = `
       SELECT sr.*, e.name as employee_name, e.employee_id as emp_code, e.department, e.designation
       FROM salary_records sr
-      JOIN employees e ON sr.employee_id = e.id
+      JOIN employees e ON sr.employee_id = e.id AND e.deleted_at IS NULL
       WHERE 1=1
     `;
     let params = [];
@@ -227,9 +246,16 @@ exports.updateSalaryStatus = async (req, res) => {
 
     const record = rows[0];
 
+    await logAuditAction(req, {
+      action: 'UPDATE_SALARY_STATUS',
+      resource_type: 'salary_record',
+      resource_id: record.id,
+      new_values: { status, payment_mode, payment_date: formattedDate }
+    });
+
     // WhatsApp Notification for Salary
     if (status.toLowerCase() === 'paid') {
-      const [empResult] = await req.db.execute('SELECT name, phone FROM employees WHERE id = ?', [record.employee_id]);
+      const [empResult] = await req.db.execute('SELECT name, phone FROM employees WHERE id = ? AND deleted_at IS NULL', [record.employee_id]);
       if (empResult.length > 0 && empResult[0].phone) {
         const employee = empResult[0];
         const whatsappService = require('../services/whatsappService');

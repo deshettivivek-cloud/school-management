@@ -9,7 +9,7 @@ const validate = (schema) => (req, res, next) => {
     });
   }
 
-  req.body = result.data; // cleaned, type-coerced data
+  req.body = result.data;
   next();
 };
 

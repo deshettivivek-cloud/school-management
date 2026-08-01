@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const { getMasterPool } = require('../config/database');
 const { getSchoolPool, resolveSchoolDbName } = require('../config/tenantPool');
 const { hashPassword } = require('../config/auth');
+const superAdminRepository = require('../repositories/superAdminRepository');
+const { logAuditAction } = require('../utils/auditLogger');
 
 // @desc    Get all schools (platform-wide)
 // @route   GET /api/super-admin/schools
@@ -9,10 +11,10 @@ const { hashPassword } = require('../config/auth');
 exports.getAllSchools = async (req, res) => {
   try {
     const masterPool = await getMasterPool();
-    const [schools] = await masterPool.query('SELECT * FROM schools ORDER BY created_at DESC');
+    const schools = await superAdminRepository.findAllSchools(masterPool);
 
     // Enrich with user counts by querying global_users
-    const [userCounts] = await masterPool.query('SELECT school_id, COUNT(*) as count FROM global_users GROUP BY school_id');
+    const userCounts = await superAdminRepository.findGlobalUserCounts(masterPool);
 
     const countMap = {};
     userCounts.forEach(r => {
@@ -41,7 +43,7 @@ exports.getAllSchools = async (req, res) => {
 exports.getSchoolById = async (req, res) => {
   try {
     const masterPool = await getMasterPool();
-    const [schoolRows] = await masterPool.execute('SELECT * FROM schools WHERE id = ?', [req.params.id]);
+    const schoolRows = await superAdminRepository.findSchoolById(masterPool, req.params.id);
 
     if (schoolRows.length === 0) {
       return res.status(404).json({ success: false, message: 'School not found' });
@@ -51,8 +53,8 @@ exports.getSchoolById = async (req, res) => {
     // Connect to tenant DB to get users and student count
     const schoolPool = await getSchoolPool(school.db_name);
 
-    const [users] = await schoolPool.query('SELECT id, name, email, role, created_at FROM profiles ORDER BY created_at DESC');
-    const [studentCountResult] = await schoolPool.query('SELECT COUNT(*) as count FROM students');
+    const users = await superAdminRepository.findSchoolUsers(schoolPool);
+    const studentCountResult = await superAdminRepository.findSchoolStudentCount(schoolPool);
 
     res.json({
       success: true,
@@ -73,8 +75,7 @@ exports.getSchoolById = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
   try {
     const masterPool = await getMasterPool();
-    // Query schools and global users
-    const [schools] = await masterPool.query('SELECT id, name, db_name FROM schools');
+    const schools = await superAdminRepository.findAllSchoolsBasic(masterPool);
 
     const schoolMap = {};
     schools.forEach(s => { schoolMap[s.id] = s.name; });
@@ -85,7 +86,7 @@ exports.getAllUsers = async (req, res) => {
     const tasks = schools.map(async (school) => {
       try {
         const pool = await getSchoolPool(school.db_name);
-        const [users] = await pool.query('SELECT id, name, email, role, is_active FROM profiles');
+        const users = await superAdminRepository.findSchoolProfilesBasic(pool);
         users.forEach(u => {
           allUsers.push({
             ...u,
@@ -124,13 +125,13 @@ exports.createUser = async (req, res) => {
     const masterPool = await getMasterPool();
 
     // Check if user exists globally
-    const [checkUser] = await masterPool.execute('SELECT * FROM global_users WHERE email = ?', [email]);
+    const checkUser = await superAdminRepository.findGlobalUserByEmail(masterPool, email);
 
     if (checkUser.length > 0) {
       return res.status(400).json({ success: false, message: 'A user with this email already exists' });
     }
 
-    const [schoolRows] = await masterPool.execute('SELECT * FROM schools WHERE id = ?', [schoolId]);
+    const schoolRows = await superAdminRepository.findSchoolById(masterPool, schoolId);
 
     if (schoolRows.length === 0) {
       return res.status(404).json({ success: false, message: 'School not found' });
@@ -143,20 +144,31 @@ exports.createUser = async (req, res) => {
     const schoolPool = await getSchoolPool(school.db_name);
     const profileId = crypto.randomUUID();
 
-    await schoolPool.execute(`
-        INSERT INTO profiles (id, email, password_hash, name, role, must_change_password)
-        VALUES (?, ?, ?, ?, ?, 1)
-      `, [profileId, email, passwordHash, name, role]);
+    await superAdminRepository.insertSchoolUserProfile(schoolPool, {
+      id: profileId,
+      email,
+      passwordHash,
+      name,
+      role,
+    });
 
-    const [profileRows] = await schoolPool.execute('SELECT * FROM profiles WHERE id = ?', [profileId]);
+    const profileRows = await superAdminRepository.findSchoolProfileById(schoolPool, profileId);
     const newProfile = profileRows[0];
 
     // Add to global routing table
     const globalUserId = crypto.randomUUID();
-    await masterPool.execute(`
-        INSERT INTO global_users (id, email, school_id)
-        VALUES (?, ?, ?)
-      `, [globalUserId, email, schoolId]);
+    await superAdminRepository.insertGlobalUser(masterPool, {
+      id: globalUserId,
+      email,
+      schoolId,
+    });
+
+    await logAuditAction(req, {
+      action: 'CREATE_USER',
+      resource_type: 'user',
+      resource_id: newProfile.id,
+      new_values: { email, name, role, schoolId }
+    });
 
     res.status(201).json({
       success: true,
@@ -179,7 +191,6 @@ exports.createUser = async (req, res) => {
 // @route   POST /api/super-admin/schools
 // @access  Super Admin
 exports.createSchool = async (req, res) => {
-  // Uses the CLI script function internally or reproduces it
   try {
     const { createSchoolDatabase } = require('../scripts/createSchoolDb');
     const { schoolName, schoolCode, address, phone, email, academicYear, logo, principalName, principalEmail, temporaryPassword, dbName } = req.body;
@@ -201,6 +212,13 @@ exports.createSchool = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Failed to create school. School code may already exist.' });
     }
 
+    await logAuditAction(req, {
+      action: 'CREATE_SCHOOL',
+      resource_type: 'school',
+      resource_id: school.id,
+      new_values: { schoolName, dbName, principalEmail }
+    });
+
     res.status(201).json({
       success: true,
       message: 'School and Principal created successfully',
@@ -218,7 +236,7 @@ exports.getStats = async (req, res) => {
   try {
     const masterPool = await getMasterPool();
 
-    const [schools] = await masterPool.query('SELECT id, name, db_name, created_at FROM schools ORDER BY created_at DESC');
+    const schools = await superAdminRepository.findSchoolsForStats(masterPool);
     const totalSchools = schools.length;
 
     let totalUsers = 0;
@@ -229,13 +247,13 @@ exports.getStats = async (req, res) => {
       try {
         const pool = await getSchoolPool(school.db_name);
 
-        const [uCount] = await pool.query('SELECT COUNT(*) as count FROM profiles');
-        totalUsers += uCount[0].count;
+        const uCount = await superAdminRepository.findSchoolProfileCount(pool);
+        totalUsers += uCount;
 
-        const [sCount] = await pool.query('SELECT COUNT(*) as count FROM students');
-        totalStudents += sCount[0].count;
+        const sCount = await superAdminRepository.findSchoolStudentCount(pool);
+        totalStudents += (sCount[0] ? sCount[0].count : 0);
 
-        const [rCounts] = await pool.query('SELECT role, COUNT(*) as count FROM profiles GROUP BY role');
+        const rCounts = await superAdminRepository.findSchoolRoleCounts(pool);
         rCounts.forEach(r => {
           roleCounts[r.role] = (roleCounts[r.role] || 0) + r.count;
         });
@@ -264,7 +282,6 @@ exports.getStats = async (req, res) => {
 // @access  Super Admin
 exports.deleteUser = async (req, res) => {
   try {
-    // Requires email to delete from global_users, or finding the user first
     const { email, schoolId } = req.body;
 
     if (!email || !schoolId) {
@@ -276,10 +293,16 @@ exports.deleteUser = async (req, res) => {
 
     const schoolPool = await getSchoolPool(dbName);
 
-    await schoolPool.execute('DELETE FROM profiles WHERE email = ?', [email]);
+    await superAdminRepository.deleteProfileByEmail(schoolPool, email);
 
     const masterPool = await getMasterPool();
-    await masterPool.execute('DELETE FROM global_users WHERE email = ?', [email]);
+    await superAdminRepository.deleteGlobalUserByEmail(masterPool, email);
+
+    await logAuditAction(req, {
+      action: 'DELETE_USER',
+      resource_type: 'user',
+      resource_id: email
+    });
 
     res.json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
@@ -308,15 +331,17 @@ exports.resetUserPassword = async (req, res) => {
     const passwordHash = await hashPassword(newPassword);
 
     const schoolPool = await getSchoolPool(dbName);
-    const [result] = await schoolPool.execute(`
-        UPDATE profiles 
-        SET password_hash = ?, must_change_password = 1 
-        WHERE id = ?
-      `, [passwordHash, userId]);
+    const result = await superAdminRepository.updateProfilePasswordAndFlag(schoolPool, userId, passwordHash);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    await logAuditAction(req, {
+      action: 'RESET_USER_PASSWORD',
+      resource_type: 'user',
+      resource_id: userId
+    });
 
     res.json({ success: true, message: 'Password reset successfully', data: { temporaryPassword: newPassword } });
   } catch (error) {
@@ -340,11 +365,18 @@ exports.updateUserStatus = async (req, res) => {
     if (!dbName) return res.status(404).json({ success: false, message: 'School not found' });
 
     const schoolPool = await getSchoolPool(dbName);
-    const [result] = await schoolPool.execute('UPDATE profiles SET is_active = ? WHERE id = ?', [status === 'active' ? 1 : 0, userId]);
+    const result = await superAdminRepository.updateProfileActiveStatus(schoolPool, userId, status === 'active');
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    await logAuditAction(req, {
+      action: 'UPDATE_USER_STATUS',
+      resource_type: 'user',
+      resource_id: userId,
+      new_values: { status }
+    });
 
     res.json({ success: true, message: `User status updated to ${status}` });
   } catch (error) {
@@ -356,22 +388,17 @@ exports.updateUserStatus = async (req, res) => {
 // @route   PATCH /api/super-admin/schools/:id
 // @access  Super Admin
 exports.updateSchool = async (req, res) => {
-  console.log("🔥 updateSchool called");
-  console.log(req.params.id);
-  console.log(req.body);
   try {
     const schoolId = req.params.id;
     const { name, address, phone, email, status, academicYear } = req.body;
 
     const masterPool = await getMasterPool();
 
-    // Check if school exists
-    const [schoolRows] = await masterPool.execute('SELECT * FROM schools WHERE id = ?', [schoolId]);
+    const schoolRows = await superAdminRepository.findSchoolById(masterPool, schoolId);
     if (schoolRows.length === 0) {
       return res.status(404).json({ success: false, message: 'School not found' });
     }
 
-    // Build dynamic update
     const updates = [];
     const values = [];
 
@@ -385,7 +412,6 @@ exports.updateSchool = async (req, res) => {
       updates.push('is_active = ?');
       values.push(isActive);
 
-      // Reset the 365-day timer if activating
       if (isActive === 1) {
         updates.push('created_at = CURRENT_TIMESTAMP');
       }
@@ -395,10 +421,16 @@ exports.updateSchool = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No fields to update' });
     }
 
-    values.push(schoolId);
-    await masterPool.execute(`UPDATE schools SET ${updates.join(', ')} WHERE id = ?`, values);
+    await superAdminRepository.updateSchoolRecord(masterPool, schoolId, updates.join(', '), values);
 
-    const [updatedRows] = await masterPool.execute('SELECT * FROM schools WHERE id = ?', [schoolId]);
+    const updatedRows = await superAdminRepository.findSchoolById(masterPool, schoolId);
+
+    await logAuditAction(req, {
+      action: 'UPDATE_SCHOOL',
+      resource_type: 'school',
+      resource_id: schoolId,
+      new_values: updatedRows[0]
+    });
 
     res.json({
       success: true,
@@ -418,7 +450,7 @@ exports.deleteSchool = async (req, res) => {
     const schoolId = req.params.id;
     const masterPool = await getMasterPool();
 
-    const [schoolRows] = await masterPool.execute('SELECT * FROM schools WHERE id = ?', [schoolId]);
+    const schoolRows = await superAdminRepository.findSchoolById(masterPool, schoolId);
     if (schoolRows.length === 0) {
       return res.status(404).json({ success: false, message: 'School not found' });
     }
@@ -426,24 +458,27 @@ exports.deleteSchool = async (req, res) => {
     const school = schoolRows[0];
 
     // Remove global users for this school
-    await masterPool.execute('DELETE FROM global_users WHERE school_id = ?', [schoolId]);
+    await superAdminRepository.deleteGlobalUsersBySchoolId(masterPool, schoolId);
 
-    // Try to drop the tenant database (may fail on shared hosting due to permissions)
+    // Try to drop tenant database
     try {
-      await masterPool.execute(`DROP DATABASE IF EXISTS \`${school.db_name}\``);
+      await superAdminRepository.dropDatabaseIfExists(masterPool, school.db_name);
       console.log(`🗑️ Dropped database: ${school.db_name}`);
     } catch (dropError) {
-      // On shared hosting (e.g., HostGator), the user may not have DROP DATABASE privilege.
-      // Log the error but proceed with deleting the school record.
       console.warn(`⚠️ Could not drop database ${school.db_name}: ${dropError.message}. Proceeding with school deletion.`);
     }
 
     // Delete school record from master DB
-    await masterPool.execute('DELETE FROM schools WHERE id = ?', [schoolId]);
+    await superAdminRepository.deleteSchoolById(masterPool, schoolId);
+
+    await logAuditAction(req, {
+      action: 'DELETE_SCHOOL',
+      resource_type: 'school',
+      resource_id: schoolId
+    });
 
     res.json({ success: true, message: `School "${school.name}" deleted successfully` });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-

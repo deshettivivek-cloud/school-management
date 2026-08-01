@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { logAuditAction } = require('../utils/auditLogger');
 
 // @desc    Get all employees
 // @route   GET /api/employees
@@ -11,7 +12,7 @@ exports.getEmployees = async (req, res) => {
       SELECT e.*, p.email, p.role 
       FROM employees e
       LEFT JOIN profiles p ON e.user_id = p.id
-      WHERE 1=1
+      WHERE e.deleted_at IS NULL
     `;
     let params = [];
 
@@ -112,6 +113,13 @@ exports.createEmployee = async (req, res) => {
 
     const [rows] = await req.db.query('SELECT * FROM employees WHERE id = ?', [newEmpId]);
 
+    await logAuditAction(req, {
+      action: 'CREATE_EMPLOYEE',
+      resource_type: 'employee',
+      resource_id: newEmpId,
+      new_values: { name, employee_id: finalEmployeeId, designation, department }
+    });
+
     res.status(201).json({
       success: true,
       data: rows[0]
@@ -127,7 +135,7 @@ exports.createEmployee = async (req, res) => {
 // @access  Private
 exports.getEmployee = async (req, res) => {
   try {
-    const [rows] = await req.db.query('SELECT * FROM employees WHERE id = ?', [req.params.id]);
+    const [rows] = await req.db.query('SELECT * FROM employees WHERE id = ? AND deleted_at IS NULL', [req.params.id]);
 
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Employee not found' });
@@ -204,6 +212,13 @@ exports.updateEmployee = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Employee not found' });
     }
 
+    await logAuditAction(req, {
+      action: 'UPDATE_EMPLOYEE',
+      resource_type: 'employee',
+      resource_id: req.params.id,
+      new_values: rows[0]
+    });
+
     res.json({ success: true, data: rows[0] });
   } catch (error) {
     console.error('Error updating employee:', error);
@@ -216,11 +231,17 @@ exports.updateEmployee = async (req, res) => {
 // @access  Private
 exports.deleteEmployee = async (req, res) => {
   try {
-    const [result] = await req.db.query('DELETE FROM employees WHERE id = ?', [req.params.id]);
+    const [result] = await req.db.query('UPDATE employees SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL', [req.params.id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Employee not found' });
     }
+
+    await logAuditAction(req, {
+      action: 'DELETE_EMPLOYEE',
+      resource_type: 'employee',
+      resource_id: req.params.id
+    });
 
     res.json({ success: true, message: 'Employee deleted successfully' });
   } catch (error) {

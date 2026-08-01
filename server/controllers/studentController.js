@@ -1,3 +1,5 @@
+const { logAuditAction } = require('../utils/auditLogger');
+
 // Helper: generate admission number
 const generateAdmissionNo = async (db, academicYear) => {
   const yearCode = academicYear.replace('-', '');
@@ -27,7 +29,7 @@ exports.getStudents = async (req, res) => {
   try {
     const { grade, academicYear, status, search, active } = req.query;
     
-    let query = 'SELECT * FROM students WHERE 1=1';
+    let query = 'SELECT * FROM students WHERE deleted_at IS NULL';
     let params = [];
 
     if (grade) {
@@ -66,7 +68,7 @@ exports.getStudents = async (req, res) => {
 // @access  Auth
 exports.getStudent = async (req, res) => {
   try {
-    const [rows] = await req.db.execute('SELECT * FROM students WHERE id = ?', [req.params.id]);
+    const [rows] = await req.db.execute('SELECT * FROM students WHERE id = ? AND deleted_at IS NULL', [req.params.id]);
 
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Student not found' });
@@ -82,7 +84,10 @@ exports.getStudent = async (req, res) => {
 // @route   POST /api/students
 // @access  Auth
 exports.createStudent = async (req, res) => {
+  const connection = await req.db.getConnection();
   try {
+    await connection.beginTransaction();
+
     const {
       name, dob, gender, grade, section, parentName, parentPhone,
       parentEmail, address, academicYear, admissionDate, photoUrl,
@@ -91,9 +96,9 @@ exports.createStudent = async (req, res) => {
       fatherOccupationDesc, motherOccupationDesc, penNumber, caste, subCaste
     } = req.body;
 
-    const finalAdmissionNo = admissionNo || await generateAdmissionNo(req.db, academicYear);
+    const finalAdmissionNo = admissionNo || await generateAdmissionNo(connection, academicYear);
 
-    await req.db.execute(`
+    await connection.execute(`
         INSERT INTO students (
           admission_no, name, dob, gender, grade, section, parent_name, parent_phone,
           parent_email, address, academic_year, admission_date, photo_url, aadhar_no,
@@ -116,12 +121,12 @@ exports.createStudent = async (req, res) => {
         fatherOccupationDesc || '', motherOccupationDesc || ''
       ]);
 
-    const [rows] = await req.db.execute('SELECT * FROM students WHERE admission_no = ?', [finalAdmissionNo]);
+    const [rows] = await connection.execute('SELECT * FROM students WHERE admission_no = ?', [finalAdmissionNo]);
     const student = rows[0];
 
     // Auto-assign fee if a fee structure exists for the student's grade
     try {
-      const [feeResult] = await req.db.execute(
+      const [feeResult] = await connection.execute(
         'SELECT * FROM fee_structures WHERE academic_year = ? AND grade = ?',
         [academicYear, grade]
       );
@@ -129,7 +134,7 @@ exports.createStudent = async (req, res) => {
       if (feeResult.length > 0) {
         const feeStructure = feeResult[0];
         
-        await req.db.execute(`
+        await connection.execute(`
             INSERT INTO fee_collections (student_id, academic_year, committed_fee, fee_breakdown, balance, status)
             VALUES (?, ?, ?, ?, ?, 'pending')
           `, [
@@ -141,9 +146,21 @@ exports.createStudent = async (req, res) => {
       console.error('Auto-assign fee on admission (non-fatal):', feeErr.message);
     }
 
+    await connection.commit();
+
+    await logAuditAction(req, {
+      action: 'CREATE_STUDENT',
+      resource_type: 'student',
+      resource_id: student.id,
+      new_values: { name: student.name, admissionNo: student.admission_no, grade: student.grade }
+    });
+
     res.status(201).json({ success: true, data: student });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    connection.release();
   }
 };
 
@@ -204,6 +221,13 @@ exports.updateStudent = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
 
+    await logAuditAction(req, {
+      action: 'UPDATE_STUDENT',
+      resource_type: 'student',
+      resource_id: req.params.id,
+      new_values: rows[0]
+    });
+
     res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -246,7 +270,7 @@ exports.getStudentStats = async (req, res) => {
   try {
     const { academicYear } = req.query;
 
-    let query = 'SELECT admission_status, grade FROM students WHERE is_active = 1';
+    let query = 'SELECT admission_status, grade FROM students WHERE is_active = 1 AND deleted_at IS NULL';
     let params = [];
 
     if (academicYear) {
@@ -310,6 +334,32 @@ exports.getStudentTimeline = async (req, res) => {
       `, [req.params.id]);
 
     res.json({ success: true, data: rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete student (soft delete)
+// @route   DELETE /api/students/:id
+// @access  Auth
+exports.deleteStudent = async (req, res) => {
+  try {
+    const [result] = await req.db.execute(
+      'UPDATE students SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL',
+      [req.params.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Student not found or already deleted' });
+    }
+
+    await logAuditAction(req, {
+      action: 'DELETE_STUDENT',
+      resource_type: 'student',
+      resource_id: req.params.id
+    });
+
+    res.json({ success: true, message: 'Student deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

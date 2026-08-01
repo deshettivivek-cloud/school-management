@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { logAuditAction } = require('../utils/auditLogger');
 
 // @desc    Get all transfer certificates
 // @route   GET /api/tc
@@ -120,38 +121,45 @@ exports.getTC = async (req, res) => {
 // @route   POST /api/tc
 // @access  Admin
 exports.issueTC = async (req, res) => {
+  const connection = await req.db.getConnection();
   try {
+    await connection.beginTransaction();
+
     const { studentId, dateOfLeaving, reason, conduct, remarks } = req.body;
 
     // Verify student exists and is active
-    const [students] = await req.db.execute('SELECT * FROM students WHERE id = ?', [studentId]);
+    const [students] = await connection.execute('SELECT * FROM students WHERE id = ? AND deleted_at IS NULL', [studentId]);
 
     if (students.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
     
     const student = students[0];
     if (!student.is_active) {
+      await connection.rollback();
       return res.status(400).json({ success: false, message: 'TC already issued — student is inactive' });
     }
 
     // Check for pending fees
-    const [feesResult] = await req.db.execute('SELECT balance FROM fee_collections WHERE student_id = ? AND balance > 0', [studentId]);
+    const [feesResult] = await connection.execute('SELECT balance FROM fee_collections WHERE student_id = ? AND balance > 0', [studentId]);
 
     if (feesResult.length > 0) {
+      await connection.rollback();
       return res.status(400).json({ success: false, message: 'Cannot issue TC — student has pending fees' });
     }
 
     // Check existing TC
-    const [existingTC] = await req.db.execute('SELECT id FROM transfer_certificates WHERE student_id = ?', [studentId]);
+    const [existingTC] = await connection.execute('SELECT id FROM transfer_certificates WHERE student_id = ?', [studentId]);
 
     if (existingTC.length > 0) {
+      await connection.rollback();
       return res.status(400).json({ success: false, message: 'TC already issued for this student' });
     }
 
     // Generate TC number
     const year = new Date().getFullYear();
-    const [countResult] = await req.db.query('SELECT COUNT(*) as count FROM transfer_certificates');
+    const [countResult] = await connection.query('SELECT COUNT(*) as count FROM transfer_certificates');
       
     const count = countResult[0].count;
     const tcNumber = `TC-${year}-${String(count + 1).padStart(4, '0')}`;
@@ -159,7 +167,7 @@ exports.issueTC = async (req, res) => {
     const tcId = crypto.randomUUID();
 
     // Create TC
-    await req.db.execute(`
+    await connection.execute(`
         INSERT INTO transfer_certificates (id, student_id, tc_number, date_of_leaving, reason, conduct, remarks, issued_by)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `, [
@@ -168,10 +176,10 @@ exports.issueTC = async (req, res) => {
       ]);
 
     // Mark student inactive
-    await req.db.execute('UPDATE students SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [studentId]);
+    await connection.execute('UPDATE students SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [studentId]);
 
     // Get the final joined data for the response
-    const [finalRows] = await req.db.execute(`
+    const [finalRows] = await connection.execute(`
         SELECT tc.*, 
                s.name as student_name, s.admission_no, s.grade, s.section, s.parent_name,
                p.name as issued_by_name
@@ -180,6 +188,15 @@ exports.issueTC = async (req, res) => {
         LEFT JOIN profiles p ON tc.issued_by = p.id
         WHERE tc.id = ?
       `, [tcId]);
+
+    await connection.commit();
+
+    await logAuditAction(req, {
+      action: 'ISSUE_TC',
+      resource_type: 'transfer_certificate',
+      resource_id: tcId,
+      new_values: { studentId, tcNumber, dateOfLeaving, reason }
+    });
 
     const finalRow = finalRows[0];
     const data = { ...finalRow };
@@ -200,6 +217,9 @@ exports.issueTC = async (req, res) => {
       data
     });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    connection.release();
   }
 };

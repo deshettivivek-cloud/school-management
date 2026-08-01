@@ -41,7 +41,7 @@ exports.getDashboardWidgets = async (req, res) => {
     // 1. Recent Admissions (Principal, Clerk)
     if (['principal', 'clerk'].includes(role)) {
       tasks.push(
-        db.execute('SELECT id, name, grade, created_at FROM students ORDER BY created_at DESC LIMIT 5')
+        db.execute('SELECT id, name, grade, created_at FROM students WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 5')
           .then(([rows]) => { recentAdmissions = { data: rows, error: null }; })
           .catch(err => { recentAdmissions = { data: [], error: err.message }; })
       );
@@ -53,7 +53,7 @@ exports.getDashboardWidgets = async (req, res) => {
         db.execute(`
             SELECT fc.id, fc.academic_year, fc.total_paid, fc.updated_at, s.name as student_name
             FROM fee_collections fc
-            JOIN students s ON fc.student_id = s.id
+            JOIN students s ON fc.student_id = s.id AND s.deleted_at IS NULL
             WHERE fc.total_paid > 0
             ORDER BY fc.updated_at DESC
             LIMIT 5
@@ -72,7 +72,7 @@ exports.getDashboardWidgets = async (req, res) => {
     // 3. Pending Approvals (Principal)
     if (['principal'].includes(role)) {
       tasks.push(
-        db.execute("SELECT id, name, grade, admission_status FROM students WHERE admission_status = 'pending' ORDER BY created_at DESC LIMIT 5")
+        db.execute("SELECT id, name, grade, admission_status FROM students WHERE admission_status = 'pending' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 5")
           .then(([rows]) => { pendingApprovals = { data: rows, error: null }; })
           .catch(err => { pendingApprovals = { data: [], error: err.message }; })
       );

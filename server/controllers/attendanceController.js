@@ -13,7 +13,7 @@ exports.getAttendance = async (req, res) => {
 
     // 1. Fetch students
     const [students] = await req.db.execute(
-      'SELECT id, name, admission_no, photo_url FROM students WHERE grade = ? AND is_active = 1 ORDER BY name ASC',
+      'SELECT id, name, admission_no, photo_url FROM students WHERE grade = ? AND is_active = 1 AND deleted_at IS NULL ORDER BY name ASC',
       [classReference]
     );
 
@@ -60,7 +60,7 @@ exports.markAttendance = async (req, res) => {
 
     if (req.user.role === 'teacher') {
       const [empResult] = await req.db.execute(
-        'SELECT class_teacher_of FROM employees WHERE user_id = ?',
+        'SELECT class_teacher_of FROM employees WHERE user_id = ? AND deleted_at IS NULL',
         [req.user.id]
       );
         
@@ -107,7 +107,7 @@ exports.markAttendance = async (req, res) => {
       const idsList = absentStudentIds.map(() => '?').join(',');
       
       const [studentsResult] = await req.db.query(`
-        SELECT id, name, parent_phone FROM students WHERE id IN (${idsList})
+        SELECT id, name, parent_phone FROM students WHERE id IN (${idsList}) AND deleted_at IS NULL
       `, absentStudentIds);
 
       const whatsappService = require('../services/whatsappService');

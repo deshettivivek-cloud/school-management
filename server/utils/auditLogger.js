@@ -17,8 +17,8 @@ const crypto = require('crypto');
 exports.logAuditAction = async (req, { action, resource_type, resource_id, old_values = null, new_values = null, schoolId = null, userId = null }) => {
   try {
     // Extract IP (handling proxies if applicable)
-    const ip_address = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
-    const user_agent = req.headers['user-agent'] || null;
+    const ip_address = (req && req.headers && req.headers['x-forwarded-for']) || (req && req.socket && req.socket.remoteAddress) || null;
+    const user_agent = (req && req.headers && req.headers['user-agent']) || null;
 
     const actualSchoolId = schoolId || (req.user ? req.user.schoolId : null);
     const actualUserId = userId || (req.user ? req.user.id : null);

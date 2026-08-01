@@ -12,7 +12,7 @@ exports.checkPromotion = async (req, res) => {
 
     const [students] = await req.db.execute(`
         SELECT * FROM students 
-        WHERE grade = ? AND academic_year = ? AND is_active = 1
+        WHERE grade = ? AND academic_year = ? AND is_active = 1 AND deleted_at IS NULL
         ORDER BY name ASC
       `, [grade, academicYear]);
 
@@ -77,7 +77,7 @@ exports.promoteStudents = async (req, res) => {
       });
     }
 
-    let query = `SELECT id FROM students WHERE grade = ? AND academic_year = ? AND is_active = 1`;
+    let query = `SELECT id FROM students WHERE grade = ? AND academic_year = ? AND is_active = 1 AND deleted_at IS NULL`;
     let params = [fromGrade, academicYear];
 
     if (studentIds && studentIds.length > 0) {
@@ -101,7 +101,7 @@ exports.promoteStudents = async (req, res) => {
       const [pendingFees] = await req.db.query(`
         SELECT fc.balance, s.name, s.admission_no
         FROM fee_collections fc
-        JOIN students s ON fc.student_id = s.id
+        JOIN students s ON fc.student_id = s.id AND s.deleted_at IS NULL
         WHERE fc.academic_year = ? 
           AND fc.status IN ('pending', 'partial', 'overdue')
           AND fc.student_id IN (${idsList})

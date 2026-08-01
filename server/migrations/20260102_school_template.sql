@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS students (
     admission_status VARCHAR(20) DEFAULT 'pending' CHECK (admission_status IN ('pending', 'confirmed')),
     academic_year VARCHAR(20) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_students_grade (grade, academic_year),
@@ -54,6 +55,7 @@ CREATE TABLE IF NOT EXISTS fee_structures (
     grade VARCHAR(20) NOT NULL,
     fee_heads LONGTEXT,
     total_standard_fee DECIMAL(12,2) DEFAULT 0,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(academic_year, grade),
     INDEX idx_fee_structures_year (academic_year, grade)
@@ -113,6 +115,7 @@ CREATE TABLE IF NOT EXISTS expenditures (
     vendor_name VARCHAR(255) DEFAULT '',
     academic_year VARCHAR(20) DEFAULT '',
     created_by VARCHAR(36) REFERENCES profiles(id),
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_expenditures_date (date),
@@ -181,6 +184,7 @@ CREATE TABLE IF NOT EXISTS employees (
     ifsc_code VARCHAR(20) DEFAULT '',
     remarks VARCHAR(255) DEFAULT '',
     is_active BOOLEAN DEFAULT TRUE,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_employees_user (user_id)

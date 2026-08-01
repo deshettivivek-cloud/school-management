@@ -1,9 +1,30 @@
-const { getMasterPool, buildSchoolConfig } = require('./database');
+const { getMasterPool, buildSchoolConfig, getConnectionWithRetry } = require('./database');
 const mysql = require('mysql2/promise');
 
 const pools = new Map();
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+const MAX_POOLS = 50;
 let cleanupTimer = null;
+
+async function evictLruPool() {
+  if (pools.size === 0) return;
+  let oldestDbName = null;
+  let oldestLastUsed = Infinity;
+
+  for (const [dbName, entry] of pools) {
+    if (entry.lastUsed < oldestLastUsed) {
+      oldestLastUsed = entry.lastUsed;
+      oldestDbName = dbName;
+    }
+  }
+
+  if (oldestDbName) {
+    const entry = pools.get(oldestDbName);
+    pools.delete(oldestDbName);
+    await entry.pool.end().catch(console.error);
+    console.log(`🗑️ LRU Evicted pool: ${oldestDbName}`);
+  }
+}
 
 async function getSchoolPool(dbName) {
   if (pools.has(dbName)) {
@@ -12,11 +33,15 @@ async function getSchoolPool(dbName) {
     return entry.pool;
   }
 
+  if (pools.size >= MAX_POOLS) {
+    await evictLruPool();
+  }
+
   const schoolConfig = buildSchoolConfig(dbName);
   const pool = mysql.createPool(schoolConfig);
 
-  // Test the connection
-  const connection = await pool.getConnection();
+  // Test the connection with retry
+  const connection = await getConnectionWithRetry(pool);
   connection.release();
 
   pools.set(dbName, {

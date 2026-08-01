@@ -1,5 +1,7 @@
 const crypto = require('crypto');
 
+const { logAuditAction } = require('../utils/auditLogger');
+
 // @desc    Get all expenditures
 // @route   GET /api/expenditures
 // @access  Auth (Admin, Principal, Clerk)
@@ -11,7 +13,7 @@ exports.getExpenditures = async (req, res) => {
       SELECT e.*, p.name as created_by_name 
       FROM expenditures e
       LEFT JOIN profiles p ON e.created_by = p.id
-      WHERE 1=1
+      WHERE e.deleted_at IS NULL
     `;
     let params = [];
 
@@ -66,16 +68,20 @@ exports.getExpenditures = async (req, res) => {
 // @route   POST /api/expenditures
 // @access  Auth (Admin, Principal, Clerk)
 exports.createExpenditure = async (req, res) => {
+  const connection = await req.db.getConnection();
   try {
+    await connection.beginTransaction();
+
     const { title, amount, category, date, description, payment_mode, vendor_name, academic_year } = req.body;
 
     if (!title || !amount) {
+      await connection.rollback();
       return res.status(400).json({ success: false, message: 'Title and amount are required' });
     }
 
     const newExpId = crypto.randomUUID();
 
-    await req.db.query(`
+    await connection.query(`
         INSERT INTO expenditures (
           id, title, amount, category, date, description, payment_mode, 
           vendor_name, academic_year, created_by
@@ -89,12 +95,24 @@ exports.createExpenditure = async (req, res) => {
         description || '', payment_mode || 'cash', vendor_name || '', academic_year || '', req.user.id
       ]);
 
-    const [rows] = await req.db.query('SELECT * FROM expenditures WHERE id = ?', [newExpId]);
+    const [rows] = await connection.query('SELECT * FROM expenditures WHERE id = ?', [newExpId]);
+
+    await connection.commit();
+
+    await logAuditAction(req, {
+      action: 'CREATE_EXPENDITURE',
+      resource_type: 'expenditure',
+      resource_id: newExpId,
+      new_values: { title, amount, category }
+    });
 
     res.status(201).json({ success: true, data: rows[0] });
   } catch (error) {
+    await connection.rollback();
     console.error('Error creating expenditure:', error);
     res.status(500).json({ success: false, message: 'Failed to create expenditure' });
+  } finally {
+    connection.release();
   }
 };
 
@@ -107,7 +125,7 @@ exports.getExpenditure = async (req, res) => {
         SELECT e.*, p.name as created_by_name 
         FROM expenditures e
         LEFT JOIN profiles p ON e.created_by = p.id
-        WHERE e.id = ?
+        WHERE e.id = ? AND e.deleted_at IS NULL
       `, [req.params.id]);
 
     if (rows.length === 0) {
@@ -133,7 +151,10 @@ exports.getExpenditure = async (req, res) => {
 // @route   PUT /api/expenditures/:id
 // @access  Auth (Admin, Principal, Clerk)
 exports.updateExpenditure = async (req, res) => {
+  const connection = await req.db.getConnection();
   try {
+    await connection.beginTransaction();
+
     const fields = [
       'title', 'amount', 'category', 'date', 'description', 
       'payment_mode', 'vendor_name', 'academic_year'
@@ -154,27 +175,41 @@ exports.updateExpenditure = async (req, res) => {
     });
 
     if (setClauses.length === 0) {
+      await connection.rollback();
       return res.status(400).json({ success: false, message: 'No fields to update' });
     }
 
     params.push(req.params.id);
     
-    await req.db.query(`
+    await connection.query(`
       UPDATE expenditures 
       SET ${setClauses.join(', ')} 
       WHERE id = ?
     `, params);
 
-    const [rows] = await req.db.query('SELECT * FROM expenditures WHERE id = ?', [req.params.id]);
+    const [rows] = await connection.query('SELECT * FROM expenditures WHERE id = ?', [req.params.id]);
 
     if (rows.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ success: false, message: 'Expenditure not found' });
     }
 
+    await connection.commit();
+
+    await logAuditAction(req, {
+      action: 'UPDATE_EXPENDITURE',
+      resource_type: 'expenditure',
+      resource_id: req.params.id,
+      new_values: rows[0]
+    });
+
     res.json({ success: true, data: rows[0] });
   } catch (error) {
+    await connection.rollback();
     console.error('Error updating expenditure:', error);
     res.status(500).json({ success: false, message: 'Failed to update expenditure' });
+  } finally {
+    connection.release();
   }
 };
 
@@ -183,11 +218,17 @@ exports.updateExpenditure = async (req, res) => {
 // @access  Auth (Admin, Principal)
 exports.deleteExpenditure = async (req, res) => {
   try {
-    const [result] = await req.db.query('DELETE FROM expenditures WHERE id = ?', [req.params.id]);
+    const [result] = await req.db.query('UPDATE expenditures SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL', [req.params.id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Expenditure not found' });
     }
+
+    await logAuditAction(req, {
+      action: 'DELETE_EXPENDITURE',
+      resource_type: 'expenditure',
+      resource_id: req.params.id
+    });
 
     res.json({ success: true, message: 'Expenditure deleted successfully' });
   } catch (error) {
@@ -207,6 +248,7 @@ exports.getExpenditureStats = async (req, res) => {
         category,
         SUM(amount) as categoryTotal
       FROM expenditures
+      WHERE deleted_at IS NULL
       GROUP BY category WITH ROLLUP
     `);
 
