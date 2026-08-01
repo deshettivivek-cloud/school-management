@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  server-check:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: test_root_pw
+          MYSQL_DATABASE: school_master_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot_pw"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install server deps
+        run: cd server && npm install
+
+      - name: Run migrations against test DB
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: test_root_pw
+          DB_MASTER_NAME: school_master_db
+        run: cd server && npm run migrate
+
+      - name: Boot server (smoke test)
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: test_root_pw
+          DB_MASTER_NAME: school_master_db
+          JWT_SECRET: ci_test_secret_1234567890abcdef
+          NODE_ENV: test
+        run: |
+          cd server
+          timeout 15s node server.js &
+          sleep 5
+          curl --fail http://localhost:5000/api/health || exit 1
+
+  client-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install client deps
+        run: cd client && npm install
+
+      - name: Build client
+        run: cd client && npm run build

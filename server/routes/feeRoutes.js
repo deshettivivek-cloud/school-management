@@ -1,3 +1,5 @@
+const validate = require('../middleware/validate');
+const { recordPaymentSchema } = require('../validators/moneySchemas');
 const express = require('express');
 const router = express.Router();
 const {
@@ -33,7 +35,7 @@ router.get('/collection', protect, getFeeCollections);
 router.get('/collection/:studentId', protect, getStudentFeeCollection);
 router.get('/history/:studentId', protect, getStudentFeeHistory);
 router.post('/collection/commit', protect, roleCheck('principal', 'clerk'), commitFee);
-router.post('/collection/pay', protect, recordPayment);
+router.post('/collection/pay', protect, validate(recordPaymentSchema), recordPayment);
 router.post('/collection/reminders', protect, sendFeeReminders);
 router.post('/send-sms-receipt', protect, require('../controllers/feeCollectionController').sendSmsReceipt);
 router.post('/send-whatsapp-receipt', protect, require('../controllers/feeCollectionController').sendWhatsappReceipt);

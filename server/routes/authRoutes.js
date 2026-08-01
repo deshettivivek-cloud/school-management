@@ -13,11 +13,12 @@ const {
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { roleCheck } = require('../middleware/roleCheck');
+const { loginLimiter } = require('../middleware/rateLimiter');
 
 // Public auth routes (no token required)
-router.post('/login', login);
-router.post('/super-admin/login', superAdminLogin);
-router.post('/forgot-password', forgotPassword);
+router.post('/login', loginLimiter, login);
+router.post('/super-admin/login', loginLimiter, superAdminLogin);
+router.post('/forgot-password', loginLimiter, forgotPassword);
 
 // Protected auth routes
 router.get('/me', protect, getMe);

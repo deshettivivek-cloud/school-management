@@ -93,35 +93,14 @@ app.get('/', (req, res) => {
   });
 });
 
-app.get('/api/debug-env', (req, res) => {
-  res.json({
-    success: true,
-    env: {
-      NODE_ENV: process.env.NODE_ENV,
-      CLIENT_URL: process.env.CLIENT_URL,
-    }
-  });
+// Error handler
+const multer = require('multer');
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError || err.message?.includes('allowed')) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+  next(err);
 });
 
-// Error handler
 app.use(errorHandler);
-
-const PORT = process.env.PORT || 5000;
-const { getMasterPool } = require('./config/database');
-
-async function startServer() {
-  try {
-    await getMasterPool();
-
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🏫 School Management Server running on port ${PORT}`);
-      console.log(`📡 Database: MySQL (Multi-Tenant)`);
-      console.log(`🔐 Auth: Native JWT Auth`);
-    });
-  } catch (err) {
-    console.error("❌ Failed to connect to MySQL:", err.message);
-    process.exit(1);
-  }
-}
-
-startServer();
