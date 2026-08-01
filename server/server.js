@@ -75,6 +75,7 @@ app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/sms', require('./routes/smsRoutes'));
+app.use('/api/communications', require('./routes/communicationRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => {
