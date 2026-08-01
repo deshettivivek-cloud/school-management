@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const whatsappService = require('../services/whatsappService');
+const smsService = require('../services/smsService');
 const { logAuditAction } = require('../utils/auditLogger');
 
 /**
@@ -14,17 +15,10 @@ exports.sendBulkMessage = async (req, res) => {
     const messageText = req.body.messageText || req.body.message_text;
 
     // 1. Channel Validation
-    if (channel === 'sms') {
+    if (channel !== 'whatsapp' && channel !== 'sms') {
       return res.status(400).json({
         success: false,
-        message: 'SMS not yet configured',
-      });
-    }
-
-    if (channel !== 'whatsapp') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid communication channel. Currently supported channel is whatsapp.',
+        message: 'Invalid communication channel. Currently supported channels are whatsapp and sms.',
       });
     }
 
@@ -70,7 +64,13 @@ exports.sendBulkMessage = async (req, res) => {
     const sendResults = [];
 
     for (const student of students) {
-      const result = await whatsappService.sendTextMessage(student.parent_phone, trimmedText);
+      let result;
+      if (channel === 'whatsapp') {
+        result = await whatsappService.sendTextMessage(student.parent_phone, trimmedText);
+      } else if (channel === 'sms') {
+        result = await smsService.sendSMS(student.parent_phone, trimmedText);
+      }
+      
       if (result && result.success) {
         successCount++;
       } else {

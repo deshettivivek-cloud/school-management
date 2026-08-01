@@ -13,7 +13,7 @@ const BulkMessaging = () => {
   // Form states
   const [targetFilter, setTargetFilter] = useState('All Students');
   const [channel, setChannel] = useState('whatsapp');
-  const [messageText, setMessageText] = useState('');
+  const [messageText, setMessageText] = useState('STANCH SOFT APPLICATION- Dear Bharath Garu, Your Paid AMOUNT IS 1000 Rs. and Receipt No.STAN123 -STANCH SOFT SOLUTIONS');
   
   // Data & UI states
   const [availableGrades, setAvailableGrades] = useState([]);
@@ -51,11 +51,6 @@ const BulkMessaging = () => {
 
     if (!messageText.trim()) {
       toast.error('Please enter a message text before sending.');
-      return;
-    }
-
-    if (channel === 'sms') {
-      toast.error('SMS channel is not yet configured.');
       return;
     }
 
@@ -252,32 +247,35 @@ const BulkMessaging = () => {
                 </div>
               </div>
 
-              {/* SMS Option (Disabled / Stub) */}
+              {/* SMS Option */}
               <div
+                onClick={() => setChannel('sms')}
                 style={{
-                  border: '2px solid var(--border-color, #e5e7eb)',
-                  background: 'var(--bg-muted, #f9fafb)',
+                  border: `2px solid ${channel === 'sms' ? '#3b82f6' : 'var(--border-color, #e5e7eb)'}`,
+                  background: channel === 'sms' ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-default)',
                   borderRadius: '12px',
                   padding: '1.25rem',
-                  opacity: 0.65,
-                  cursor: 'not-allowed',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '1rem'
                 }}
               >
-                <div style={{ background: '#9ca3af', color: '#fff', padding: '0.75rem', borderRadius: '12px', display: 'flex', alignItems: 'center' }}>
+                <div style={{ background: '#3b82f6', color: '#fff', padding: '0.75rem', borderRadius: '12px', display: 'flex', alignItems: 'center' }}>
                   <Smartphone size={24} />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     SMS (GSM)
-                    <span style={{ fontSize: '0.75rem', background: '#f3f4f6', color: '#6b7280', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600, border: '1px solid #d1d5db' }}>
-                      Coming soon
-                    </span>
+                    {channel === 'sms' && (
+                      <span style={{ fontSize: '0.75rem', background: '#dbeafe', color: '#1d4ed8', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 700 }}>
+                        Active
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                    Provider not configured yet
+                    Direct SMS messaging via CitySupply
                   </div>
                 </div>
               </div>
@@ -389,7 +387,7 @@ const BulkMessaging = () => {
               ) : (
                 <>
                   <Send size={18} />
-                  Send WhatsApp Message
+                  {channel === 'whatsapp' ? 'Send WhatsApp Message' : 'Send SMS Message'}
                 </>
               )}
             </button>
