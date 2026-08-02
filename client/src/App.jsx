@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout/Layout';
@@ -7,49 +7,50 @@ import Login from './pages/Login';
 import SuperAdminLogin from './pages/SuperAdminLogin';
 import ChangePassword from './pages/ChangePassword';
 import ForgotPassword from './pages/ForgotPassword';
-import Dashboard from './pages/Dashboard';
-import SchoolSetup from './pages/SchoolSetup';
-import AdmissionsList from './pages/Admissions/AdmissionsList';
-import AdmissionForm from './pages/Admissions/AdmissionForm';
-import VirtualAdmissionForm from './pages/Admissions/VirtualAdmissionForm';
-import StudentDirectory from './pages/Students/StudentDirectory';
-import StudentProfile from './pages/Students/StudentProfile';
-import FeeStructure from './pages/Fees/FeeStructure';
-import FeeCollection from './pages/Fees/FeeCollection';
-import PendingFees from './pages/Fees/PendingFees';
-import ReceiptView from './pages/Fees/ReceiptView';
-import YearEndPromotion from './pages/Promotion/YearEndPromotion';
-import IssueTc from './pages/TC/IssueTc';
-import TcRegister from './pages/TC/TcRegister';
-import TcView from './pages/TC/TcView';
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const SchoolSetup = lazy(() => import('./pages/SchoolSetup'));
+const AdmissionsList = lazy(() => import('./pages/Admissions/AdmissionsList'));
+const AdmissionForm = lazy(() => import('./pages/Admissions/AdmissionForm'));
+const VirtualAdmissionForm = lazy(() => import('./pages/Admissions/VirtualAdmissionForm'));
+const StudentDirectory = lazy(() => import('./pages/Students/StudentDirectory'));
+const StudentProfile = lazy(() => import('./pages/Students/StudentProfile'));
+const FeeStructure = lazy(() => import('./pages/Fees/FeeStructure'));
+const FeeCollection = lazy(() => import('./pages/Fees/FeeCollection'));
+const PendingFees = lazy(() => import('./pages/Fees/PendingFees'));
+const ReceiptView = lazy(() => import('./pages/Fees/ReceiptView'));
+const YearEndPromotion = lazy(() => import('./pages/Promotion/YearEndPromotion'));
+const IssueTc = lazy(() => import('./pages/TC/IssueTc'));
+const TcRegister = lazy(() => import('./pages/TC/TcRegister'));
+const TcView = lazy(() => import('./pages/TC/TcView'));
 import Unauthorized from './pages/Unauthorized';
-import RoleManagement from './pages/Admin/RoleManagement';
-import SchoolExpenditure from './pages/Expenditure/SchoolExpenditure';
-import HallTicket from './pages/Exams/HallTicket';
-import EmployeeDashboard from './pages/Employees/EmployeeDashboard';
-import AddEmployee from './pages/Employees/AddEmployee';
-import EmployeeProfile from './pages/Employees/EmployeeProfile';
-import SalaryDashboard from './pages/Salary/SalaryDashboard';
-import SalaryStructure from './pages/Salary/SalaryStructure';
-import MonthlySalary from './pages/Salary/MonthlySalary';
-import SalaryHistory from './pages/Salary/SalaryHistory';
-import SalaryReports from './pages/Salary/SalaryReports';
-import PayslipView from './pages/Salary/PayslipView';
-import SuperAdminDashboard from './pages/SuperAdmin/SuperAdminDashboard';
-import ManageSchools from './pages/SuperAdmin/ManageSchools';
-import ManageUsers from './pages/SuperAdmin/ManageUsers';
-import AuditLogs from './pages/SuperAdmin/AuditLogs';
-import SuperAdminBugReports from './pages/SuperAdmin/SuperAdminBugReports';
-import ReportsDashboard from './pages/Reports/ReportsDashboard';
-import ReportViewer from './pages/Reports/ReportViewer';
-import AttendanceRegister from './pages/Attendance/AttendanceRegister';
-import CalendarView from './pages/CalendarView';
-import AnnouncementsDashboard from './pages/Announcements/AnnouncementsDashboard';
-import BulkMessaging from './pages/Communications/BulkMessaging';
-import SmsHistory from './pages/Communications/SmsHistory';
-import ReportBug from './pages/BugReports/ReportBug';
-import BugReportsList from './pages/BugReports/BugReportsList';
-import ImportStudents from './pages/Students/ImportStudents';
+const RoleManagement = lazy(() => import('./pages/Admin/RoleManagement'));
+const SchoolExpenditure = lazy(() => import('./pages/Expenditure/SchoolExpenditure'));
+const HallTicket = lazy(() => import('./pages/Exams/HallTicket'));
+const EmployeeDashboard = lazy(() => import('./pages/Employees/EmployeeDashboard'));
+const AddEmployee = lazy(() => import('./pages/Employees/AddEmployee'));
+const EmployeeProfile = lazy(() => import('./pages/Employees/EmployeeProfile'));
+const SalaryDashboard = lazy(() => import('./pages/Salary/SalaryDashboard'));
+const SalaryStructure = lazy(() => import('./pages/Salary/SalaryStructure'));
+const MonthlySalary = lazy(() => import('./pages/Salary/MonthlySalary'));
+const SalaryHistory = lazy(() => import('./pages/Salary/SalaryHistory'));
+const SalaryReports = lazy(() => import('./pages/Salary/SalaryReports'));
+const PayslipView = lazy(() => import('./pages/Salary/PayslipView'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdmin/SuperAdminDashboard'));
+const ManageSchools = lazy(() => import('./pages/SuperAdmin/ManageSchools'));
+const ManageUsers = lazy(() => import('./pages/SuperAdmin/ManageUsers'));
+const AuditLogs = lazy(() => import('./pages/SuperAdmin/AuditLogs'));
+const SuperAdminBugReports = lazy(() => import('./pages/SuperAdmin/SuperAdminBugReports'));
+const ReportsDashboard = lazy(() => import('./pages/Reports/ReportsDashboard'));
+const ReportViewer = lazy(() => import('./pages/Reports/ReportViewer'));
+const AttendanceRegister = lazy(() => import('./pages/Attendance/AttendanceRegister'));
+const CalendarView = lazy(() => import('./pages/CalendarView'));
+const AnnouncementsDashboard = lazy(() => import('./pages/Announcements/AnnouncementsDashboard'));
+const BulkMessaging = lazy(() => import('./pages/Communications/BulkMessaging'));
+const SmsHistory = lazy(() => import('./pages/Communications/SmsHistory'));
+const ReportBug = lazy(() => import('./pages/BugReports/ReportBug'));
+const BugReportsList = lazy(() => import('./pages/BugReports/BugReportsList'));
+const ImportStudents = lazy(() => import('./pages/Students/ImportStudents'));
+const ImportEmployees = lazy(() => import('./pages/Employees/ImportEmployees'));
 
 // Protected route wrapper — requires authentication
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -211,7 +212,12 @@ function App() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <Routes>
+    <Suspense fallback={
+      <div className="spinner-container" style={{ minHeight: '100vh' }}>
+        <div className="spinner" />
+      </div>
+    }>
+      <Routes>
       {/* ──── Public Auth Routes ──── */}
       <Route
         path="/login"
@@ -319,12 +325,14 @@ function App() {
           <Route path="/promotion" element={<YearEndPromotion />} />
           <Route path="/bug-reports" element={<BugReportsList />} />
           <Route path="/students/import" element={<ImportStudents />} />
+          <Route path="/employees/import" element={<ImportEmployees />} />
         </Route>
       </Route>
 
       {/* ──── Catch-All ──── */}
       <Route path="*" element={<CatchAllRoute />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

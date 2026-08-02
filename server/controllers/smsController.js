@@ -1,27 +1,6 @@
 const { sendSMS } = require('../services/smsService');
-const crypto = require('crypto');
-
-// Helper: Log SMS to database
-const logSms = async (db, { phone, message, gatewayResponse, messageId, status, sentBy, sentByName }) => {
-  try {
-    const id = crypto.randomUUID();
-    await db.query(
-      `INSERT INTO sms_logs (id, phone, message, gateway_response, message_id, status, sent_by, sent_by_name)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, phone, message, gatewayResponse || '', messageId || '', status, sentBy || null, sentByName || '']
-    );
-  } catch (err) {
-    console.error('Failed to log SMS to database:', err.message);
-  }
-};
-
-// Helper: Extract message ID from gateway response
-const extractMessageId = (responseData) => {
-  if (typeof responseData === 'string' && responseData.includes('Message ID:')) {
-    return responseData.split('Message ID:')[1].trim();
-  }
-  return '';
-};
+const { getSmsCredentials } = require('../config/sms');
+const { logSms, extractMessageId } = require('../utils/smsLogger');
 
 // @desc    Send a test SMS
 // @route   POST /api/sms/test
@@ -37,7 +16,9 @@ exports.sendTestSms = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Message text is required' });
     }
 
-    const result = await sendSMS(phone, message, tpid);
+    const credentials = getSmsCredentials(req.school);
+    if (tpid) credentials.tpid = tpid;
+    const result = await sendSMS(phone, message, credentials);
     const messageId = extractMessageId(result.data);
 
     // Log to database
@@ -101,12 +82,15 @@ exports.sendBulkSms = async (req, res) => {
     let successCount = 0;
     let failCount = 0;
 
+    const credentials = getSmsCredentials(req.school);
+    if (tpid) credentials.tpid = tpid;
+
     for (const student of students) {
       if (student.parent_phone) {
         const personalizedMsg = message.replace(/__STUDENT_NAME__/g, student.name);
 
         try {
-          const result = await sendSMS(student.parent_phone, personalizedMsg, tpid);
+          const result = await sendSMS(student.parent_phone, personalizedMsg, credentials);
           const messageId = extractMessageId(result.data);
 
           // Log each SMS to database

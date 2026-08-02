@@ -85,6 +85,11 @@ const protect = async (req, res, next) => {
       isSuperAdmin: false,
     };
 
+    // Fetch the school row from the master database to get per-school config like sms_credentials
+    const masterPool = await getMasterPool();
+    const [schoolRows] = await masterPool.execute('SELECT * FROM schools WHERE db_name = ?', [tenantDb]);
+    req.school = schoolRows[0] || null;
+
     // Attach the school's database connection
     req.db = schoolPool;
     req.isMasterDb = false;

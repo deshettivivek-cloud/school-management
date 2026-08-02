@@ -1,4 +1,5 @@
 const { sendSMS } = require('../services/smsService');
+const { getSmsCredentials } = require('../config/sms');
 const whatsappService = require('../services/whatsappService');
 const feeRepository = require('../repositories/feeRepository');
 const { logAuditAction } = require('../utils/auditLogger');
@@ -340,7 +341,7 @@ exports.getPendingFees = async (req, res) => {
       return d;
     });
 
-    const totalPending = shaped.reduce((sum, r) => sum + (r.balance || 0), 0);
+    const totalPending = shaped.reduce((sum, r) => sum + (Number(r.balance) || 0), 0);
 
     res.json({ success: true, count: shaped.length, totalPending, data: shaped });
   } catch (error) {
@@ -497,7 +498,8 @@ exports.sendSmsReceipt = async (req, res) => {
 
     const message = `STANCH SOFT APPLICATION- Dear ${student.name} Garu, Your Paid AMOUNT IS ${amount} Rs. and Receipt No.${receiptNo} -STANCH SOFT SOLUTIONS`;
 
-    const result = await sendSMS(student.parent_phone, message);
+    const credentials = getSmsCredentials(req.school);
+    const result = await sendSMS(student.parent_phone, message, credentials);
     
     if (result.success) {
       res.json({ success: true, message: 'SMS receipt sent successfully' });

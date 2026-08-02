@@ -210,11 +210,11 @@ const ReportViewer = () => {
       const exportData = res.data.data;
 
       if (type === 'PDF') {
-        exportToPDF(exportData, config.columns, schoolInfo, config.title, activeFilters);
+        await exportToPDF(exportData, config.columns, schoolInfo, config.title, activeFilters);
       } else if (type === 'Excel') {
-        exportToExcel(exportData, config.columns, config.title);
+        await exportToExcel(exportData, config.columns, config.title);
       } else if (type === 'CSV') {
-        exportToCSV(exportData, config.columns, config.title);
+        await exportToCSV(exportData, config.columns, config.title);
       } else if (type === 'Print') {
         window.print();
       }

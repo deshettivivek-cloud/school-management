@@ -348,7 +348,7 @@ const Dashboard = () => {
           {/* 13. Quick Action: Collect Fee */}
           <div className="widget-card col-span-3 stat-card" style={{ cursor: 'pointer', background: 'var(--bg-tertiary)' }} onClick={() => navigate('/fees/collection')}>
             <div className="stat-card-header">
-              <span className="stat-card-label" style={{ color: 'var(--success-600)' }}>Quick Action</span>
+              <span className="stat-card-label" style={{ color: 'var(--success-700)' }}>Quick Action</span>
               <div className="stat-card-icon green"><DollarSign size={20} /></div>
             </div>
             <div className="stat-card-value" style={{ fontSize: '1.25rem', marginTop: '0.5rem' }}>Collect Fee</div>
@@ -360,7 +360,7 @@ const Dashboard = () => {
           {/* 14. Quick Action: View Reports */}
           <div className="widget-card col-span-3 stat-card" style={{ cursor: 'pointer', background: 'var(--bg-tertiary)' }} onClick={() => navigate('/reports')}>
             <div className="stat-card-header">
-              <span className="stat-card-label" style={{ color: 'var(--warning-600)' }}>Quick Action</span>
+              <span className="stat-card-label" style={{ color: 'var(--warning-700)' }}>Quick Action</span>
               <div className="stat-card-icon amber"><FileText size={20} /></div>
             </div>
             <div className="stat-card-value" style={{ fontSize: '1.25rem', marginTop: '0.5rem' }}>View Reports</div>

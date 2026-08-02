@@ -39,9 +39,9 @@ const Layout = ({ title }) => {
           setMobileOpen={setMobileOpen}
           schoolData={schoolData}
         />
-        <div className="page-content animate-fade-in">
+        <main className="page-content animate-fade-in">
           <Outlet />
-        </div>
+        </main>
       </div>
     </div>
   );

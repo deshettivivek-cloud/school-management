@@ -1,6 +1,3 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 
 /**
@@ -19,7 +16,9 @@ const getDocumentConfig = (schoolName, schoolAddress, reportName, appliedFilters
 /**
  * Generate PDF Report
  */
-export const exportToPDF = (data, columns, schoolInfo, reportName, appliedFilters) => {
+export const exportToPDF = async (data, columns, schoolInfo, reportName, appliedFilters) => {
+  const { default: jsPDF } = await import('jspdf');
+  await import('jspdf-autotable');
   const doc = new jsPDF('landscape');
   const config = getDocumentConfig(schoolInfo?.name, schoolInfo?.address, reportName, appliedFilters);
   
@@ -80,7 +79,8 @@ export const exportToPDF = (data, columns, schoolInfo, reportName, appliedFilter
 /**
  * Generate Excel Report
  */
-export const exportToExcel = (data, columns, reportName) => {
+export const exportToExcel = async (data, columns, reportName) => {
+  const XLSX = await import('xlsx');
   const formattedData = data.map(item => {
     const row = {};
     columns.forEach(col => {
@@ -100,7 +100,8 @@ export const exportToExcel = (data, columns, reportName) => {
 /**
  * Generate CSV Report
  */
-export const exportToCSV = (data, columns, reportName) => {
+export const exportToCSV = async (data, columns, reportName) => {
+  const XLSX = await import('xlsx');
   const formattedData = data.map(item => {
     const row = {};
     columns.forEach(col => {

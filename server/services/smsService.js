@@ -1,15 +1,14 @@
 const fetch = require('node-fetch') || globalThis.fetch;
 
-async function sendSMS(to, message) {
+async function sendSMS(to, message, credentials) {
   try {
-    const userId = process.env.SMS_USERID;
-    const password = process.env.SMS_PASSWORD;
-    const sender = process.env.SMS_SENDER;
-    const peid = process.env.SMS_PEID;
-    const tpid = process.env.SMS_TPID;
+    if (!credentials) {
+      throw new Error('SMS credentials are required. Ensure getSmsCredentials() is called and passed to sendSMS().');
+    }
+    const { userId, password, sender, peid, tpid } = credentials;
 
     if (!userId || !password || !sender) {
-      console.warn('SMS credentials missing in .env');
+      console.warn('SMS credentials missing in configuration');
       return { success: false, error: 'SMS not configured' };
     }
 

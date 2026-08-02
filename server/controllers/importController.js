@@ -2,6 +2,8 @@ const XLSX = require('xlsx');
 const { parseSpreadsheet, validateRows } = require('../services/importService');
 const { studentRowSchema } = require('../validators/studentImportSchema');
 const { findExistingAdmissionNumbers, bulkInsertStudentsWithFeeCollections } = require('../repositories/studentImportRepository');
+const { employeeRowSchema } = require('../validators/employeeImportSchema');
+const { findExistingEmployeeIds, bulkInsertEmployees } = require('../repositories/employeeImportRepository');
 const { logAuditAction } = require('../utils/auditLogger');
 
 /**
@@ -163,8 +165,161 @@ const commitStudentImport = async (req, res, next) => {
   }
 };
 
+/**
+ * Downloads a sample Excel template for employee bulk import.
+ * GET /api/import/employees/template
+ */
+const downloadEmployeeTemplate = (req, res) => {
+  try {
+    const workbook = XLSX.utils.book_new();
+
+    const templateData = [
+      {
+        emp_id: 'EMP-001',
+        name: 'Sarah Connor',
+        department: 'Science',
+        designation: 'Senior Teacher',
+        gender: 'female',
+        dob: '1985-04-12',
+        joining_date: '2020-06-01',
+        basic_salary: 45000,
+        phone: '9876543220',
+        email: 'sarah.c@school.edu',
+        address: '101 Faculty Housing',
+      },
+      {
+        emp_id: 'EMP-002',
+        name: 'John Smith',
+        department: 'Administration',
+        designation: 'Clerk',
+        gender: 'male',
+        dob: '1990-08-25',
+        joining_date: '2022-01-15',
+        basic_salary: 25000,
+        phone: '9876543221',
+        email: 'john.s@school.edu',
+        address: '202 Staff Quarters',
+      },
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+
+    // Auto-fit column widths
+    worksheet['!cols'] = [
+      { wch: 15 }, // emp_id
+      { wch: 20 }, // name
+      { wch: 15 }, // department
+      { wch: 15 }, // designation
+      { wch: 10 }, // gender
+      { wch: 12 }, // dob
+      { wch: 15 }, // joining_date
+      { wch: 15 }, // basic_salary
+      { wch: 15 }, // phone
+      { wch: 25 }, // email
+      { wch: 30 }, // address
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Employees_Template');
+
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="employee_import_template.xlsx"');
+    return res.send(buffer);
+  } catch (error) {
+    console.error('Download template error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to generate template' });
+  }
+};
+
+/**
+ * Previews uploaded employee spreadsheet.
+ * POST /api/import/employees/preview
+ */
+const previewEmployeeImport = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No spreadsheet file uploaded' });
+    }
+
+    const { headers, rows } = parseSpreadsheet(req.file.buffer);
+
+    const validationResult = await validateRows(
+      rows,
+      employeeRowSchema,
+      async (empIds) => findExistingEmployeeIds(req.db, empIds),
+      'emp_id'
+    );
+
+    return res.json({
+      success: true,
+      headers,
+      validRows: validationResult.validRows,
+      invalidRows: validationResult.invalidRows,
+      summary: validationResult.summary,
+    });
+  } catch (error) {
+    if (error.message.includes('exceeds maximum allowed limit') || error.message.includes('Failed to parse') || error.message.includes('empty')) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Commits pre-validated employee rows into database.
+ * POST /api/import/employees/commit
+ */
+const commitEmployeeImport = async (req, res, next) => {
+  try {
+    const { validRows } = req.body;
+
+    if (!Array.isArray(validRows) || validRows.length === 0) {
+      return res.status(400).json({ success: false, message: 'No valid rows provided for import' });
+    }
+
+    const rawDataObjects = validRows.map((item) => item.data || item);
+
+    const revalidation = await validateRows(
+      rawDataObjects,
+      employeeRowSchema,
+      async (empIds) => findExistingEmployeeIds(req.db, empIds),
+      'emp_id'
+    );
+
+    if (revalidation.invalidRows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Server-side re-validation failed. Some rows contain duplicate or invalid data.',
+        invalidRows: revalidation.invalidRows,
+      });
+    }
+
+    const insertedEmployees = await bulkInsertEmployees(req.db, revalidation.validRows);
+
+    await logAuditAction(req, {
+      action: 'BULK_IMPORT_EMPLOYEES',
+      resource_type: 'employee',
+      resource_id: 'batch',
+      new_values: { count: insertedEmployees.length },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `Successfully imported ${insertedEmployees.length} employees.`,
+      count: insertedEmployees.length,
+      data: insertedEmployees,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   downloadStudentTemplate,
   previewStudentImport,
   commitStudentImport,
+  downloadEmployeeTemplate,
+  previewEmployeeImport,
+  commitEmployeeImport
 };

@@ -37,12 +37,80 @@ function parseSpreadsheet(fileBuffer) {
   const normalizedRows = rawRows.map((row) => {
     const normalized = {};
     Object.keys(row).forEach((key) => {
-      const cleanKey = key
+      let cleanKey = key
         .toString()
         .trim()
         .toLowerCase()
         .replace(/[\s\-]+/g, '_')
         .replace(/[^a-z0-9_]/g, '');
+
+      // Common header aliases mapping
+      const aliases = {
+        student_name: 'name',
+        full_name: 'name',
+        student: 'name',
+        employee_name: 'name',
+        staff_name: 'name',
+        name: 'name',
+        
+        date_of_birth: 'dob',
+        birth_date: 'dob',
+        birthdate: 'dob',
+        dateofbirth: 'dob',
+        d_o_b: 'dob',
+        birth: 'dob',
+        
+        sex: 'gender',
+        gender: 'gender',
+        m_f: 'gender',
+        
+        year: 'academic_year',
+        session: 'academic_year',
+        academicyear: 'academic_year',
+        academic: 'academic_year',
+        batch: 'academic_year',
+        term: 'academic_year',
+        
+        admission_number: 'admission_no',
+        adm_no: 'admission_no',
+        admissionno: 'admission_no',
+        
+        employee_id: 'emp_id',
+        emp_id: 'emp_id',
+        staff_id: 'emp_id',
+        id_number: 'emp_id',
+
+        department: 'department',
+        dept: 'department',
+        
+        designation: 'designation',
+        job_title: 'designation',
+        role: 'designation',
+        title: 'designation',
+
+        basic_salary: 'basic_salary',
+        salary: 'basic_salary',
+        basic_pay: 'basic_salary',
+
+        joining_date: 'joining_date',
+        date_of_joining: 'joining_date',
+        doj: 'joining_date',
+
+        parent: 'parent_name',
+        father_name: 'parent_name',
+        guardian_name: 'parent_name',
+        parents_name: 'parent_name',
+        
+        parent_mobile: 'parent_phone',
+        phone: 'parent_phone',
+        mobile: 'parent_phone',
+        contact_no: 'parent_phone',
+        contact: 'parent_phone'
+      };
+
+      if (aliases[cleanKey]) {
+        cleanKey = aliases[cleanKey];
+      }
 
       if (cleanKey) {
         let val = row[key];

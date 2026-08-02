@@ -83,6 +83,10 @@ async function tenantResolver(req, res, next) {
       });
     }
 
+    const master = await getMasterPool();
+    const [schoolRows] = await master.execute('SELECT * FROM schools WHERE db_name = ?', [tenantDb]);
+    req.school = schoolRows[0] || null;
+
     req.db = await getSchoolPool(tenantDb);
     req.isMasterDb = false;
     next();

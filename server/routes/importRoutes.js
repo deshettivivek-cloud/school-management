@@ -8,6 +8,9 @@ const {
   downloadStudentTemplate,
   previewStudentImport,
   commitStudentImport,
+  downloadEmployeeTemplate,
+  previewEmployeeImport,
+  commitEmployeeImport
 } = require('../controllers/importController');
 
 // Multer memory storage configuration for spreadsheets
@@ -60,5 +63,10 @@ router.use(protect, roleCheck('principal'));
 router.get('/students/template', downloadStudentTemplate);
 router.post('/students/preview', handleMulterUpload, previewStudentImport);
 router.post('/students/commit', commitStudentImport);
+
+// Employee import endpoints
+router.get('/employees/template', downloadEmployeeTemplate);
+router.post('/employees/preview', handleMulterUpload, previewEmployeeImport);
+router.post('/employees/commit', commitEmployeeImport);
 
 module.exports = router;

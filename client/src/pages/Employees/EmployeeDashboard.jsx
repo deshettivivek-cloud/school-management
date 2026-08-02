@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { exportToPDF, exportToExcel } from '../../utils/exportUtils';
 import { 
   Search, Plus, UserCheck, Briefcase, FileText, Download, Printer, Filter
 } from 'lucide-react';
@@ -53,6 +54,38 @@ const EmployeeDashboard = () => {
     window.print();
   };
 
+  const handleExportPDF = async () => {
+    if (filteredEmployees.length === 0) {
+      toast.error('No employees to export');
+      return;
+    }
+    const columns = [
+      { header: 'Emp ID', key: 'emp_id' },
+      { header: 'Name', key: 'name' },
+      { header: 'Department', key: 'department' },
+      { header: 'Designation', key: 'designation' },
+      { header: 'Contact', key: 'mobile' },
+      { header: 'Status', key: 'status' }
+    ];
+    await exportToPDF(filteredEmployees, columns, { name: 'School MS' }, 'Employee Directory');
+  };
+
+  const handleExportExcel = async () => {
+    if (filteredEmployees.length === 0) {
+      toast.error('No employees to export');
+      return;
+    }
+    const columns = [
+      { header: 'Emp ID', key: 'emp_id' },
+      { header: 'Name', key: 'name' },
+      { header: 'Department', key: 'department' },
+      { header: 'Designation', key: 'designation' },
+      { header: 'Contact', key: 'mobile' },
+      { header: 'Status', key: 'status' }
+    ];
+    await exportToExcel(filteredEmployees, columns, 'Employee Directory');
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -65,16 +98,25 @@ const EmployeeDashboard = () => {
           <button className="btn btn-outline" onClick={handlePrint}>
             <Printer size={16} /> Print
           </button>
-          <button className="btn btn-outline">
+          <button className="btn btn-outline" onClick={handleExportPDF}>
             <Download size={16} /> Export PDF
           </button>
-          <button className="btn btn-outline">
+          <button className="btn btn-outline" onClick={handleExportExcel}>
             <FileText size={16} /> Export Excel
           </button>
           {(user?.role === 'principal' || user?.role === 'super_admin') && (
-            <button className="btn btn-primary" onClick={() => navigate('/employees/add')}>
-              <Plus size={16} /> Add Employee
-            </button>
+            <>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => navigate('/employees/import')}
+                style={{ background: 'var(--primary-100)', color: 'var(--primary-700)' }}
+              >
+                Import Employees (.xlsx)
+              </button>
+              <button className="btn btn-primary" onClick={() => navigate('/employees/add')}>
+                <Plus size={16} /> Add Employee
+              </button>
+            </>
           )}
         </div>
       </div>
