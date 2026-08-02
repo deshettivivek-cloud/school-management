@@ -14,6 +14,8 @@ const {
   deleteSchool,
   resetUserPassword,
   updateUserStatus,
+  getAllBugReportsAcrossSchools,
+  respondToBugReport,
 } = require('../controllers/superAdminController');
 
 // All routes require auth + super_admin role
@@ -35,6 +37,10 @@ router.post('/users', createUser);
 router.post('/users/:id/reset-password', resetUserPassword);
 router.patch('/users/:id/status', updateUserStatus);
 router.delete('/users/:id', deleteUser);
+
+// Bug Reports Management
+router.get('/bug-reports', getAllBugReportsAcrossSchools);
+router.put('/bug-reports/:schoolId/:id/respond', respondToBugReport);
 
 module.exports = router;
 
