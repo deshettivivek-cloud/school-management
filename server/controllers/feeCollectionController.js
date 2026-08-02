@@ -289,20 +289,17 @@ exports.recordPayment = async (req, res) => {
     // WhatsApp Notification
     if (collection.parent_phone) {
       const whatsappService = require('../services/whatsappService');
-      // Send official template (Requires 'fee_receipt' approved in Meta)
       const components = [
         {
           type: "body",
           parameters: [
             { type: "text", text: collection.student_name },
-            { type: "text", text: String(newPayment.amount) },
-            { type: "text", text: newPayment.receiptNo },
-            { type: "text", text: String(calcs.balance) }
+            { type: "text", text: String(newPayment.amount) }
           ]
         }
       ];
-      whatsappService.sendTemplateMessage(collection.parent_phone, 'fee_receipt', 'en_US', components)
-        .catch(err => console.error('Failed to send fee receipt:', err));
+      whatsappService.sendTemplateMessage(collection.parent_phone, 'holi', 'en', components)
+        .catch(err => console.error('Failed to send WhatsApp fee receipt:', err));
     }
 
     res.json({
@@ -534,9 +531,17 @@ exports.sendWhatsappReceipt = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Parent phone number not available' });
     }
 
-    const message = `Dear ${student.name} Garu,\n\nYour fee payment of ₹${amount} has been received successfully.\n\nReceipt No: ${receiptNo}\nBalance Amount: ₹${balance || 0}\n\nThank you.\nSchool Administration`;
+    const components = [
+      {
+        type: "body",
+        parameters: [
+          { type: "text", text: student.name },
+          { type: "text", text: String(amount) }
+        ]
+      }
+    ];
 
-    const result = await whatsappService.sendTextMessage(student.parent_phone, message);
+    const result = await whatsappService.sendTemplateMessage(student.parent_phone, 'holi', 'en', components);
     
     if (result.success) {
       res.json({ success: true, message: 'WhatsApp receipt sent successfully' });

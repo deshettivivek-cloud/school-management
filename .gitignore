@@ -10,3 +10,6 @@ coverage/
 *.sqlite
 backups/
 server/backups/
+server/test*.js
+server/public/uploads/
+server/scratch/
