@@ -23,7 +23,8 @@ import {
   History,
   Calendar,
   Megaphone,
-  MessageSquare
+  MessageSquare,
+  Bug
 } from 'lucide-react';
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
@@ -62,11 +63,15 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
     { path: '/expenditure', icon: Calculator, label: 'Expenditure' },
 
     { section: 'Academic' },
-    { path: '/promotion', icon: ArrowUpCircle, label: 'Promotion' },
+    { path: '/promotion', icon: ArrowUpCircle, label: 'Promotion', roles: ['principal'] },
     { path: '/exams/hall-ticket', icon: ClipboardList, label: 'Hall Ticket' },
     { path: '/tc/issue', icon: GraduationCap, label: 'Issue TC' },
     { path: '/tc/register', icon: FileArchive, label: 'TC Register' },
     { path: '/reports', icon: BarChart3, label: 'Reports' },
+
+    { section: 'Support & Issues' },
+    { path: '/report-bug', icon: Bug, label: 'Report a Bug' },
+    { path: '/bug-reports', icon: Bug, label: 'Bug Reports', roles: ['principal'] },
   ];
 
   const isActive = (path) => {
@@ -99,6 +104,9 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
 
         <nav className="sidebar-nav">
           {navItems.map((item, idx) => {
+            if (item.roles && !hasAccess(item.roles)) {
+              return null;
+            }
             if (item.section) {
               return !collapsed ? (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={idx} className="nav-section-label">

@@ -76,6 +76,8 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/sms', require('./routes/smsRoutes'));
 app.use('/api/communications', require('./routes/communicationRoutes'));
+app.use('/api/bug-reports', require('./routes/bugReportRoutes'));
+app.use('/api/import', require('./routes/importRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => {

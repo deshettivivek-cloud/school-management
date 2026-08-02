@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Bug
 } from 'lucide-react';
 
 const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
@@ -23,6 +24,7 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
     { path: '/super-admin/schools', icon: Building2, label: 'Schools' },
     { path: '/super-admin/users', icon: Users, label: 'Users' },
     { section: 'System' },
+    { path: '/super-admin/bug-reports', icon: Bug, label: 'Bug Reports' },
     { path: '/super-admin/reports', icon: BarChart3, label: 'Reports' },
     { path: '/super-admin/audit-logs', icon: ClipboardList, label: 'Audit Logs' },
   ];

@@ -23,6 +23,7 @@
     "mysql2": "^3.23.1",
     "node-fetch": "^2.7.0",
     "nodemailer": "^9.0.3",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/xlsx-0.20.1.tgz",
     "zod": "^4.4.3"
   },
   "devDependencies": {

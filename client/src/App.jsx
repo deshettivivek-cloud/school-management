@@ -39,6 +39,7 @@ import SuperAdminDashboard from './pages/SuperAdmin/SuperAdminDashboard';
 import ManageSchools from './pages/SuperAdmin/ManageSchools';
 import ManageUsers from './pages/SuperAdmin/ManageUsers';
 import AuditLogs from './pages/SuperAdmin/AuditLogs';
+import SuperAdminBugReports from './pages/SuperAdmin/SuperAdminBugReports';
 import ReportsDashboard from './pages/Reports/ReportsDashboard';
 import ReportViewer from './pages/Reports/ReportViewer';
 import AttendanceRegister from './pages/Attendance/AttendanceRegister';
@@ -46,6 +47,9 @@ import CalendarView from './pages/CalendarView';
 import AnnouncementsDashboard from './pages/Announcements/AnnouncementsDashboard';
 import BulkMessaging from './pages/Communications/BulkMessaging';
 import SmsHistory from './pages/Communications/SmsHistory';
+import ReportBug from './pages/BugReports/ReportBug';
+import BugReportsList from './pages/BugReports/BugReportsList';
+import ImportStudents from './pages/Students/ImportStudents';
 
 // Protected route wrapper — requires authentication
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -249,6 +253,7 @@ function App() {
         <Route path="/super-admin/schools" element={<ManageSchools />} />
         <Route path="/super-admin/users" element={<ManageUsers />} />
         <Route path="/super-admin/audit-logs" element={<AuditLogs />} />
+        <Route path="/super-admin/bug-reports" element={<SuperAdminBugReports />} />
         
         {/* Reports */}
         <Route path="/super-admin/reports" element={<ReportsDashboard />} />
@@ -305,10 +310,15 @@ function App() {
         <Route path="/reports" element={<ReportsDashboard />} />
         <Route path="/reports/:module" element={<ReportViewer />} />
 
+        {/* Bug Reports */}
+        <Route path="/report-bug" element={<ReportBug />} />
+
         {/* Principal Only */}
         <Route element={<ProtectedRoute allowedRoles={['principal']}><Outlet /></ProtectedRoute>}>
           <Route path="/school-setup" element={<SchoolSetup />} />
           <Route path="/promotion" element={<YearEndPromotion />} />
+          <Route path="/bug-reports" element={<BugReportsList />} />
+          <Route path="/students/import" element={<ImportStudents />} />
         </Route>
       </Route>
 

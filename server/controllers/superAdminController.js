@@ -3,6 +3,7 @@ const { getMasterPool } = require('../config/database');
 const { getSchoolPool, resolveSchoolDbName } = require('../config/tenantPool');
 const { hashPassword } = require('../config/auth');
 const superAdminRepository = require('../repositories/superAdminRepository');
+const bugReportRepo = require('../repositories/bugReportRepository');
 const { logAuditAction } = require('../utils/auditLogger');
 
 // @desc    Get all schools (platform-wide)
@@ -478,6 +479,104 @@ exports.deleteSchool = async (req, res) => {
     });
 
     res.json({ success: true, message: `School "${school.name}" deleted successfully` });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get all bug reports across all tenant databases (Super Admin only)
+// @route   GET /api/super-admin/bug-reports
+// @access  Super Admin
+exports.getAllBugReportsAcrossSchools = async (req, res) => {
+  try {
+    const masterPool = await getMasterPool();
+    const schools = await superAdminRepository.findAllSchoolsBasic(masterPool);
+
+    let allBugReports = [];
+
+    const tasks = schools.map(async (school) => {
+      try {
+        const pool = await getSchoolPool(school.db_name);
+        const reports = await bugReportRepo.findAllBugReports(pool);
+        reports.forEach(r => {
+          allBugReports.push({
+            ...r,
+            school_id: school.id,
+            school_name: school.name,
+            school_db_name: school.db_name,
+          });
+        });
+      } catch (err) {
+        console.error(`Failed to fetch bug reports for school ${school.name}:`, err.message);
+      }
+    });
+
+    await Promise.all(tasks);
+
+    // Sort newest first
+    allBugReports.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    res.json({
+      success: true,
+      count: allBugReports.length,
+      data: allBugReports,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Respond to a bug report (Super Admin only)
+// @route   PUT /api/super-admin/bug-reports/:schoolId/:id/respond
+// @access  Super Admin
+exports.respondToBugReport = async (req, res) => {
+  try {
+    const { schoolId, id } = req.params;
+    const { developer_response, status } = req.body;
+
+    if (!developer_response || !developer_response.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Developer response text is required',
+      });
+    }
+
+    const masterPool = await getMasterPool();
+    const schoolRows = await superAdminRepository.findSchoolById(masterPool, schoolId);
+
+    if (schoolRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'School not found' });
+    }
+
+    const school = schoolRows[0];
+    const pool = await getSchoolPool(school.db_name);
+
+    const existing = await bugReportRepo.findBugReportById(pool, id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Bug report not found in school database' });
+    }
+
+    await bugReportRepo.updateBugReportDeveloperResponse(pool, id, developer_response.trim(), status);
+    const updated = await bugReportRepo.findBugReportById(pool, id);
+
+    await logAuditAction(req, {
+      action: 'RESPOND_TO_BUG_REPORT',
+      resource_type: 'bug_report',
+      resource_id: String(id),
+      schoolId: schoolId,
+      old_values: { developer_response: existing.developer_response, status: existing.status },
+      new_values: { developer_response: developer_response.trim(), status: updated.status },
+    });
+
+    res.json({
+      success: true,
+      message: 'Response recorded successfully',
+      data: {
+        ...updated,
+        school_id: school.id,
+        school_name: school.name,
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
