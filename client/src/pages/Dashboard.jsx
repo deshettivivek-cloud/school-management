@@ -1,12 +1,13 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import {
   Users, CreditCard, AlertCircle, CheckCircle, TrendingUp, UserPlus,
   BookOpen, Calendar, Clock, DollarSign, ArrowRight, Zap, Sparkles, User, Bell,
-  FileText, Activity, Wallet, GraduationCap, ChevronRight, BarChart3, PieChart as PieChartIcon, Gift, Megaphone, CheckSquare
+  FileText, Activity, Wallet, GraduationCap, ChevronRight, BarChart3, PieChart as PieChartIcon, Gift, Megaphone, CheckSquare,
+  IndianRupee, ClipboardList, Briefcase
 } from 'lucide-react';
 import PrintSection from '../components/PrintSection';
 import DashboardWidget from '../components/Dashboard/DashboardWidget';
@@ -14,10 +15,9 @@ import CalendarWidget from '../components/Dashboard/CalendarWidget';
 import StatCard from '../components/Common/StatCard';
 import '../styles/dashboard.css';
 
-const DashboardCharts = lazy(() => import('../components/Dashboard/DashboardCharts'));
-
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { schoolData } = useOutletContext() || {};
   const { user } = useAuth();
   const [studentStats, setStudentStats] = useState(null);
   const [feeStats, setFeeStats] = useState(null);
@@ -68,16 +68,14 @@ const Dashboard = () => {
     }).format(amount || 0);
   };
 
-  const gradeData = studentStats?.gradeWise?.map((g) => ({
-    name: `Class ${g._id}`,
-    students: g.count,
-  })) || [];
-
-  const pieData = [
-    { name: 'Paid', value: feeStats?.paidCount || 0, color: 'var(--success-500)' },
-    { name: 'Partial', value: feeStats?.partialCount || 0, color: 'var(--warning-500)' },
-    { name: 'Pending', value: feeStats?.pendingCount || 0, color: 'var(--danger-500)' },
-  ].filter((d) => d.value > 0);
+  const quickActions = [
+    { title: 'Admissions', icon: UserPlus, path: '/admissions', color: 'var(--primary-500)', desc: 'Manage student admissions' },
+    { title: 'Fee Collection', icon: IndianRupee, path: '/fees/collection', color: 'var(--success-500)', desc: 'Process student fees' },
+    { title: 'Attendance', icon: ClipboardList, path: '/attendance', color: 'var(--warning-500)', desc: 'Mark student attendance' },
+    { title: 'Student Directory', icon: Users, path: '/students/directory', color: 'var(--info-500)', desc: 'View all students' },
+    { title: 'Employees', icon: Briefcase, path: '/employees', color: 'var(--accent-500)', desc: 'Manage staff and teachers' },
+    { title: 'Reports', icon: BarChart3, path: '/reports', color: 'var(--danger-500)', desc: 'View school analytics' },
+  ];
 
   // Derive extra stats for widgets
   const profitLoss = dailyStats?.profitLoss || 0;
@@ -167,8 +165,8 @@ const Dashboard = () => {
         <div className="dashboard-hero">
           <div className="dashboard-hero-bg" />
           <div className="dashboard-hero-content">
-            <h1 className="hero-title">Welcome Back, Principal 👋</h1>
-            <p className="hero-subtitle">Here's your school's performance summary for today.</p>
+            <h1 className="hero-title">{schoolData?.name || 'School Management System'}</h1>
+            <p className="hero-subtitle">Welcome Back, {user?.name || 'Principal'} 👋 Here's your school's performance summary for today.</p>
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
               <div className="badge" style={{ background: '#FFFFFF', color: '#111827', padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                 <Calendar size={14} color="#6D5AE0" /> Academic Year 2026-27
@@ -208,21 +206,46 @@ const Dashboard = () => {
           <DashboardWidget config={widgetsConfig.find(w => w.id === 'recentPayments')} widgetData={widgetData?.recentPayments} />
           <DashboardWidget config={widgetsConfig.find(w => w.id === 'pendingApprovals')} widgetData={widgetData?.pendingApprovals} />
         </div>
-
-        <div className="dashboard-grid">
-          {/* Analytics & Charts */}
-          <Suspense fallback={
-            <>
-              <div className="widget-card col-span-8" style={{ minHeight: '360px' }}>
-                <div className="spinner-container" style={{ height: '100%' }}><div className="spinner" /></div>
+        <div style={{ marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Quick Actions</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+            {quickActions.map((action, idx) => (
+              <div 
+                key={idx}
+                onClick={() => navigate(action.path)}
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '1.25rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                  e.currentTarget.style.borderColor = action.color;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                  e.currentTarget.style.borderColor = 'var(--border-color)';
+                }}
+              >
+                <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: `${action.color}15`, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <action.icon size={20} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{action.title}</h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>{action.desc}</p>
+                </div>
               </div>
-              <div className="widget-card col-span-4" style={{ minHeight: '360px' }}>
-                <div className="spinner-container" style={{ height: '100%' }}><div className="spinner" /></div>
-              </div>
-            </>
-          }>
-            <DashboardCharts gradeData={gradeData} pieData={pieData} />
-          </Suspense>
+            ))}
+          </div>
         </div>
       </motion.div>
     </PrintSection>

@@ -78,25 +78,9 @@ const Header = ({ title, collapsed, setMobileOpen, schoolData }) => {
             <Menu size={22} />
           </button>
 
-          {title === 'Dashboard' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              {logo ? (
-                <img src={logo} alt="School Logo" style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', objectFit: 'contain', background: '#fff' }} />
-              ) : (
-                <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: 'var(--primary-50)', color: 'var(--primary-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                  <Building2 size={24} />
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <h1 className="page-title" style={{ fontSize: '1.1rem' }}>{schoolName}</h1>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.02em' }}>
-                  Academic Year {academicYear}
-                </span>
-              </div>
-            </div>
-          ) : (
+          {title !== 'Dashboard' && (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <h1 className="page-title">{title}</h1>
+              <h1 className="page-title" style={{ margin: 0, fontSize: '1.25rem' }}>{title}</h1>
             </div>
           )}
         </div>

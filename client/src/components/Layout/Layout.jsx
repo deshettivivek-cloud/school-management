@@ -40,7 +40,7 @@ const Layout = ({ title }) => {
           schoolData={schoolData}
         />
         <main className="page-content animate-fade-in">
-          <Outlet />
+          <Outlet context={{ schoolData }} />
         </main>
       </div>
     </div>

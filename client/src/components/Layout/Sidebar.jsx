@@ -1,81 +1,104 @@
+import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard,
-  Settings,
-  Users,
-  UserPlus,
-  GraduationCap,
-  ClipboardList,
-  IndianRupee,
-  FileText,
-  Calculator,
-  ArrowUpCircle,
-  FileArchive,
-  BarChart3,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  BookOpen,
-  Briefcase,
-  Banknote,
-  History,
-  Calendar,
-  Megaphone,
-  MessageSquare,
-  Bug,
-  CreditCard
+  LayoutDashboard, Settings, Users, UserPlus, GraduationCap, ClipboardList,
+  IndianRupee, FileText, Calculator, ArrowUpCircle, FileArchive, BarChart3,
+  Calendar, Megaphone, MessageSquare, Bug, Briefcase, Banknote, History, ChevronDown, BookOpen
 } from 'lucide-react';
 
-const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
-  const { logout, hasAccess } = useAuth();
+const Sidebar = ({ mobileOpen, setMobileOpen }) => {
+  const { hasAccess } = useAuth();
   const location = useLocation();
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const navRef = useRef(null);
 
-  const navItems = [
-    { section: 'Main' },
-    { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/calendar', icon: Calendar, label: 'Calendar' },
-    { path: '/announcements', icon: Megaphone, label: 'Announcements' },
-    { path: '/communications', icon: MessageSquare, label: 'Communications' },
-    { path: '/school-setup', icon: Settings, label: 'School Setup' },
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (navRef.current && !navRef.current.contains(e.target)) {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    { section: 'Students' },
-    { path: '/students/directory', icon: Users, label: 'Directory' },
-    { path: '/attendance', icon: ClipboardList, label: 'Attendance' },
-    { path: '/admissions', icon: BookOpen, label: 'Admissions' },
-    { path: '/admissions/new', icon: UserPlus, label: 'New Admission' },
-
-    { section: 'Staff & HR' },
-    { path: '/employees', icon: Briefcase, label: 'Employees' },
-    { path: '/employees/add', icon: UserPlus, label: 'Add Employee' },
-
-    { section: 'Salary Management' },
-    { path: '/salary/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/salary/structure', icon: FileText, label: 'Structure' },
-    { path: '/salary/monthly', icon: Banknote, label: 'Monthly Salary' },
-    { path: '/salary/history', icon: History, label: 'Salary History' },
-    { path: '/salary/reports', icon: BarChart3, label: 'Salary Reports' },
-
-    { section: 'Fees' },
-    { path: '/fees/structure', icon: ClipboardList, label: 'Fee Structure' },
-    { path: '/fees/collection', icon: IndianRupee, label: 'Fee Collection' },
-    { path: '/fees/pending', icon: FileText, label: 'Pending Fees' },
-    { path: '/expenditure', icon: Calculator, label: 'Expenditure' },
-
-    { section: 'Academic' },
-    { path: '/promotion', icon: ArrowUpCircle, label: 'Promotion', roles: ['principal'] },
-    { path: '/exams/hall-ticket', icon: ClipboardList, label: 'Hall Ticket' },
-    { path: '/tc/issue', icon: GraduationCap, label: 'Issue TC' },
-    { path: '/tc/register', icon: FileArchive, label: 'TC Register' },
-    { path: '/reports', icon: BarChart3, label: 'Reports' },
-
-    { section: 'Support & Issues' },
-    { path: '/report-bug', icon: Bug, label: 'Report a Bug' },
-    { path: '/bug-reports', icon: Bug, label: 'Bug Reports', roles: ['principal'] },
+  const navSections = [
+    {
+      section: 'Main',
+      links: [
+        { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/calendar', icon: Calendar, label: 'Calendar' },
+        { path: '/announcements', icon: Megaphone, label: 'Announcements' },
+        { path: '/communications', icon: MessageSquare, label: 'Communications' },
+        { path: '/school-setup', icon: Settings, label: 'School Setup' },
+      ]
+    },
+    {
+      section: 'Students',
+      links: [
+        { path: '/students/directory', icon: Users, label: 'Directory' },
+        { path: '/attendance', icon: ClipboardList, label: 'Attendance' },
+        { path: '/admissions', icon: BookOpen, label: 'Admissions' },
+        { path: '/admissions/new', icon: UserPlus, label: 'New Admission' },
+      ]
+    },
+    {
+      section: 'Fees',
+      links: [
+        { path: '/fees/structure', icon: ClipboardList, label: 'Fee Structure' },
+        { path: '/fees/collection', icon: IndianRupee, label: 'Fee Collection' },
+        { path: '/fees/pending', icon: FileText, label: 'Pending Fees' },
+        { path: '/expenditure', icon: Calculator, label: 'Expenditure' },
+      ]
+    },
+    {
+      section: 'Academic',
+      links: [
+        { path: '/promotion', icon: ArrowUpCircle, label: 'Promotion', roles: ['principal'] },
+        { path: '/exams/hall-ticket', icon: ClipboardList, label: 'Hall Ticket' },
+        { path: '/tc/issue', icon: GraduationCap, label: 'Issue TC' },
+        { path: '/tc/register', icon: FileArchive, label: 'TC Register' },
+        { path: '/reports', icon: BarChart3, label: 'Reports' },
+      ]
+    },
+    {
+      section: 'Staff & HR',
+      links: [
+        { path: '/employees', icon: Briefcase, label: 'Employees' },
+        { path: '/employees/add', icon: UserPlus, label: 'Add Employee' },
+      ]
+    },
+    {
+      section: 'Salary',
+      links: [
+        { path: '/salary/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/salary/structure', icon: FileText, label: 'Structure' },
+        { path: '/salary/monthly', icon: Banknote, label: 'Monthly Salary' },
+        { path: '/salary/history', icon: History, label: 'Salary History' },
+        { path: '/salary/reports', icon: BarChart3, label: 'Salary Reports' },
+      ]
+    },
+    {
+      section: 'Support',
+      links: [
+        { path: '/report-bug', icon: Bug, label: 'Report a Bug' },
+        { path: '/bug-reports', icon: Bug, label: 'Bug Reports', roles: ['principal'] },
+      ]
+    }
   ];
 
-  const isActive = (path) => {
+  // A section is active if any of its links match the current path
+  const isSectionActive = (section) => {
+    return section.links.some(link => {
+      if (link.path === '/') return location.pathname === '/';
+      return location.pathname.startsWith(link.path);
+    });
+  };
+
+  const isLinkActive = (path) => {
     if (path === '/') return location.pathname === '/';
     return location.pathname.startsWith(path);
   };
@@ -90,132 +113,70 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
         />
       )}
 
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
-        <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <div style={{ background: 'var(--accent-500)', padding: '0.4rem', borderRadius: '0.5rem', display: 'flex' }}>
-              <BookOpen size={20} color="white" />
-            </div>
-          </div>
-          {!collapsed && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="sidebar-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>SchoolMS</div>
-              <div className="sidebar-subtitle">Management System</div>
-            </motion.div>
-          )}
-        </div>
-
-        <nav className="sidebar-nav">
-          {navItems.map((item, idx) => {
-            if (item.roles && !hasAccess(item.roles)) {
-              return null;
-            }
-            if (item.section) {
-              return !collapsed ? (
-                <div key={idx} className="nav-section-label">
-                  {item.section}
-                </div>
-              ) : (
-                <div key={idx} style={{ height: '0.75rem' }} />
-              );
-            }
-
-            const Icon = item.icon;
-            const active = isActive(item.path);
+      <nav className={`top-navbar ${mobileOpen ? 'mobile-open' : ''}`} ref={navRef}>
+        <div className="top-navbar-container">
+          {navSections.map((section, idx) => {
+            // Filter links by roles
+            const validLinks = section.links.filter(link => !link.roles || hasAccess(link.roles));
+            if (validLinks.length === 0) return null;
+            
+            const active = isSectionActive(section);
+            const isOpen = activeDropdown === idx;
 
             return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={`nav-item ${active ? 'active' : ''}`}
-                onClick={() => setMobileOpen(false)}
-                title={collapsed ? item.label : ''}
+              <div 
+                key={section.section} 
+                className={`top-nav-item ${active ? 'active' : ''}`}
+                onMouseEnter={() => setActiveDropdown(idx)}
+                onMouseLeave={() => setActiveDropdown(null)}
               >
-                {active && (
-                  <motion.div
-                    layoutId="activeNavBackground"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'var(--accent-500)',
-                      borderRadius: 'var(--radius-md)',
-                      zIndex: 0
-                    }}
-                    initial={false}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  />
-                )}
-                <span className="nav-item-icon" style={{ zIndex: 1, color: active ? '#FFFFFF' : 'var(--text-primary)' }}>
-                  <Icon size={18} strokeWidth={active ? 2.5 : 2} />
-                </span>
-                {!collapsed && (
-                  <span style={{ zIndex: 1, color: active ? '#FFFFFF' : 'var(--text-primary)', fontWeight: active ? 600 : 500 }}>
-                    {item.label}
-                  </span>
-                )}
-              </NavLink>
+                <div 
+                  className="top-nav-trigger"
+                  onClick={() => setActiveDropdown(isOpen ? null : idx)}
+                >
+                  <span style={{ fontWeight: active ? 600 : 500 }}>{section.section}</span>
+                  <ChevronDown size={14} className={`dropdown-icon ${isOpen ? 'open' : ''}`} />
+                </div>
+
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.15 }}
+                      className="top-nav-dropdown"
+                    >
+                      {validLinks.map(link => {
+                        const linkActive = isLinkActive(link.path);
+                        const Icon = link.icon;
+                        return (
+                          <NavLink
+                            key={link.path}
+                            to={link.path}
+                            className={`dropdown-link ${linkActive ? 'active' : ''}`}
+                            onClick={() => {
+                              setActiveDropdown(null);
+                              setMobileOpen(false);
+                            }}
+                          >
+                            <span className="dropdown-icon-wrapper">
+                              <Icon size={16} strokeWidth={linkActive ? 2.5 : 2} color={linkActive ? 'var(--primary-600)' : 'var(--text-muted)'} />
+                            </span>
+                            <span style={{ fontWeight: linkActive ? 600 : 500, color: linkActive ? 'var(--primary-700)' : 'var(--text-primary)' }}>
+                              {link.label}
+                            </span>
+                          </NavLink>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             );
           })}
-        </nav>
-
-        {!collapsed && (
-          <div className="sidebar-widget" style={{ 
-            margin: '1rem', 
-            padding: '1rem', 
-            background: 'var(--primary-50)', 
-            borderRadius: 'var(--radius-lg)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.5rem',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--primary-800)', margin: 0, zIndex: 1 }}>Empowering<br/>Education</h4>
-            <p style={{ fontSize: '0.75rem', color: 'var(--primary-600)', margin: 0, zIndex: 1 }}>One student at a time</p>
-            <div style={{ position: 'absolute', right: '-0.5rem', bottom: '-0.5rem', opacity: 0.8, color: 'var(--accent-500)' }}>
-              <GraduationCap size={64} strokeWidth={1} />
-            </div>
-          </div>
-        )}
-
-        <div className="sidebar-footer">
-          <button className="logout-btn" onClick={logout}>
-            <LogOut size={18} />
-            {!collapsed && 'Logout'}
-          </button>
-
-          <button
-            className="sidebar-toggle"
-            onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
         </div>
-
-        <style>{`
-          .logout-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            width: 100%;
-            padding: 0.75rem;
-            border-radius: var(--radius-full);
-            background: transparent;
-            color: var(--danger-500);
-            border: 1px solid var(--danger-200);
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all var(--transition-fast);
-            margin-bottom: 0.5rem;
-          }
-          .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.05);
-            border-color: var(--danger-300);
-          }
-        `}</style>
-      </aside>
+      </nav>
     </>
   );
 };

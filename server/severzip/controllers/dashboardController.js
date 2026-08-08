@@ -1,5 +1,6 @@
 const crypto = require('crypto');
-
+const XLSX = require('xlsx');
+const { getMasterPool } = require('../config/database');
 // Fetch data for all widgets and calendar
 exports.getDashboardWidgets = async (req, res) => {
   try {
@@ -171,5 +172,78 @@ exports.createCalendarEvent = async (req, res) => {
   } catch (error) {
     console.error('Create Calendar Event Error:', error);
     res.status(500).json({ success: false, message: 'Server error creating event', error: error.message });
+  }
+};
+
+exports.importCalendar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    const newAcademicYear = req.body.academic_year;
+    if (!newAcademicYear) {
+      return res.status(400).json({ success: false, message: 'Academic year is required' });
+    }
+
+    let workbook;
+    try {
+      workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    } catch (e) {
+      return res.status(400).json({ success: false, message: 'Invalid file format. Please upload a valid CSV or Excel file.' });
+    }
+    
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+
+    if (!rows || rows.length === 0) {
+      return res.status(400).json({ success: false, message: 'The uploaded file is empty' });
+    }
+
+    // Update academic_year in schools master DB
+    const masterDb = await getMasterPool();
+    await masterDb.execute('UPDATE schools SET academic_year = ? WHERE id = ?', [newAcademicYear, req.user.schoolId]);
+
+    // Clear old calendar events in tenant DB
+    await req.db.execute('DELETE FROM calendar_events');
+
+    for (const row of rows) {
+      const title = row.title || row.Title || 'Untitled Event';
+      const description = row.description || row.Description || '';
+      let type = (row.type || row.Type || 'event').toLowerCase();
+      if (!['event', 'holiday'].includes(type)) type = 'event';
+
+      let start_date = row.start_date || row.StartDate;
+      let end_date = row.end_date || row.EndDate;
+      
+      const parseExcelDate = (excelDate) => {
+        if (!excelDate) return null;
+        if (typeof excelDate === 'number') {
+          return new Date(Math.round((excelDate - 25569) * 86400 * 1000)).toISOString().split('T')[0];
+        }
+        return new Date(excelDate).toISOString().split('T')[0];
+      };
+
+      try {
+        start_date = parseExcelDate(start_date);
+        end_date = end_date ? parseExcelDate(end_date) : null;
+      } catch (e) {
+        continue; 
+      }
+
+      if (!start_date) continue;
+
+      const eventId = crypto.randomUUID();
+      await req.db.execute(`
+        INSERT INTO calendar_events (id, title, description, type, start_date, end_date, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `, [eventId, title, description, type, start_date, end_date, req.user.id]);
+    }
+
+    res.json({ success: true, message: 'Academic calendar imported successfully!' });
+  } catch (error) {
+    console.error('Import Calendar Error:', error);
+    res.status(500).json({ success: false, message: 'Server error importing calendar', error: error.message });
   }
 };
