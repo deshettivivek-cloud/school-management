@@ -35,10 +35,10 @@ const REPORT_CONFIG = {
     backendModule: 'fees',
     defaultFilters: { feeStatus: 'pending' },
     columns: [
-      { key: 'students.name', header: 'Student Name' },
-      { key: 'students.grade', header: 'Grade' },
+      { key: 'student_name', header: 'Student Name' },
+      { key: 'grade', header: 'Grade' },
       { key: 'balance', header: 'Pending Amount' },
-      { key: 'due_date', header: 'Due Date' }
+      { key: 'status', header: 'Status' }
     ]
   },
   fee_collections_daily: {
@@ -46,10 +46,10 @@ const REPORT_CONFIG = {
     backendModule: 'fees',
     defaultFilters: { startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] },
     columns: [
-      { key: 'payment_date', header: 'Date' },
-      { key: 'amount', header: 'Amount' },
-      { key: 'payment_mode', header: 'Mode' },
-      { key: 'collected_by', header: 'Collected By' }
+      { key: 'student_name', header: 'Student Name' },
+      { key: 'grade', header: 'Grade' },
+      { key: 'committed_fee', header: 'Total Fee' },
+      { key: 'total_paid', header: 'Paid Amount' }
     ]
   },
   attendance_low: {
@@ -57,38 +57,40 @@ const REPORT_CONFIG = {
     backendModule: 'attendance',
     defaultFilters: { attendanceLow: true },
     columns: [
-      { key: 'students.name', header: 'Student Name' },
-      { key: 'students.grade', header: 'Grade' },
-      { key: 'attendance_percentage', header: '% Attendance' },
-      { key: 'last_present_date', header: 'Last Present' }
+      { key: 'student_name', header: 'Student Name' },
+      { key: 'grade', header: 'Grade' },
+      { key: 'date', header: 'Date' },
+      { key: 'status', header: 'Status' }
     ]
   },
   expenditure_category: {
     title: 'Category-wise Expenditure',
     backendModule: 'expenditure',
     columns: [
+      { key: 'title', header: 'Title' },
       { key: 'category', header: 'Category' },
       { key: 'amount', header: 'Amount' },
-      { key: 'month', header: 'Month' }
+      { key: 'date', header: 'Date' }
     ]
   },
   staff_attendance: {
     title: 'Staff Attendance Report',
     backendModule: 'staff',
     columns: [
-      { key: 'staff_name', header: 'Staff Name' },
-      { key: 'days_present', header: 'Days Present' },
-      { key: 'leaves_taken', header: 'Leaves Taken' }
+      { key: 'name', header: 'Staff Name' },
+      { key: 'department', header: 'Department' },
+      { key: 'designation', header: 'Designation' },
+      { key: 'phone', header: 'Phone' }
     ]
   },
   exam_toppers: {
     title: 'Exam Toppers Report',
     backendModule: 'exams',
     columns: [
-      { key: 'exams.name', header: 'Exam Name' },
-      { key: 'students.name', header: 'Student Name' },
-      { key: 'students.grade', header: 'Grade' },
-      { key: 'score_percentage', header: '% Score' }
+      { key: 'exam_name', header: 'Exam Name' },
+      { key: 'student_name', header: 'Student Name' },
+      { key: 'marks_obtained', header: 'Marks Obtained' },
+      { key: 'max_marks', header: 'Max Marks' }
     ]
   }
 };

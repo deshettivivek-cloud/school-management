@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import { getImageUrl } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { exportToPDF, exportToExcel } from '../../utils/exportUtils';
@@ -205,7 +206,7 @@ const EmployeeDashboard = () => {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         {emp.photo_url ? (
-                          <img src={emp.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+                          <img src={getImageUrl(emp.photo_url)} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--primary-100)', color: 'var(--primary-700)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
                             {emp.name.charAt(0)}

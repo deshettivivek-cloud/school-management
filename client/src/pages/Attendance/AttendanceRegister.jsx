@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import StatCard from '../../components/Common/StatCard';
+import { getImageUrl } from '../../utils/helpers';
 
 const AttendanceRegister = () => {
   const { user } = useAuth();
@@ -212,7 +213,7 @@ const AttendanceRegister = () => {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         {student.photo_url ? (
-                          <img src={student.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+                          <img src={getImageUrl(student.photo_url)} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--primary-100)', color: 'var(--primary-700)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
                             {student.name.charAt(0)}

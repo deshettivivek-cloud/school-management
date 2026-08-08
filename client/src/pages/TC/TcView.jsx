@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlinePrinter, HiOutlineArrowLeft } from 'react-icons/hi';
 import { format } from 'date-fns';
+import { getImageUrl } from '../../utils/helpers';
 
 const TcView = () => {
   const { id } = useParams();
@@ -294,7 +295,7 @@ const TcView = () => {
             <div style={{ overflow: 'hidden', marginBottom: '1.5rem' }}>
               <div className="photo-box-print">
                 {(student.photo_url || student.photoUrl) ? (
-                  <img src={student.photo_url || student.photoUrl} alt="Student" />
+                  <img src={getImageUrl(student.photo_url || student.photoUrl)} alt="Student" />
                 ) : (
                   <span>Photo</span>
                 )}

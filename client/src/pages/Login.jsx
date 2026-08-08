@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { Mail, Lock, Eye, EyeOff, BookOpen } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, BookOpen, Heart, Users, CreditCard, BarChart2, ArrowRight } from 'lucide-react';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -15,14 +15,14 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!email || !password) {
-      toast.error('Please enter both email and password');
+    if (!identifier || !password) {
+      toast.error('Please enter both your credentials');
       return;
     }
 
     setLoading(true);
     try {
-      const userData = await signIn(email, password);
+      const userData = await signIn(identifier, password);
 
       if (userData.mustChangePassword) {
         toast('Please change your password to continue', { icon: '🔑' });
@@ -40,91 +40,173 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-bg-effects">
-        <div className="auth-bg-orb auth-bg-orb-1" />
-        <div className="auth-bg-orb auth-bg-orb-2" />
-        <div className="auth-bg-orb auth-bg-orb-3" />
-      </div>
-
-      <div className="auth-card animate-slide-up">
-        <div className="auth-header">
-          <div className="auth-logo" style={{ background: 'var(--primary-50)', color: 'var(--primary-600)', width: 48, height: 48, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: 'var(--shadow-sm)' }}>
-            <BookOpen size={24} />
+    <div className="login-mockup-split">
+      {/* LEFT PANE: Light Canvas */}
+      <div className="mockup-left-pane">
+        
+        {/* Header */}
+        <div className="mockup-left-header">
+          <div className="mockup-logo-area">
+            <BookOpen size={28} color="#6D5AE0" />
+            <span>ClassOrbit</span>
           </div>
-          <h1 className="auth-title">Welcome Back</h1>
-          <p className="auth-subtitle">Sign in to your School Management System</p>
+          <div className="mockup-trusted-badge">
+            <Heart size={16} fill="currentColor" />
+            Trusted by modern schools
+          </div>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="auth-field">
-            <label className="auth-label" htmlFor="login-email">
-              <Mail className="auth-label-icon" size={16} />
-              Email Address
-            </label>
-            <input
-              id="login-email"
-              type="email"
-              className="auth-input"
-              placeholder="you@school.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              autoFocus
-            />
+        {/* Content */}
+        <div className="mockup-left-content">
+          
+          <div style={{ position: 'relative' }}>
+            <span className="mockup-handwritten" style={{ top: '-1rem', right: '-4rem' }}>
+              Better tools.<br/>A brighter tomorrow.
+            </span>
+            <h1 className="mockup-title">
+              Welcome to<br/>
+              <span>ClassOrbit</span>
+            </h1>
           </div>
+          
+          <p className="mockup-subtitle">
+            A smarter way to manage your school. Simplify attendance, fees, academics and everything in between — all in one place.
+          </p>
 
-          <div className="auth-field">
-            <label className="auth-label" htmlFor="login-password">
-              <Lock className="auth-label-icon" size={16} />
-              Password
-            </label>
-            <div className="auth-input-group">
-              <input
-                id="login-password"
-                type={showPassword ? 'text' : 'password'}
-                className="auth-input"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                className="auth-toggle-password"
-                onClick={() => setShowPassword(!showPassword)}
-                tabIndex={-1}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+          <div className="mockup-feature-row">
+            <div className="mockup-feature-icon mockup-icon-purple">
+              <Users size={24} />
+            </div>
+            <div className="mockup-feature-text">
+              <h3>Attendance Tracking</h3>
+              <p>Accurate. Instant. Hassle-free.</p>
             </div>
           </div>
 
-          <div className="auth-actions-row">
-            <Link to="/forgot-password" className="auth-link">
-              Forgot password?
-            </Link>
+          <div className="mockup-feature-row">
+            <div className="mockup-feature-icon mockup-icon-green">
+              <CreditCard size={24} />
+            </div>
+            <div className="mockup-feature-text">
+              <h3>Fee Management</h3>
+              <p>Simple. Secure. Transparent.</p>
+            </div>
           </div>
 
-          <button
-            id="login-submit"
-            type="submit"
-            className="auth-btn auth-btn-primary"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <div className="auth-spinner" />
-                Signing in...
-              </>
-            ) : (
-              'Sign In'
-            )}
-          </button>
-        </form>
+          <div className="mockup-feature-row">
+            <div className="mockup-feature-icon mockup-icon-orange">
+              <BarChart2 size={24} />
+            </div>
+            <div className="mockup-feature-text">
+              <h3>Real-time Reports</h3>
+              <p>Better insights. Better decisions.</p>
+            </div>
+          </div>
+          
+          <div style={{ position: 'relative', marginTop: '2rem' }}>
+            <span className="mockup-handwritten" style={{ bottom: '-1rem', left: '0', fontSize: '1.25rem', transform: 'rotate(-3deg)' }}>
+              Empowering<br/>Smarter Education
+            </span>
+          </div>
 
-        <div className="auth-footer" style={{ padding: '0.5rem', border: 'none' }}>
+        </div>
+      </div>
+
+      {/* RIGHT PANE: Purple Gradient & Login Card */}
+      <div className="mockup-right-pane">
+        
+        <div className="mockup-wavy-bg"></div>
+        <div className="mockup-wavy-bg-2"></div>
+
+        <div className="mockup-login-card">
+          
+          <div className="mockup-card-header">
+            <div className="mockup-card-logo">
+              <BookOpen className="mockup-card-logo-icon" size={28} />
+              ClassOrbit
+            </div>
+            <p className="mockup-card-subtitle">Sign in to your school account</p>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            
+            <div className="mockup-input-group">
+              <label className="mockup-label" htmlFor="login-identifier">
+                Email or Username
+              </label>
+              <div className="mockup-input-wrapper">
+                <User size={18} className="mockup-input-icon" />
+                <input
+                  id="login-identifier"
+                  type="text"
+                  className="mockup-input"
+                  placeholder="Enter email or username"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  autoComplete="username"
+                />
+              </div>
+            </div>
+
+            <div className="mockup-input-group">
+              <label className="mockup-label" htmlFor="login-password">
+                Password
+              </label>
+              <div className="mockup-input-wrapper">
+                <Lock size={18} className="mockup-input-icon" />
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="mockup-input"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  style={{ paddingRight: '2.5rem' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                  style={{ position: 'absolute', right: '1rem', background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', display: 'flex' }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4B5563', cursor: 'pointer', fontWeight: 500 }}>
+                <input type="checkbox" style={{ accentColor: '#6D5AE0', width: '1rem', height: '1rem', cursor: 'pointer' }} />
+                Keep me signed in
+              </label>
+              <Link to="/forgot-password" style={{ fontSize: '0.875rem', color: '#6D5AE0', fontWeight: 600, textDecoration: 'none' }}>
+                Forgot password?
+              </Link>
+            </div>
+
+            <button
+              id="login-submit"
+              type="submit"
+              className="mockup-btn-primary"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2, borderColor: 'white', borderTopColor: 'transparent' }} />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <ArrowRight size={18} /> Sign In
+                </>
+              )}
+            </button>
+          </form>
+          
+          <div className="mockup-footer-link">
+            Need help? <a href="#">Contact your school admin</a>
+          </div>
         </div>
       </div>
     </div>

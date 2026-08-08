@@ -148,12 +148,13 @@ const ReportFilterModal = ({
   useEffect(() => {
     if (isOpen) {
       setLocalFilters(filters);
+      const columnsOptions = COLUMNS_BY_MODULE[module] || [];
       setLocalColumns(selectedColumns?.length ? selectedColumns : columnsOptions.map(c => c.key));
       setLocalSortBy(sortBy || (columnsOptions[0]?.key || ''));
       setLocalSortOrder(sortOrder || 'Ascending');
       setLocalGroupBy(groupBy || 'None');
     }
-  }, [isOpen, filters, selectedColumns, module, sortBy, sortOrder, groupBy, columnsOptions]);
+  }, [isOpen, module]);
 
   const handleChange = (key, value) => {
     setLocalFilters(prev => ({ ...prev, [key]: value }));

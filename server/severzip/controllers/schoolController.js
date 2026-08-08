@@ -17,7 +17,8 @@ exports.getSchool = async (req, res) => {
       data: rows.length > 0 ? rows[0] : null,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[SchoolController getSchool]', error);
+    res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }
 };
 
@@ -71,7 +72,8 @@ exports.updateSchool = async (req, res) => {
 
     res.json({ success: true, data: updated[0] });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[SchoolController updateSchool]', error);
+    res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }
 };
 
@@ -95,7 +97,8 @@ exports.uploadLogo = async (req, res) => {
 
     res.json({ success: true, data: updated[0] });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[SchoolController uploadLogo]', error);
+    res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }
 };
 
@@ -147,6 +150,7 @@ exports.getDailyStats = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[SchoolController getDailyStats]', error);
+    res.status(500).json({ success: false, message: 'An internal server error occurred.' });
   }
 };

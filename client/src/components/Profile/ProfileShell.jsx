@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { getImageUrl } from '../../utils/helpers';
 
 const ProfileShell = ({ header, tabs }) => {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ const ProfileShell = ({ header, tabs }) => {
           border: '2px solid var(--border-color)'
         }}>
           {header.photoUrl ? (
-            <img src={header.photoUrl} alt={header.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={getImageUrl(header.photoUrl)} alt={header.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
             <span style={{ fontSize: '2rem', color: 'var(--text-muted)' }}>{header.title?.charAt(0)}</span>
           )}

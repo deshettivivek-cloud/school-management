@@ -136,9 +136,9 @@ const SuperAdminDashboard = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{
               width: 48, height: 48, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#2563eb',
+              background: 'var(--accent-500)',
             }}>
-              <HiOutlineUserGroup size={22} color="#fff" />
+              <HiOutlineUserGroup size={22} color="var(--text-inverse)" />
             </div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
@@ -155,9 +155,9 @@ const SuperAdminDashboard = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{
               width: 48, height: 48, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#16a34a',
+              background: 'var(--success-500)',
             }}>
-              <HiOutlineAcademicCap size={22} color="#fff" />
+              <HiOutlineAcademicCap size={22} color="var(--text-inverse)" />
             </div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
@@ -179,8 +179,8 @@ const SuperAdminDashboard = () => {
                 <span style={{ fontWeight: 600, textTransform: 'capitalize', color: 'var(--text-primary)' }}>{role}</span>
                 <span style={{
                   padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)',
-                  background: role === 'principal' ? '#eff6ff' : role === 'clerk' ? '#f0fdf4' : '#f5f3ff',
-                  color: role === 'principal' ? '#2563eb' : role === 'clerk' ? '#16a34a' : '#7c3aed',
+                  background: 'var(--bg-elevated)',
+                  color: role === 'principal' ? 'var(--info-500)' : role === 'clerk' ? 'var(--success-500)' : 'var(--accent-500)',
                   fontWeight: 700, fontSize: '0.85rem',
                 }}>{count}</span>
               </div>

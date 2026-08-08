@@ -24,7 +24,8 @@ import {
   Calendar,
   Megaphone,
   MessageSquare,
-  Bug
+  Bug,
+  CreditCard
 } from 'lucide-react';
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
@@ -92,11 +93,13 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <BookOpen size={20} />
+            <div style={{ background: 'var(--accent-500)', padding: '0.4rem', borderRadius: '0.5rem', display: 'flex' }}>
+              <BookOpen size={20} color="white" />
+            </div>
           </div>
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="sidebar-title">SchoolMS</div>
+              <div className="sidebar-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>SchoolMS</div>
               <div className="sidebar-subtitle">Management System</div>
             </motion.div>
           )}
@@ -109,9 +112,9 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
             }
             if (item.section) {
               return !collapsed ? (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={idx} className="nav-section-label">
+                <div key={idx} className="nav-section-label">
                   {item.section}
-                </motion.div>
+                </div>
               ) : (
                 <div key={idx} style={{ height: '0.75rem' }} />
               );
@@ -134,8 +137,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: 'var(--primary-50)',
-                      borderLeft: '3px solid var(--primary-600)',
+                      background: 'var(--accent-500)',
                       borderRadius: 'var(--radius-md)',
                       zIndex: 0
                     }}
@@ -143,11 +145,11 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
                 )}
-                <span className="nav-item-icon" style={{ zIndex: 1, color: active ? 'var(--primary-600)' : 'var(--text-muted)' }}>
+                <span className="nav-item-icon" style={{ zIndex: 1, color: active ? '#FFFFFF' : 'var(--text-primary)' }}>
                   <Icon size={18} strokeWidth={active ? 2.5 : 2} />
                 </span>
                 {!collapsed && (
-                  <span style={{ zIndex: 1, color: active ? 'var(--primary-700)' : 'var(--text-secondary)', fontWeight: active ? 600 : 500 }}>
+                  <span style={{ zIndex: 1, color: active ? '#FFFFFF' : 'var(--text-primary)', fontWeight: active ? 600 : 500 }}>
                     {item.label}
                   </span>
                 )}
@@ -155,6 +157,26 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
             );
           })}
         </nav>
+
+        {!collapsed && (
+          <div className="sidebar-widget" style={{ 
+            margin: '1rem', 
+            padding: '1rem', 
+            background: 'var(--primary-50)', 
+            borderRadius: 'var(--radius-lg)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--primary-800)', margin: 0, zIndex: 1 }}>Empowering<br/>Education</h4>
+            <p style={{ fontSize: '0.75rem', color: 'var(--primary-600)', margin: 0, zIndex: 1 }}>One student at a time</p>
+            <div style={{ position: 'absolute', right: '-0.5rem', bottom: '-0.5rem', opacity: 0.8, color: 'var(--accent-500)' }}>
+              <GraduationCap size={64} strokeWidth={1} />
+            </div>
+          </div>
+        )}
 
         <div className="sidebar-footer">
           <button className="logout-btn" onClick={logout}>
@@ -179,17 +201,18 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
             gap: 0.75rem;
             width: 100%;
             padding: 0.75rem;
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-full);
             background: transparent;
-            color: var(--text-secondary);
+            color: var(--danger-500);
+            border: 1px solid var(--danger-200);
             font-size: 0.875rem;
             font-weight: 500;
             transition: all var(--transition-fast);
             margin-bottom: 0.5rem;
           }
           .logout-btn:hover {
-            background: var(--danger-50);
-            color: var(--danger-600);
+            background: rgba(239, 68, 68, 0.05);
+            border-color: var(--danger-300);
           }
         `}</style>
       </aside>

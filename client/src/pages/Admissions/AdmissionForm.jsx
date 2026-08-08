@@ -82,6 +82,26 @@ const AdmissionForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const normalizedName = (form.name || '').trim().replace(/\s+/g, ' ');
+    
+    if (!normalizedName) {
+      toast.error('❌ Name is required');
+      return;
+    }
+    
+    if (normalizedName.length > 100) {
+      toast.error('❌ Maximum length exceeded');
+      return;
+    }
+
+    if (!/^[a-zA-Z\s'-]+$/.test(normalizedName)) {
+      toast.error('❌ Student name can contain only letters, spaces, apostrophes (\') and hyphens (-).');
+      return;
+    }
+
+    form.name = normalizedName; // Update form object before submission
+
     const missing = [];
     if (!form.name) missing.push('Full Name');
     if (!form.dob) missing.push('Date of Birth');

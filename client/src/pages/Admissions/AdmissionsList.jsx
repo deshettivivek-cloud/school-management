@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlinePlus, HiOutlineSearch, HiOutlineCheckCircle, HiOutlineClock, HiOutlineDocumentText } from 'react-icons/hi';
 import { format } from 'date-fns';
+import { getImageUrl } from '../../utils/helpers';
 import { useAuth } from '../../context/AuthContext';
 import PrintSection from '../../components/PrintSection';
 
@@ -155,7 +156,7 @@ const AdmissionsList = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {student.photo_url || student.photo ? (
                           <img
-                            src={student.photo_url || student.photo}
+                            src={getImageUrl(student.photo_url || student.photo)}
                             alt=""
                             style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
                           />

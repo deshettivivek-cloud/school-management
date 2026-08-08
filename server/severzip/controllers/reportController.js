@@ -134,7 +134,7 @@ exports.generateReport = async (req, res) => {
     // Date Filters
     if (filters.startDate && filters.endDate) {
       const dateCol = config.defaultSort.includes('date') ? config.defaultSort : `${tablePrefix}created_at`;
-      queryBase += ` AND ${dateCol} >= ? AND ${dateCol} <= ?`;
+      queryBase += ` AND DATE(${dateCol}) >= ? AND DATE(${dateCol}) <= ?`;
       params.push(filters.startDate, filters.endDate);
     }
 

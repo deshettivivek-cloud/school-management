@@ -55,6 +55,7 @@ exports.login = async (req, res) => {
     const routeResult = await authRepository.findGlobalUserSchool(masterPool, email);
 
     if (routeResult.length === 0) {
+      console.warn(`[AUTH DEBUG] Login failed for ${email}: Not found in global_users.`);
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
       await AuthRateLimiter.delay(delayMs);
       return res.status(401).json({ success: false, message: 'Incorrect email or password' });
@@ -72,6 +73,7 @@ exports.login = async (req, res) => {
     const isExpired = daysSinceCreation > 365;
 
     if (isSuspended || isExpired) {
+      console.warn(`[AUTH DEBUG] Login blocked for ${email}: School suspended (${isSuspended}) or expired (${isExpired}).`);
       AuthRateLimiter.clearAttempts(email);
       return res.status(403).json({ 
         success: false, 
@@ -86,6 +88,7 @@ exports.login = async (req, res) => {
     const profileResult = await authRepository.findUserProfileByEmail(schoolPool, email);
 
     if (profileResult.length === 0) {
+      console.warn(`[AUTH DEBUG] Login failed for ${email}: Profile not found in tenant DB (${dbName}).`);
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
       await AuthRateLimiter.delay(delayMs);
       return res.status(401).json({ success: false, message: 'Incorrect email or password' });
@@ -94,6 +97,7 @@ exports.login = async (req, res) => {
     const user = profileResult[0];
 
     if (user.is_active === 0 || user.is_active === false) {
+      console.warn(`[AUTH DEBUG] Login blocked for ${email}: User profile suspended in tenant DB (${dbName}).`);
       AuthRateLimiter.clearAttempts(email);
       return res.status(403).json({ 
         success: false, 
@@ -104,6 +108,7 @@ exports.login = async (req, res) => {
     // 3. Verify password
     const isMatch = await comparePassword(password, user.password_hash);
     if (!isMatch) {
+      console.warn(`[AUTH DEBUG] Login failed for ${email}: Password mismatch.`);
       const delayMs = await AuthRateLimiter.incrementAttempt(email);
       await AuthRateLimiter.delay(delayMs);
       return res.status(401).json({ success: false, message: 'Incorrect email or password' });

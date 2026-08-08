@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import { HiOutlineSearch, HiOutlineCurrencyRupee, HiOutlineReceiptRefund } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineCurrencyRupee, HiOutlineReceiptRefund, HiOutlineArrowLeft } from 'react-icons/hi';
 import StatCard from '../../components/Common/StatCard';
 import { format } from 'date-fns';
 import PrintSection from '../../components/PrintSection';
@@ -23,6 +23,9 @@ const FeeCollection = () => {
   const [inputYear, setInputYear] = useState('');
   const [pendingRecords, setPendingRecords] = useState([]);
   const [gradeFilter, setGradeFilter] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [dropdownLoading, setDropdownLoading] = useState(false);
+  const [dropdownResults, setDropdownResults] = useState([]);
 
   useEffect(() => {
     fetchSchoolYear();
@@ -58,9 +61,35 @@ const FeeCollection = () => {
     } catch (err) { /* ignore */ }
   };
 
+  // Debounced live search
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (search.trim().length >= 2) {
+        setDropdownLoading(true);
+        setIsDropdownOpen(true);
+        try {
+          const res = await api.get(`/students?search=${encodeURIComponent(search)}&active=true&limit=8`);
+          // Note: Backend might not support limit=8 natively, so we slice it here just in case.
+          const results = res.data.data || [];
+          setDropdownResults(results.slice(0, 8));
+        } catch (error) {
+          console.error('Live search failed', error);
+        } finally {
+          setDropdownLoading(false);
+        }
+      } else {
+        setIsDropdownOpen(false);
+        setDropdownResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const searchStudents = async () => {
     if (!search.trim()) return;
     setLoading(true);
+    setIsDropdownOpen(false);
     try {
       const res = await api.get(`/students?search=${encodeURIComponent(search)}&active=true`);
       setStudents(res.data.data);
@@ -74,6 +103,8 @@ const FeeCollection = () => {
   const selectStudent = async (student) => {
     setSelectedStudent(student);
     setStudents([]);
+    setDropdownResults([]);
+    setIsDropdownOpen(false);
     setSearch('');
 
     try {
@@ -176,16 +207,21 @@ const FeeCollection = () => {
     <PrintSection title="Fee Collection">
     <div className="animate-fade-in">
       <div className="page-header">
-        <div className="page-header-info">
-          <h1>Fee Collection</h1>
-          <p>Search for a student to manage their fees</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>
+            <HiOutlineArrowLeft size={18} />
+          </button>
+          <div className="page-header-info">
+            <h1>Fee Collection</h1>
+            <p>Search for a student to manage their fees</p>
+          </div>
         </div>
       </div>
 
       {/* Search */}
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
-          <div style={{ flex: 1 }}>
+      <div className="card" style={{ marginBottom: '1.5rem', overflow: 'visible' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', position: 'relative' }}>
+          <div style={{ flex: 1, position: 'relative' }}>
             <label className="form-label">Search Student</label>
             <input
               id="fee-search"
@@ -193,15 +229,82 @@ const FeeCollection = () => {
               placeholder="Type student name or admission number..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && searchStudents()}
+              onFocus={() => {
+                if (search.trim().length >= 2) setIsDropdownOpen(true);
+              }}
+              onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setIsDropdownOpen(false);
+                  searchStudents();
+                }
+              }}
+              autoComplete="off"
             />
+            {/* Autocomplete Dropdown */}
+            {isDropdownOpen && search.trim().length >= 2 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: '4px',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: 'var(--shadow-lg)',
+                  zIndex: 50,
+                  maxHeight: '300px',
+                  overflowY: 'auto'
+                }}
+              >
+                {dropdownLoading ? (
+                  <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    Loading...
+                  </div>
+                ) : dropdownResults.length > 0 ? (
+                  dropdownResults.map((s) => (
+                    <div
+                      key={s.id}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderBottom: '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                        transition: 'background 0.15s'
+                      }}
+                      onMouseDown={(e) => e.preventDefault()} // Prevents blur before click registers
+                      onClick={() => selectStudent(s)}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong style={{ color: 'var(--text-primary)' }}>{s.name}</strong>
+                          <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.85rem' }}>
+                            ({s.admission_no || s.admissionNo})
+                          </span>
+                        </div>
+                        <span className="badge badge-neutral" style={{ fontSize: '0.75rem' }}>
+                          Class {s.grade}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    No matching students
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <button className="btn btn-primary" onClick={searchStudents}>
             <HiOutlineSearch /> Search
           </button>
         </div>
 
-        {/* Search Results */}
+        {/* Search Results (Inline for explicit search) */}
         {students.length > 0 && (
           <div style={{ marginTop: '1rem', maxHeight: 250, overflowY: 'auto' }}>
             {students.map((s) => (

@@ -269,7 +269,7 @@ const BulkMessaging = () => {
                   <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     SMS (GSM)
                     {channel === 'sms' && (
-                      <span style={{ fontSize: '0.75rem', background: '#dbeafe', color: '#1d4ed8', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.75rem', background: 'var(--bg-elevated)', color: 'var(--accent-500)', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 700 }}>
                         Active
                       </span>
                     )}

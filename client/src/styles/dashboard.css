@@ -65,16 +65,15 @@
 /* ── Dashboard Hero ──────────────────────────────────────────── */
 .dashboard-hero {
   position: relative;
-  padding: 2.25rem 2rem;
-  border-radius: var(--radius-xl);
+  padding: 3rem 4rem;
+  border-radius: 1.5rem;
   overflow: hidden;
   margin-bottom: 2rem;
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-xs);
+  align-items: center;
+  background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 50%, #E0E7FF 100%);
+  border: 1px solid var(--primary-100);
 }
 
 .dashboard-hero-bg {
@@ -83,8 +82,22 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.04) 0%, rgba(124, 58, 237, 0.03) 50%, transparent 100%);
   z-index: 0;
+  overflow: hidden;
+}
+
+.dashboard-hero-bg::after {
+  content: '';
+  position: absolute;
+  right: 15%;
+  bottom: -10%;
+  width: 350px;
+  height: 250px;
+  background-image: url('https://cdn-icons-png.flaticon.com/512/2942/2942911.png'); /* Placeholder for school building */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  opacity: 0.15;
 }
 
 .dashboard-hero-content {
@@ -93,59 +106,36 @@
 }
 
 .hero-title {
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 800;
-  margin-bottom: 0.35rem;
-  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  color: #111827;
   letter-spacing: -0.02em;
 }
 
 .hero-subtitle {
-  font-size: 1rem;
-  color: var(--text-muted);
-}
-
-.hero-stats {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 1rem;
-}
-
-.hero-stat {
-  background: var(--bg-tertiary);
-  padding: 0.85rem 1.25rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.hero-stat-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
-.hero-stat-value {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: 1.125rem;
+  color: #4B5563;
 }
 
 /* ── KPI Cards ───────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 1.25rem;
   margin-bottom: 2rem;
 }
 
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+}
+
 .kpi-card {
-  background: var(--bg-card);
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
@@ -158,6 +148,7 @@
 .kpi-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+  border-color: var(--primary-200);
 }
 
 .kpi-glow {
@@ -177,15 +168,20 @@
 }
 
 .kpi-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-md);
+  width: 48px;
+  height: 48px;
+  border-radius: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  color: #fff;
+  font-size: 1.5rem;
 }
+
+.kpi-icon.purple { background: #EEF2FF; color: #6D5AE0; }
+.kpi-icon.blue { background: #EFF6FF; color: #3B82F6; }
+.kpi-icon.green { background: #ECFDF5; color: #10B981; }
+.kpi-icon.orange { background: #FFFBEB; color: #F59E0B; }
+.kpi-icon.red { background: #FEF2F2; color: #EF4444; }
 
 .kpi-trend {
   display: flex;
@@ -259,7 +255,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--primary-700);
+  color: var(--primary-800);
 }
 
 .ai-grid {
@@ -338,8 +334,9 @@
 }
 
 .action-card:hover .action-icon-wrapper {
-  background: var(--primary-500);
+  background: var(--gradient-indigo);
   color: white;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
 .action-label {

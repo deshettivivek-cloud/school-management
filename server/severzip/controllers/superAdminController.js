@@ -196,8 +196,8 @@ exports.createSchool = async (req, res) => {
     const { createSchoolDatabase } = require('../scripts/createSchoolDb');
     const { schoolName, schoolCode, address, phone, email, academicYear, logo, principalName, principalEmail, temporaryPassword, dbName } = req.body;
 
-    if (!schoolName || !principalName || !principalEmail || !temporaryPassword || !dbName) {
-      return res.status(400).json({ success: false, message: 'Missing required fields. Database name (pre-created in cPanel) is required.' });
+    if (!schoolName || !principalName || !principalEmail || !temporaryPassword) {
+      return res.status(400).json({ success: false, message: 'Missing required fields (School Name, Principal Name, Principal Email, Password).' });
     }
 
     const school = await createSchoolDatabase(

@@ -50,6 +50,16 @@ async function getMasterPool() {
     masterPool = mysql.createPool(masterConfig);
     // Test the connection with retry
     const connection = await getConnectionWithRetry(masterPool);
+    
+    const [rows] = await masterPool.query(`
+      SELECT
+      DATABASE() AS database_name,
+      @@hostname AS hostname,
+      @@port AS port,
+      USER() AS logged_user
+    `);
+    console.table(rows);
+
     connection.release();
     console.log('✅ Connected to master database');
     return masterPool;

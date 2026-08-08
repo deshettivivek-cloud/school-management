@@ -63,14 +63,14 @@ const BugReportsList = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'fixed':
-        return <span style={{ color: '#16a34a', fontWeight: 600 }}>Fixed</span>;
+        return <span style={{ color: 'var(--success-500)', fontWeight: 600 }}>Fixed</span>;
       case 'in_progress':
-        return <span style={{ color: '#2563eb', fontWeight: 600 }}>In Progress</span>;
+        return <span style={{ color: 'var(--accent-500)', fontWeight: 600 }}>In Progress</span>;
       case 'wont_fix':
-        return <span style={{ color: '#6b7280', fontWeight: 600 }}>Won't Fix</span>;
+        return <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Won't Fix</span>;
       case 'open':
       default:
-        return <span style={{ color: '#dc2626', fontWeight: 600 }}>Open</span>;
+        return <span style={{ color: 'var(--danger-500)', fontWeight: 600 }}>Open</span>;
     }
   };
 

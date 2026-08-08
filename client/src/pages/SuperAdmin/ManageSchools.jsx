@@ -201,9 +201,9 @@ const ManageSchools = () => {
                       <input className="form-input" type="text" required value={form.schoolName} onChange={e => setForm({...form, schoolName: e.target.value})} />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Database Name (cPanel) *</label>
-                      <input className="form-input" type="text" required placeholder="e.g. class16c_School_2" value={form.dbName} onChange={e => setForm({...form, dbName: e.target.value})} />
-                      <p style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '0.25rem' }}>⚠️ Must be pre-created in cPanel with user access granted</p>
+                      <label className="form-label">Database Name (Optional)</label>
+                      <input className="form-input" type="text" placeholder="Auto-generated if left blank" value={form.dbName} onChange={e => setForm({...form, dbName: e.target.value})} />
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Leave blank to automatically create a database for this school.</p>
                     </div>
                     <div className="form-group">
                       <label className="form-label">School Join Code (Optional)</label>
@@ -428,8 +428,8 @@ const ManageSchools = () => {
                             <td>
                               <span style={{
                                 padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize',
-                                background: u.role === 'principal' ? '#eff6ff' : u.role === 'clerk' ? '#f0fdf4' : '#f5f3ff',
-                                color: u.role === 'principal' ? '#2563eb' : u.role === 'clerk' ? '#16a34a' : '#7c3aed',
+                                background: 'var(--bg-elevated)',
+                                color: u.role === 'principal' ? 'var(--info-500)' : u.role === 'clerk' ? 'var(--success-500)' : 'var(--accent-500)',
                               }}>{u.role}</span>
                             </td>
                           </tr>

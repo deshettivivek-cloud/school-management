@@ -45,13 +45,13 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
 
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
-          <div className="sidebar-logo" style={{ background: 'var(--warning-500)' }}>
+          <div className="sidebar-logo" style={{ background: 'var(--warning-500)', boxShadow: 'var(--shadow-sm)' }}>
             <ShieldCheck size={20} />
           </div>
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="sidebar-title">SchoolMS</div>
-              <div className="sidebar-subtitle" style={{ color: 'var(--warning-600)' }}>Super Admin</div>
+              <div className="sidebar-subtitle" style={{ color: 'var(--warning-500)' }}>Super Admin</div>
             </motion.div>
           )}
         </div>
@@ -85,8 +85,8 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: 'var(--warning-50)',
-                      borderLeft: '3px solid var(--warning-600)',
+                      background: 'rgba(251, 191, 36, 0.1)',
+                      borderLeft: '3px solid var(--warning-500)',
                       borderRadius: 'var(--radius-md)',
                       zIndex: 0
                     }}
@@ -94,11 +94,11 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
                 )}
-                <span className="nav-item-icon" style={{ zIndex: 1, color: active ? 'var(--warning-600)' : 'var(--text-muted)' }}>
+                <span className="nav-item-icon" style={{ zIndex: 1, color: active ? '#111827' : undefined }}>
                   <Icon size={18} strokeWidth={active ? 2.5 : 2} />
                 </span>
                 {!collapsed && (
-                  <span style={{ zIndex: 1, color: active ? 'var(--warning-700)' : 'var(--text-secondary)', fontWeight: active ? 600 : 500 }}>
+                  <span style={{ zIndex: 1, color: active ? '#111827' : undefined, fontWeight: active ? 700 : 500 }}>
                     {item.label}
                   </span>
                 )}
@@ -131,15 +131,15 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
             padding: 0.75rem;
             border-radius: var(--radius-md);
             background: transparent;
-            color: var(--text-secondary);
+            color: var(--danger-500);
             font-size: 0.875rem;
             font-weight: 500;
             transition: all var(--transition-fast);
             margin-bottom: 0.5rem;
           }
           .logout-btn:hover {
-            background: var(--danger-50);
-            color: var(--danger-600);
+            background: rgba(248, 113, 113, 0.1);
+            color: var(--danger-400);
           }
         `}</style>
       </aside>

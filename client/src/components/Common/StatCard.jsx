@@ -1,6 +1,6 @@
 import React from 'react';
 
-const StatCard = ({ title, value, icon: Icon, color = 'blue', previousValue, periodLabel = 'Compared to last period', formatValue, className = 'col-span-3', hideDelta = false }) => {
+const StatCard = ({ title, value, icon: Icon, color = 'blue', previousValue, periodLabel = 'Compared to last period', formatValue, className = '', hideDelta = false }) => {
   let isNew = false;
   let deltaStr = '';
   let trend = 'neutral';
@@ -39,21 +39,27 @@ const StatCard = ({ title, value, icon: Icon, color = 'blue', previousValue, per
   const displayValue = formatValue ? formatValue(value) : value;
 
   return (
-    <div className={`widget-card ${className} stat-card`}>
-      <div className="stat-card-header">
-        <span className="stat-card-label">{title}</span>
+    <div className={`kpi-card ${className}`}>
+      <div className="kpi-header">
+        <div className="kpi-value-container">
+          <span className="kpi-label">{title}</span>
+          <span className="kpi-value" style={{ 
+            color: 'var(--text-primary)' 
+          }}>
+            {displayValue}
+          </span>
+        </div>
         {Icon && (
-          <div className={`stat-card-icon ${color}`}>
-            <Icon size={20} />
+          <div className={`kpi-icon ${color}`}>
+            <Icon size={24} strokeWidth={2} />
           </div>
         )}
       </div>
-      <div className="stat-card-value" style={{ 
-        color: color === 'green' ? 'var(--success-600)' : color === 'red' ? 'var(--danger-600)' : 'var(--text-primary)' 
-      }}>
-        {displayValue}
-      </div>
-      
+      {!hideDelta && deltaStr && (
+        <div className={`kpi-trend ${trend}`} style={{ padding: 0, background: 'transparent' }}>
+          {trend === 'positive' ? '↗' : trend === 'negative' ? '↘' : '→'} {deltaStr} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{periodLabel}</span>
+        </div>
+      )}
     </div>
   );
 };

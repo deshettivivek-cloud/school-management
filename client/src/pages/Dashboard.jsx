@@ -93,8 +93,11 @@ const Dashboard = () => {
       renderPrimary: (item) => item.name,
       renderSecondary: (item) => `Grade: ${item.grade}`,
       renderRight: (item) => (
-        <div className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
-          {new Date(item.created_at).toLocaleDateString()}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--success-600)' }}>
+            {new Date(item.created_at).toLocaleDateString('en-US')}
+          </span>
+          <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
         </div>
       )
     },
@@ -107,8 +110,11 @@ const Dashboard = () => {
       renderPrimary: (item) => item.students?.name || 'Unknown',
       renderSecondary: (item) => `Paid: ₹${item.total_paid}`,
       renderRight: (item) => (
-        <div className="badge badge-success" style={{ fontSize: '0.7rem' }}>
-          {new Date(item.updated_at).toLocaleDateString()}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--success-600)' }}>
+            {new Date(item.updated_at).toLocaleDateString('en-US')}
+          </span>
+          <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
         </div>
       )
     },
@@ -163,56 +169,48 @@ const Dashboard = () => {
           <div className="dashboard-hero-content">
             <h1 className="hero-title">Welcome Back, Principal 👋</h1>
             <p className="hero-subtitle">Here's your school's performance summary for today.</p>
-          </div>
-          <div className="hero-stats">
-            <div className="hero-stat">
-              <span className="hero-stat-label">Date</span>
-              <span className="hero-stat-value">{new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+              <div className="badge" style={{ background: '#FFFFFF', color: '#111827', padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                <Calendar size={14} color="#6D5AE0" /> Academic Year 2026-27
+              </div>
+              <div className="badge" style={{ background: '#FFFFFF', color: '#111827', padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }}></div> Term 1
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* UPPER DASHBOARD: Snapshot Widgets */}
-        <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Zap size={20} className="text-warning-500" /> Today's Snapshot
-          </h2>
-          <div className="dashboard-grid">
-            <DashboardWidget config={widgetsConfig.find(w => w.id === 'recentAdmissions')} widgetData={widgetData?.recentAdmissions} />
-            <DashboardWidget config={widgetsConfig.find(w => w.id === 'recentPayments')} widgetData={widgetData?.recentPayments} />
-            <DashboardWidget config={widgetsConfig.find(w => w.id === 'pendingApprovals')} widgetData={widgetData?.pendingApprovals} />
-            <DashboardWidget config={widgetsConfig.find(w => w.id === 'upcomingExams')} widgetData={widgetData?.upcomingExams} />
-            <DashboardWidget config={widgetsConfig.find(w => w.id === 'latestAnnouncements')} widgetData={widgetData?.latestAnnouncements} />
+          <div className="hero-stats" style={{ background: '#FFFFFF', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '140px', zIndex: 10 }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#6D5AE0', letterSpacing: '0.05em' }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()}</span>
+            <span style={{ fontSize: '3.5rem', fontWeight: 800, color: '#111827', lineHeight: 1, margin: '0.5rem 0' }}>{new Date().getDate()}</span>
+            <span style={{ fontSize: '1rem', fontWeight: 600, color: '#4B5563' }}>{new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
           </div>
         </div>
 
-
-
-        <div className="dashboard-grid">
+        <div className="kpi-grid">
           {/* Row 1: Key Metrics */}
-          {/* 2. Total Students */}
-          <StatCard title="Total Students" value={studentStats?.total || 0} icon={Users} color="blue" periodLabel="Active Enrolled" />
+          {/* 1. Total Students */}
+          <StatCard title="Total Students" value={studentStats?.total || 0} icon={Users} color="purple" periodLabel="Active Enrolled" />
 
-          {/* 3. New Admissions */}
-          <StatCard title="New Admissions" value={studentStats?.newAdmissions || 0} icon={UserPlus} color="purple" periodLabel="This Academic Year" />
+          {/* 2. New Admissions */}
+          <StatCard title="New Admissions" value={studentStats?.newAdmissions || 0} icon={UserPlus} color="blue" periodLabel="This Academic Year" />
 
-          {/* 4. Fee Defaulters */}
-          <StatCard title="Fee Defaulters" value={feeStats?.pendingCount || 0} icon={AlertCircle} color="red" periodLabel="Students Pending" />
-
-          {/* 5. Paid Students */}
+          {/* 3. Fully Paid */}
           <StatCard title="Fully Paid" value={feeStats?.paidCount || 0} icon={CheckCircle} color="green" periodLabel="Cleared Dues" />
 
-          {/* Row 2: Financial Overview */}
-          {/* 6. Total Collection (Month) */}
-          <StatCard title="Total Collection (YTD)" value={feeStats?.totalCollected || 0} formatValue={formatCurrency} icon={Wallet} color="blue" periodLabel="Gross Revenue" className="col-span-4" />
+          {/* 4. Total Collection */}
+          <StatCard title="Total Collection" value={feeStats?.totalCollected || 0} formatValue={formatCurrency} icon={Wallet} color="orange" periodLabel="YTD Revenue" />
 
-          {/* 7. Today's Revenue */}
-          <StatCard title="Today's Collection" value={dailyStats?.totalCollection || 0} formatValue={formatCurrency} icon={DollarSign} color="green" periodLabel="Received Today" className="col-span-4" />
+          {/* 5. Fee Defaulters */}
+          <StatCard title="Fee Defaulters" value={feeStats?.pendingCount || 0} formatValue={formatCurrency} icon={AlertCircle} color="red" periodLabel="Students Pending" />
+        </div>
 
-          {/* 8. Today's Expenditure */}
-          <StatCard title="Today's Expenditure" value={dailyStats?.totalExpenditure || 0} formatValue={formatCurrency} icon={CreditCard} color="amber" periodLabel="Spent Today" className="col-span-4" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+          <DashboardWidget config={widgetsConfig.find(w => w.id === 'recentAdmissions')} widgetData={widgetData?.recentAdmissions} />
+          <DashboardWidget config={widgetsConfig.find(w => w.id === 'recentPayments')} widgetData={widgetData?.recentPayments} />
+          <DashboardWidget config={widgetsConfig.find(w => w.id === 'pendingApprovals')} widgetData={widgetData?.pendingApprovals} />
+        </div>
 
-          {/* Row 3: Analytics & Charts */}
+        <div className="dashboard-grid">
+          {/* Analytics & Charts */}
           <Suspense fallback={
             <>
               <div className="widget-card col-span-8" style={{ minHeight: '360px' }}>
@@ -225,47 +223,6 @@ const Dashboard = () => {
           }>
             <DashboardCharts gradeData={gradeData} pieData={pieData} />
           </Suspense>
-
-          {/* Row 4: Actions & More Stats */}
-          {/* 11. Net Profit / Loss */}
-          <StatCard title="Net Profit / Loss" value={profitLoss} formatValue={(val) => `${val >= 0 ? '+' : ''}${formatCurrency(val)}`} icon={Activity} color={isProfit ? 'green' : 'red'} periodLabel="Today's Performance" />
-
-          {/* 12. Quick Action: Admission */}
-          <div className="widget-card col-span-3 stat-card" style={{ cursor: 'pointer', background: 'var(--bg-tertiary)' }} onClick={() => navigate('/admissions/new')}>
-            <div className="stat-card-header">
-              <span className="stat-card-label" style={{ color: 'var(--primary-600)' }}>Quick Action</span>
-              <div className="stat-card-icon blue"><UserPlus size={20} /></div>
-            </div>
-            <div className="stat-card-value" style={{ fontSize: '1.25rem', marginTop: '0.5rem' }}>New Admission</div>
-            <div className="stat-card-trend neutral" style={{ marginTop: 'auto' }}>
-              <span>Enroll a student</span> <ChevronRight size={14} style={{ marginLeft: 'auto' }} />
-            </div>
-          </div>
-
-          {/* 13. Quick Action: Collect Fee */}
-          <div className="widget-card col-span-3 stat-card" style={{ cursor: 'pointer', background: 'var(--bg-tertiary)' }} onClick={() => navigate('/fees/collection')}>
-            <div className="stat-card-header">
-              <span className="stat-card-label" style={{ color: 'var(--success-700)' }}>Quick Action</span>
-              <div className="stat-card-icon green"><DollarSign size={20} /></div>
-            </div>
-            <div className="stat-card-value" style={{ fontSize: '1.25rem', marginTop: '0.5rem' }}>Collect Fee</div>
-            <div className="stat-card-trend neutral" style={{ marginTop: 'auto' }}>
-              <span>Process payment</span> <ChevronRight size={14} style={{ marginLeft: 'auto' }} />
-            </div>
-          </div>
-
-          {/* 14. Quick Action: View Reports */}
-          <div className="widget-card col-span-3 stat-card" style={{ cursor: 'pointer', background: 'var(--bg-tertiary)' }} onClick={() => navigate('/reports')}>
-            <div className="stat-card-header">
-              <span className="stat-card-label" style={{ color: 'var(--warning-700)' }}>Quick Action</span>
-              <div className="stat-card-icon amber"><FileText size={20} /></div>
-            </div>
-            <div className="stat-card-value" style={{ fontSize: '1.25rem', marginTop: '0.5rem' }}>View Reports</div>
-            <div className="stat-card-trend neutral" style={{ marginTop: 'auto' }}>
-              <span>Analytics & Data</span> <ChevronRight size={14} style={{ marginLeft: 'auto' }} />
-            </div>
-          </div>
-
         </div>
       </motion.div>
     </PrintSection>

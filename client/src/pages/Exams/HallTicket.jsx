@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '../../utils/helpers';
 import { HiOutlinePrinter, HiOutlineArrowLeft, HiOutlineSearch, HiOutlineDocumentText } from 'react-icons/hi';
 import { format } from 'date-fns';
 import '../../styles/hallticket.css';
@@ -579,7 +580,7 @@ const HallTicket = () => {
                       </div>
                       <div className="hall-photo-box" style={{ padding: currentStudent.photo_url ? '0' : '10px' }}>
                         {currentStudent.photo_url ? (
-                          <img src={currentStudent.photo_url} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={getImageUrl(currentStudent.photo_url)} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           <>Affix<br/>Passport-size<br/>Photograph<br/>(attested)</>
                         )}

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import {
   UploadCloud, UserPlus, Search, Users, Phone, Mail, FileSpreadsheet
 } from 'lucide-react';
+import { getImageUrl } from '../../utils/helpers';
 
 const StudentDirectory = () => {
   const navigate = useNavigate();
@@ -242,7 +243,7 @@ const StudentDirectory = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             {student.photo_url || student.photo ? (
                               <img
-                                src={student.photo_url || student.photo}
+                                src={getImageUrl(student.photo_url || student.photo)}
                                 alt=""
                                 style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
                               />
