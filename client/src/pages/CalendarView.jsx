@@ -2,16 +2,14 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import CalendarWidget from '../components/Dashboard/CalendarWidget';
 import AddEventModal from '../components/Dashboard/AddEventModal';
-import ImportCalendarModal from '../components/Dashboard/ImportCalendarModal';
 import { motion } from 'framer-motion';
-import { Calendar as CalendarIcon, Plus, UploadCloud } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus } from 'lucide-react';
 import '../styles/dashboard.css';
 
 const CalendarView = () => {
   const [calendarEvents, setCalendarEvents] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const fetchEvents = async () => {
     try {
@@ -39,22 +37,13 @@ const CalendarView = () => {
           </h1>
           <p className="dashboard-subtitle" style={{ color: 'var(--text-muted)' }}>View all upcoming exams, announcements, and holidays</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button 
-            className="btn btn-outline" 
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-            onClick={() => setIsImportModalOpen(true)}
-          >
-            <UploadCloud size={18} /> Import Calendar
-          </button>
-          <button 
-            className="btn btn-primary" 
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-            onClick={() => setIsModalOpen(true)}
-          >
-            <Plus size={18} /> Add Event
-          </button>
-        </div>
+        <button 
+          className="btn btn-primary" 
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          onClick={() => setIsModalOpen(true)}
+        >
+          <Plus size={18} /> Add Event
+        </button>
       </div>
 
       <div className="dashboard-grid">
@@ -82,15 +71,6 @@ const CalendarView = () => {
           setIsModalOpen(false);
           fetchEvents();
         }} 
-      />
-
-      <ImportCalendarModal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-        onSuccess={() => {
-          setIsImportModalOpen(false);
-          fetchEvents();
-        }}
       />
     </div>
   );
