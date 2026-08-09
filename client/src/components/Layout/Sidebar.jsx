@@ -105,16 +105,34 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
 
   return (
     <>
-      {mobileOpen && (
-        <div
-          className="modal-overlay"
-          style={{ zIndex: 150 }}
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="mobile-overlay"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
-      <nav className={`top-navbar ${mobileOpen ? 'mobile-open' : ''}`} ref={navRef}>
-        <div className="top-navbar-container">
+      <nav className={`top-navbar ${mobileOpen ? 'mobile-drawer' : ''}`} ref={navRef}>
+        {/* Mobile Header (only visible when drawer is open on mobile) */}
+        {mobileOpen && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 1.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+            <span style={{ fontWeight: 'bold', color: 'var(--primary-600)' }}>Menu</span>
+            <button 
+              onClick={() => setMobileOpen(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        )}
+
+        <div className="top-nav-items">
           {navSections.map((section, idx) => {
             // Filter links by roles
             const validLinks = section.links.filter(link => !link.roles || hasAccess(link.roles));
