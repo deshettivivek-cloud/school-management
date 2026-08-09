@@ -165,8 +165,8 @@ const Dashboard = () => {
         <div className="dashboard-hero">
           <div className="dashboard-hero-bg" />
           <div className="dashboard-hero-content">
-            <h1 className="hero-title">{schoolData?.name || 'School Management System'}</h1>
-            <p className="hero-subtitle">Welcome Back, {user?.name || 'Principal'} 👋 Here's your school's performance summary for today.</p>
+            <h1 className="hero-title" style={{ fontSize: "2.5rem", color: "#FFFFFF", marginTop: "0.25rem", marginBottom: "0.5rem", fontWeight: 700 }}>{schoolData?.name || 'ClassOrbit High School'}</h1>
+            <p className="hero-subtitle" style={{ color: "rgba(255,255,255,0.9)", fontWeight: 500, margin: 0, marginTop: "0.25rem" }}>Welcome Back, {user?.name || 'Principal'} 👋 Here's your school's performance summary for today.</p>
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
               <div className="badge" style={{ background: '#FFFFFF', color: '#111827', padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                 <Calendar size={14} color="#6D5AE0" /> Academic Year 2026-27
@@ -198,7 +198,7 @@ const Dashboard = () => {
           <StatCard title="Total Collection" value={feeStats?.totalCollected || 0} formatValue={formatCurrency} icon={Wallet} color="orange" periodLabel="YTD Revenue" />
 
           {/* 5. Fee Defaulters */}
-          <StatCard title="Fee Defaulters" value={feeStats?.pendingCount || 0} formatValue={formatCurrency} icon={AlertCircle} color="red" periodLabel="Students Pending" />
+          <StatCard title="Fee Defaulters" value={feeStats?.pendingCount || 0} icon={AlertCircle} color="red" periodLabel="Students Pending" />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>

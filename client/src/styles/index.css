@@ -3370,3 +3370,20 @@ tbody tr:last-child td {
   font-size: 1.2rem !important;
   flex-shrink: 0 !important;
 }
+/* Sidebar active link styling from original screenshot */
+.sidebar-link.active {
+  background-color: #6D5AE0 !important;
+  color: #FFFFFF !important;
+  border-radius: 8px !important;
+}
+
+.sidebar-link.active .sidebar-icon-wrapper svg {
+  color: #FFFFFF !important;
+}
+
+.sidebar-section-header .section-title {
+  color: #6D5AE0;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+}

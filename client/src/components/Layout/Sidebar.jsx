@@ -19,7 +19,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
     {
       section: 'Main',
       links: [
-        { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { path: '/calendar', icon: Calendar, label: 'Calendar' },
         { path: '/announcements', icon: Megaphone, label: 'Announcements' },
         { path: '/communications', icon: MessageSquare, label: 'Communications' },
@@ -82,13 +82,13 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
 
   const isSectionActive = (section) => {
     return section.links.some(link => {
-      if (link.path === '/') return location.pathname === '/';
+      if (link.path === '/') return location.pathname === '/' || location.pathname === '/dashboard';
       return location.pathname.startsWith(link.path);
     });
   };
 
   const isLinkActive = (path) => {
-    if (path === '/') return location.pathname === '/';
+    if (path === '/') return location.pathname === '/' || location.pathname === '/dashboard';
     return location.pathname.startsWith(path);
   };
 
@@ -120,12 +120,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
             <span className="logo-icon">C</span>
             {!collapsed && <span className="logo-text">ClassOrbit</span>}
           </div>
-          <button 
-            className="collapse-btn hidden-on-mobile"
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
+          
           
           <button 
             className="close-mobile-btn show-on-mobile"
@@ -153,7 +148,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
                     <span className={`section-title ${active ? 'text-primary-600' : ''}`}>
                       {section.section}
                     </span>
-                    <ChevronDown size={14} className={`accordion-icon ${isOpen ? 'open' : ''}`} />
+                    
                   </div>
                 )}
                 
@@ -197,7 +192,33 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
             );
           })}
         </div>
+      
+        {!collapsed && (
+          <div className="sidebar-footer-new" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: 'auto' }}>
+            <div className="empowering-card" style={{ background: '#F0F5FF', borderRadius: '12px', padding: '1.25rem' }}>
+              <h3 style={{ color: '#3730A3', fontSize: '0.85rem', fontWeight: 700, margin: '0 0 0.5rem 0' }}>Empowering<br/>Education</h3>
+              <p style={{ color: '#6366F1', fontSize: '0.75rem', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                One student at a time
+                <GraduationCap size={28} color="#818CF8" strokeWidth={1.5} style={{ opacity: 0.8 }} />
+              </p>
+            </div>
+            
+            <button className="logout-btn" style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#EF4444', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', padding: '0.5rem' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              Logout
+            </button>
+          </div>
+        )}
+
+        <button 
+          className="collapse-btn-bottom hidden-on-mobile"
+          onClick={() => setCollapsed(!collapsed)}
+          style={{ background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', padding: '1rem', display: 'flex', justifyContent: 'center', width: '100%' }}
+        >
+          {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </button>
       </aside>
+
     </>
   );
 };
