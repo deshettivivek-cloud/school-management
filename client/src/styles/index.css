@@ -3345,3 +3345,28 @@ tbody tr:last-child td {
     left: 0 !important;
   }
 }
+
+/* FIX FOR SIDEBAR LOGO OVERLAP */
+.sidebar-logo {
+  width: auto !important;
+  height: auto !important;
+  background: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  color: var(--primary-600) !important;
+  padding: 0 !important;
+}
+.logo-icon {
+  width: 38px !important;
+  height: 38px !important;
+  background: var(--primary-600) !important;
+  color: white !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.2rem !important;
+  flex-shrink: 0 !important;
+}
