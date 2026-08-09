@@ -248,6 +248,11 @@ const Header = ({ title, collapsed, setMobileOpen, schoolData }) => {
           @media (max-width: 768px) {
             .mobile-menu-btn { display: flex !important; }
             .header-search { display: none !important; }
+            .header { padding: 0 1rem; left: 0 !important; }
+          }
+          @media (max-width: 640px) {
+            .header-right { gap: 0.5rem; }
+            .header-user-info { display: none !important; }
           }
           .page-title {
             font-size: 1.2rem;

@@ -132,7 +132,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
           </div>
         )}
 
-        <div className="top-nav-items">
+        <div className="top-navbar-container">
           {navSections.map((section, idx) => {
             // Filter links by roles
             const validLinks = section.links.filter(link => !link.roles || hasAccess(link.roles));
