@@ -3299,3 +3299,49 @@ tbody tr:last-child td {
 
 @media (max-width: 1024px) { .top-navbar.mobile-drawer .top-navbar-container { flex-direction: column; align-items: stretch; height: auto; padding: 1rem; } .header { left: 0 !important; } }
 @media (max-width: 640px) { .header-profile-info { display: none !important; } }
+
+/* NEW SIDEBAR CSS */
+.sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 1.5rem; border-bottom: 1px solid var(--border-color); }
+.sidebar-logo { display: flex; align-items: center; gap: 0.75rem; font-weight: 800; font-size: 1.25rem; color: var(--primary-600); }
+.logo-icon { width: 32px; height: 32px; background: var(--primary-600); color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.collapse-btn, .close-mobile-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; }
+.sidebar-content { padding: 1rem 0; overflow-y: auto; flex: 1; }
+.sidebar-section { margin-bottom: 0.5rem; }
+.sidebar-section-header { padding: 0.5rem 1.5rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: var(--text-muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.sidebar-section-header:hover { color: var(--text-primary); }
+.accordion-icon { transition: transform 0.2s; }
+.accordion-icon.open { transform: rotate(180deg); }
+.sidebar-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.5rem; color: var(--text-secondary); text-decoration: none; font-weight: 500; transition: all 0.2s; }
+.sidebar-link:hover, .sidebar-link.active { background: var(--primary-50); color: var(--primary-600); border-right: 3px solid var(--primary-600); }
+.sidebar-icon-wrapper { display: flex; align-items: center; justify-content: center; }
+.sidebar.collapsed .sidebar-header { justify-content: center; padding: 1.5rem 0; }
+.sidebar.collapsed .sidebar-link { padding: 0.75rem; justify-content: center; }
+.sidebar.collapsed .sidebar-link:hover, .sidebar.collapsed .sidebar-link.active { border-right: none; border-left: 3px solid var(--primary-600); }
+.sidebar.collapsed .sidebar-links { padding: 0; }
+
+@media (max-width: 768px) { .hidden-on-mobile { display: none !important; } }
+@media (min-width: 769px) { .show-on-mobile { display: none !important; } }
+
+/* LAYOUT FIXES FOR DESKTOP SIDEBAR */
+@media (min-width: 769px) {
+  .main-content {
+    margin-left: var(--sidebar-width) !important;
+  }
+  .main-content.sidebar-collapsed {
+    margin-left: var(--sidebar-collapsed) !important;
+  }
+  .header {
+    left: var(--sidebar-width) !important;
+  }
+  .header.sidebar-collapsed {
+    left: var(--sidebar-collapsed) !important;
+  }
+}
+@media (max-width: 768px) {
+  .main-content, .main-content.sidebar-collapsed {
+    margin-left: 0 !important;
+  }
+  .header, .header.sidebar-collapsed {
+    left: 0 !important;
+  }
+}

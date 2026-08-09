@@ -1,29 +1,19 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Settings, Users, UserPlus, GraduationCap, ClipboardList,
   IndianRupee, FileText, Calculator, ArrowUpCircle, FileArchive, BarChart3,
-  Calendar, Megaphone, MessageSquare, Bug, Briefcase, Banknote, History, ChevronDown, BookOpen
+  Calendar, Megaphone, MessageSquare, Bug, Briefcase, Banknote, History, ChevronDown, BookOpen,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 
-const Sidebar = ({ mobileOpen, setMobileOpen }) => {
+const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
   const { hasAccess } = useAuth();
   const location = useLocation();
-  const [activeDropdown, setActiveDropdown] = useState(null);
-  const navRef = useRef(null);
-
-  // Close dropdowns on outside click
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (navRef.current && !navRef.current.contains(e.target)) {
-        setActiveDropdown(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  
+  const [openSection, setOpenSection] = useState(null);
 
   const navSections = [
     {
@@ -90,7 +80,6 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     }
   ];
 
-  // A section is active if any of its links match the current path
   const isSectionActive = (section) => {
     return section.links.some(link => {
       if (link.path === '/') return location.pathname === '/';
@@ -103,9 +92,16 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     return location.pathname.startsWith(path);
   };
 
+  useEffect(() => {
+    const activeIndex = navSections.findIndex(sec => isSectionActive(sec));
+    if (activeIndex !== -1) {
+      setOpenSection(activeIndex);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
   return (
     <>
-      {/* Mobile Backdrop */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -118,52 +114,57 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
         )}
       </AnimatePresence>
 
-      <nav className={`top-navbar ${mobileOpen ? 'mobile-drawer' : ''}`} ref={navRef}>
-        {/* Mobile Header (only visible when drawer is open on mobile) */}
-        {mobileOpen && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 1.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
-            <span style={{ fontWeight: 'bold', color: 'var(--primary-600)' }}>Menu</span>
-            <button 
-              onClick={() => setMobileOpen(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem' }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
+      <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <span className="logo-icon">C</span>
+            {!collapsed && <span className="logo-text">ClassOrbit</span>}
           </div>
-        )}
+          <button 
+            className="collapse-btn hidden-on-mobile"
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+          
+          <button 
+            className="close-mobile-btn show-on-mobile"
+            onClick={() => setMobileOpen(false)}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
 
-        <div className="top-navbar-container">
+        <div className="sidebar-content">
           {navSections.map((section, idx) => {
-            // Filter links by roles
             const validLinks = section.links.filter(link => !link.roles || hasAccess(link.roles));
             if (validLinks.length === 0) return null;
             
             const active = isSectionActive(section);
-            const isOpen = activeDropdown === idx;
+            const isOpen = openSection === idx;
 
             return (
-              <div 
-                key={section.section} 
-                className={`top-nav-item ${active ? 'active' : ''}`}
-                onMouseEnter={() => setActiveDropdown(idx)}
-                onMouseLeave={() => setActiveDropdown(null)}
-              >
-                <div 
-                  className="top-nav-trigger"
-                  onClick={() => setActiveDropdown(isOpen ? null : idx)}
-                >
-                  <span style={{ fontWeight: active ? 600 : 500 }}>{section.section}</span>
-                  <ChevronDown size={14} className={`dropdown-icon ${isOpen ? 'open' : ''}`} />
-                </div>
-
-                <AnimatePresence>
-                  {isOpen && (
+              <div key={section.section} className="sidebar-section">
+                {!collapsed && (
+                  <div 
+                    className="sidebar-section-header"
+                    onClick={() => setOpenSection(isOpen ? null : idx)}
+                  >
+                    <span className={`section-title ${active ? 'text-primary-600' : ''}`}>
+                      {section.section}
+                    </span>
+                    <ChevronDown size={14} className={`accordion-icon ${isOpen ? 'open' : ''}`} />
+                  </div>
+                )}
+                
+                <AnimatePresence initial={false}>
+                  {(isOpen || collapsed) && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.15 }}
-                      className="top-nav-dropdown"
+                      initial={collapsed ? false : { height: 0, opacity: 0 }}
+                      animate={collapsed ? { height: 'auto', opacity: 1 } : { height: 'auto', opacity: 1 }}
+                      exit={collapsed ? false : { height: 0, opacity: 0 }}
+                      className={`sidebar-links ${collapsed ? 'collapsed-links' : ''}`}
+                      style={{ overflow: 'hidden' }}
                     >
                       {validLinks.map(link => {
                         const linkActive = isLinkActive(link.path);
@@ -172,18 +173,20 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                           <NavLink
                             key={link.path}
                             to={link.path}
-                            className={`dropdown-link ${linkActive ? 'active' : ''}`}
+                            className={`sidebar-link ${linkActive ? 'active' : ''}`}
                             onClick={() => {
-                              setActiveDropdown(null);
-                              setMobileOpen(false);
+                              if (mobileOpen) setMobileOpen(false);
                             }}
+                            title={collapsed ? link.label : ''}
                           >
-                            <span className="dropdown-icon-wrapper">
-                              <Icon size={16} strokeWidth={linkActive ? 2.5 : 2} color={linkActive ? 'var(--primary-600)' : 'var(--text-muted)'} />
+                            <span className="sidebar-icon-wrapper">
+                              <Icon size={20} strokeWidth={linkActive ? 2.5 : 2} />
                             </span>
-                            <span style={{ fontWeight: linkActive ? 600 : 500, color: linkActive ? 'var(--primary-700)' : 'var(--text-primary)' }}>
-                              {link.label}
-                            </span>
+                            {!collapsed && (
+                              <span className="sidebar-link-text">
+                                {link.label}
+                              </span>
+                            )}
                           </NavLink>
                         );
                       })}
@@ -194,7 +197,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
             );
           })}
         </div>
-      </nav>
+      </aside>
     </>
   );
 };
