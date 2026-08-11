@@ -29,14 +29,18 @@
 
 /* ── Premium Widget Container ─────────────────────────────────── */
 .widget-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: var(--radius-xl);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-xs);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   height: 100%;
+  transition: box-shadow 0.3s ease;
+}
+.widget-card:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .widget-card.no-padding {
@@ -65,15 +69,15 @@
 /* ── Dashboard Hero ──────────────────────────────────────────── */
 .dashboard-hero {
   position: relative;
-  border-radius: 1.5rem;
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  min-height: 200px;
+  min-height: 220px;
   display: flex;
   justify-content: space-between;
-  padding: 2.5rem;
-  margin-bottom: 2rem;
-  background: linear-gradient(135deg, var(--accent-500) 0%, #A78BFA 100%);
-  box-shadow: 0 10px 25px -5px rgba(109, 90, 224, 0.3);
+  padding: 3rem;
+  margin-bottom: 2.5rem;
+  background: linear-gradient(135deg, #162B5B 0%, #3157C7 100%);
+  box-shadow: var(--shadow-lg);
 }
 
 .dashboard-hero-bg {
@@ -106,49 +110,40 @@
 }
 
 .hero-title {
-  font-size: 2.25rem;
+  font-size: 2.5rem;
   font-weight: 800;
   margin-bottom: 0.5rem;
-  color: #111827;
+  color: #FFFFFF;
   letter-spacing: -0.02em;
 }
 
 .hero-subtitle {
-  font-size: 1.125rem;
-  color: #4B5563;
+  font-size: 1.15rem;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* ── KPI Cards ───────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.25rem;
   margin-bottom: 2rem;
 }
 
-@media (max-width: 1200px) {
-  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (max-width: 768px) {
-  .kpi-grid { grid-template-columns: 1fr; }
-}
-
 .kpi-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
   position: relative;
   overflow: hidden;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-xs);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
 }
 
 .kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--primary-200);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-premium-hover);
 }
 
 .kpi-glow {
@@ -168,20 +163,21 @@
 }
 
 .kpi-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 1rem;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
 }
 
-.kpi-icon.purple { background: #EEF2FF; color: #6D5AE0; }
-.kpi-icon.blue { background: #EFF6FF; color: #3B82F6; }
-.kpi-icon.green { background: #ECFDF5; color: #10B981; }
-.kpi-icon.orange { background: #FFFBEB; color: #F59E0B; }
-.kpi-icon.red { background: #FEF2F2; color: #EF4444; }
+.kpi-icon.purple { background: var(--accent-500); color: #FFFFFF; }
+.kpi-icon.blue { background: #3157C7; color: #FFFFFF; }
+.kpi-icon.green { background: #10B981; color: #FFFFFF; }
+.kpi-icon.orange { background: #F5B942; color: #FFFFFF; }
+.kpi-icon.red { background: #EF4444; color: #FFFFFF; }
 
 .kpi-trend {
   display: flex;
@@ -218,10 +214,12 @@
 }
 
 .kpi-label {
-  font-size: 0.825rem;
-  color: var(--text-muted);
-  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 600;
   margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* ── AI Insights ─────────────────────────────────────────────── */
@@ -456,4 +454,18 @@
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+@media (max-width: 768px) {
+  .dashboard-hero {
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+  .hero-title {
+    font-size: 1.75rem !important;
+  }
+  .dashboard-hero-bg::after {
+    display: none;
+  }
 }

@@ -13,6 +13,7 @@ import PrintSection from '../components/PrintSection';
 import DashboardWidget from '../components/Dashboard/DashboardWidget';
 import CalendarWidget from '../components/Dashboard/CalendarWidget';
 import StatCard from '../components/Common/StatCard';
+import { getImageUrl } from '../utils/helpers';
 import '../styles/dashboard.css';
 
 const Dashboard = () => {
@@ -165,21 +166,32 @@ const Dashboard = () => {
         <div className="dashboard-hero">
           <div className="dashboard-hero-bg" />
           <div className="dashboard-hero-content">
-            <h1 className="hero-title" style={{ fontSize: "2.5rem", color: "#FFFFFF", marginTop: "0.25rem", marginBottom: "0.5rem", fontWeight: 700 }}>{schoolData?.name || 'ClassOrbit High School'}</h1>
-            <p className="hero-subtitle" style={{ color: "rgba(255,255,255,0.9)", fontWeight: 500, margin: 0, marginTop: "0.25rem" }}>Welcome Back, {user?.name || 'Principal'} 👋 Here's your school's performance summary for today.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: "0.25rem", marginBottom: "0.5rem" }}>
+              {(schoolData?.logo_url || schoolData?.logo) && (
+                <img 
+                  src={getImageUrl(schoolData.logo_url || schoolData.logo)} 
+                  alt="School Logo" 
+                  style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'contain', backgroundColor: '#fff', padding: '4px' }} 
+                />
+              )}
+              <h1 className="hero-title" style={{ fontSize: "2.5rem", margin: 0, fontWeight: 800, color: "#FFFFFF" }}>
+                {schoolData?.name || 'ClassOrbit High School'}
+              </h1>
+            </div>
+            <p className="hero-subtitle" style={{ fontWeight: 500, margin: 0, marginTop: "0.5rem", color: "rgba(255, 255, 255, 0.8)", fontSize: "1.1rem" }}>Good Morning, {user?.name || 'Admin'} 👋 Here's your overview for today.</p>
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-              <div className="badge" style={{ background: '#FFFFFF', color: '#111827', padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                <Calendar size={14} color="#6D5AE0" /> Academic Year 2026-27
+              <div className="badge" style={{ background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', color: '#FFFFFF', padding: '0.6rem 1.25rem', borderRadius: '9999px', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                <Calendar size={16} color="#F5B942" /> Academic Year 2026-27
               </div>
-              <div className="badge" style={{ background: '#FFFFFF', color: '#111827', padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }}></div> Term 1
+              <div className="badge" style={{ background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', color: '#FFFFFF', padding: '0.6rem 1.25rem', borderRadius: '9999px', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }}></div> Term 1
               </div>
             </div>
           </div>
-          <div className="hero-stats" style={{ background: '#FFFFFF', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '140px', zIndex: 10 }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#6D5AE0', letterSpacing: '0.05em' }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()}</span>
-            <span style={{ fontSize: '3.5rem', fontWeight: 800, color: '#111827', lineHeight: 1, margin: '0.5rem 0' }}>{new Date().getDate()}</span>
-            <span style={{ fontSize: '1rem', fontWeight: 600, color: '#4B5563' }}>{new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+          <div className="hero-stats" style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-xl)', padding: '1.75rem', boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '150px', zIndex: 10, border: '1px solid rgba(255,255,255,0.4)' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--accent-500)', letterSpacing: '0.05em' }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()}</span>
+            <span style={{ fontSize: '3.5rem', fontWeight: 800, color: '#162B5B', lineHeight: 1, margin: '0.5rem 0' }}>{new Date().getDate()}</span>
+            <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#64748B' }}>{new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
           </div>
         </div>
 
@@ -195,17 +207,12 @@ const Dashboard = () => {
           <StatCard title="Fully Paid" value={feeStats?.paidCount || 0} icon={CheckCircle} color="green" periodLabel="Cleared Dues" />
 
           {/* 4. Total Collection */}
-          <StatCard title="Total Collection" value={feeStats?.totalCollected || 0} formatValue={formatCurrency} icon={Wallet} color="orange" periodLabel="YTD Revenue" />
+          <StatCard title="Total Collection" value={feeStats?.totalCollected || 0} formatValue={formatCurrency} color="orange" periodLabel="YTD Revenue" />
 
           {/* 5. Fee Defaulters */}
           <StatCard title="Fee Defaulters" value={feeStats?.pendingCount || 0} icon={AlertCircle} color="red" periodLabel="Students Pending" />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-          <DashboardWidget config={widgetsConfig.find(w => w.id === 'recentAdmissions')} widgetData={widgetData?.recentAdmissions} />
-          <DashboardWidget config={widgetsConfig.find(w => w.id === 'recentPayments')} widgetData={widgetData?.recentPayments} />
-          <DashboardWidget config={widgetsConfig.find(w => w.id === 'pendingApprovals')} widgetData={widgetData?.pendingApprovals} />
-        </div>
         <div style={{ marginBottom: '2rem' }}>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Quick Actions</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
@@ -215,25 +222,25 @@ const Dashboard = () => {
                 onClick={() => navigate(action.path)}
                 style={{
                   background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '1.25rem',
+                  border: '1px solid rgba(255, 255, 255, 0.8)',
+                  borderRadius: 'var(--radius-xl)',
+                  padding: '1.5rem',
                   cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.75rem',
+                  gap: '1rem',
                   boxShadow: 'var(--shadow-sm)',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-                  e.currentTarget.style.borderColor = action.color;
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-premium-hover)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.9)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'none';
                   e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                  e.currentTarget.style.borderColor = 'var(--border-color)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.8)';
                 }}
               >
                 <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: `${action.color}15`, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -246,6 +253,12 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+          <DashboardWidget config={widgetsConfig.find(w => w.id === 'recentAdmissions')} widgetData={widgetData?.recentAdmissions} />
+          <DashboardWidget config={widgetsConfig.find(w => w.id === 'recentPayments')} widgetData={widgetData?.recentPayments} />
+          <DashboardWidget config={widgetsConfig.find(w => w.id === 'pendingApprovals')} widgetData={widgetData?.pendingApprovals} />
         </div>
       </motion.div>
     </PrintSection>

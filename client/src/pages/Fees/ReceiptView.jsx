@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlinePrinter, HiOutlineDownload } from 'react-icons/hi';
 import { format } from 'date-fns';
+import { getImageUrl } from '../../utils/helpers';
 
 const ReceiptView = () => {
   const { collectionId, paymentId } = useParams();
@@ -100,7 +101,7 @@ const ReceiptView = () => {
             {/* Header */}
             <div className="receipt-header">
               {(school?.logo_url || school?.logo) && (
-                <img src={school.logo_url || school.logo} alt="Logo" style={{ width: 60, height: 60, objectFit: 'contain' }} />
+                <img src={getImageUrl(school.logo_url || school.logo)} alt="Logo" style={{ width: 60, height: 60, objectFit: 'contain' }} />
               )}
               <div>
                 <div className="receipt-school-name">{school?.name || 'School'}</div>

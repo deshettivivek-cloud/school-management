@@ -46,13 +46,13 @@ const ReportsDashboard = () => {
   };
 
   const allReports = [
-    { id: 'admissions_daily', title: 'Daily Admissions', icon: HiOutlineUserGroup, color: '#3b82f6', desc: 'Daily admission trends', roles: ['super_admin', 'principal', 'clerk'] },
-    { id: 'fee_defaulters', title: 'Fee Defaulters', icon: HiOutlineCash, color: '#ef4444', desc: 'Pending fee dues', roles: ['super_admin', 'principal', 'clerk'] },
-    { id: 'fee_collections_daily', title: 'Daily Fee Collections', icon: HiOutlineCash, color: '#10b981', desc: 'Daily fee collection', roles: ['super_admin', 'principal', 'clerk'] },
-    { id: 'attendance_low', title: 'Low Attendance', icon: HiOutlineCalendar, color: '#f59e0b', desc: 'Students with low attendance', roles: ['super_admin', 'principal', 'teacher'] },
-    { id: 'expenditure_category', title: 'Category-wise Expenditure', icon: HiOutlineCash, color: '#8b5cf6', desc: 'Expenses by category', roles: ['super_admin', 'principal', 'clerk'] },
-    { id: 'staff_attendance', title: 'Staff Attendance', icon: HiOutlineAcademicCap, color: '#ec4899', desc: 'Staff attendance records', roles: ['super_admin', 'principal'] },
-    { id: 'exam_toppers', title: 'Exam Toppers', icon: HiOutlineDocumentText, color: '#06b6d4', desc: 'Top performing students', roles: ['super_admin', 'principal', 'teacher'] },
+    { id: 'admissions_daily', title: 'Daily Admissions', icon: HiOutlineUserGroup, color: '#3b82f6', desc: 'Daily admission trends', roles: ['principal', 'clerk'] },
+    { id: 'fee_defaulters', title: 'Fee Defaulters', icon: HiOutlineCash, color: '#ef4444', desc: 'Pending fee dues', roles: ['principal', 'clerk'] },
+    { id: 'fee_collections_daily', title: 'Daily Fee Collections', icon: HiOutlineCash, color: '#10b981', desc: 'Daily fee collection', roles: ['principal', 'clerk'] },
+    { id: 'attendance_low', title: 'Low Attendance', icon: HiOutlineCalendar, color: '#f59e0b', desc: 'Students with low attendance', roles: ['principal', 'teacher'] },
+    { id: 'expenditure_category', title: 'Category-wise Expenditure', icon: HiOutlineCash, color: '#8b5cf6', desc: 'Expenses by category', roles: ['principal', 'clerk'] },
+    { id: 'staff_attendance', title: 'Staff Attendance', icon: HiOutlineAcademicCap, color: '#ec4899', desc: 'Staff attendance records', roles: ['principal'] },
+    { id: 'exam_toppers', title: 'Exam Toppers', icon: HiOutlineDocumentText, color: '#06b6d4', desc: 'Top performing students', roles: ['principal', 'teacher'] },
   ];
 
   const allowedReports = allReports.filter(r => r.roles.includes(user?.role));

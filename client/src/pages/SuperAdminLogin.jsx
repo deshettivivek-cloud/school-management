@@ -47,7 +47,7 @@ const SuperAdminLogin = () => {
         <div className="auth-bg-orb auth-bg-orb-3 auth-bg-orb-admin" />
       </div>
 
-      <div className="auth-card animate-slide-up">
+      <div className="auth-card-premium animate-slide-up">
         <div className="auth-header">
           <div className="auth-logo auth-logo-admin">
             <HiOutlineShieldCheck className="auth-logo-shield" />

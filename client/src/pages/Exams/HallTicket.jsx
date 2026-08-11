@@ -133,204 +133,109 @@ const HallTicket = () => {
 
   const hallTicketStyles = `
     .hall-page-wrapper * { margin: 0; padding: 0; box-sizing: border-box; }
-    .hall-page-wrapper {
-      font-family: 'Inter', sans-serif;
-      color: #1a1a1a;
-      background: white;
-    }
+    .hall-page-wrapper { font-family: 'Inter', sans-serif; color: #1a1a1a; background: white; }
     .hall-page {
-      width: 210mm;
-      min-height: 297mm;
-      margin: 0 auto;
-      padding: 20mm;
-      page-break-after: always;
-      position: relative;
-      background: white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      display: block !important;
+      width: 210mm; min-height: 297mm; margin: 0 auto; padding: 18mm 20mm;
+      page-break-after: always; position: relative; background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1); display: block !important;
+      border: 3px double #1E293B;
     }
-    .hall-page:last-child {
-      page-break-after: auto;
-    }
-    /* Header */
+    .hall-page:last-child { page-break-after: auto; }
+
+    /* ── Centered Header ── */
     .hall-header {
-      display: flex !important;
-      flex-direction: row !important;
-      justify-content: space-between !important;
-      align-items: center !important;
-      border-bottom: 2px solid #1E293B;
-      padding-bottom: 15px;
-      margin-bottom: 20px;
-      width: 100%;
+      text-align: center; padding-bottom: 18px; margin-bottom: 20px;
+      border-bottom: 3px double #1E293B; width: 100%;
     }
-    .hall-logo-wrapper {
-      display: flex;
-      flex-direction: row !important;
-      align-items: center;
-      gap: 15px;
+    .hall-header-row {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      margin-bottom: 4px;
     }
     .hall-logo {
-      width: 70px;
-      height: 70px;
-      background-color: #1E293B;
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      font-weight: 800;
+      width: 72px; height: 72px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-size: 22px;
+      font-weight: 800; background-color: #1E293B; color: white;
+      object-fit: contain; flex-shrink: 0;
     }
-    .hall-school-info {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      text-align: left;
+    .hall-school-name {
+      font-family: 'Outfit', sans-serif; font-size: 28px; font-weight: 800;
+      color: #1E293B; text-transform: uppercase; letter-spacing: 3px;
     }
-    .hall-school-info h1 {
-      color: #1E293B;
-      font-family: 'Outfit', sans-serif;
-      font-size: 24px;
-      margin-bottom: 4px;
+    .hall-school-address { font-size: 11px; color: #555; margin-bottom: 14px; }
+    .hall-title-bar {
+      display: inline-block; background: #1E293B; color: #fff; padding: 8px 40px;
+      font-size: 16px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
+      border-radius: 4px; margin-bottom: 6px;
     }
-    .hall-school-info p {
-      color: #555;
-      font-size: 11px;
-    }
-    .hall-title-wrapper {
-      text-align: right;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-    }
-    .hall-title-wrapper h2 {
-      font-size: 18px;
-      color: #1a1a1a;
-      letter-spacing: 2px;
-      margin-bottom: 4px;
-    }
-    .hall-title-wrapper p {
-      font-size: 11px;
-      color: #555;
-    }
-    
-    /* Student Details Grid */
+    .hall-assessment-info { font-size: 13px; color: #334155; font-weight: 600; margin-top: 6px; }
+
+    /* ── Student Details ── */
     .hall-details-container {
-      display: flex !important;
-      flex-direction: row !important;
-      justify-content: space-between !important;
-      align-items: flex-start !important;
-      margin-bottom: 25px;
-      width: 100%;
+      display: flex !important; flex-direction: row !important;
+      justify-content: space-between !important; align-items: flex-start !important;
+      margin-bottom: 25px; width: 100%;
     }
     .hall-details-grid {
-      flex: 1;
-      display: grid !important;
-      grid-template-columns: auto 1fr auto 1fr;
-      gap: 15px 25px;
-      padding-right: 20px;
+      flex: 1; display: grid !important; grid-template-columns: 160px 1fr 160px 1fr;
+      gap: 0; padding-right: 20px;
     }
     .hall-details-grid > div {
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 5px;
+      border-bottom: 1px solid #e2e8f0; padding: 10px 8px;
     }
     .hall-label {
-      color: #64748b;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      color: #475569; font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.5px; font-weight: 600;
     }
-    .hall-value {
-      color: #0f172a;
-      font-weight: 600;
-      font-size: 12px;
-      text-align: right;
-    }
+    .hall-value { color: #0f172a; font-weight: 700; font-size: 13px; }
     .hall-photo-box {
-      width: 120px;
-      height: 150px;
-      background-color: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-size: 10px;
-      color: #64748b;
-      padding: 10px;
-      flex-shrink: 0;
-      overflow: hidden;
+      width: 120px; height: 150px; background-color: #f8fafc;
+      border: 2px solid #1E293B; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      font-size: 10px; color: #64748b; flex-shrink: 0; overflow: hidden;
     }
-    
-    /* Schedule Table */
+
+    /* ── Schedule Table ── */
     .hall-section-title {
-      background-color: #1E293B;
-      color: white;
-      padding: 10px 15px;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      margin-bottom: 0;
-      display: block;
-      width: 100%;
-      border-radius: 6px 6px 0 0;
+      background-color: #1E293B; color: white; padding: 10px 15px;
+      font-size: 12px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; width: 100%;
     }
     .hall-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 30px;
-      display: table !important;
-      border: 1px solid #e2e8f0;
-      border-top: none;
-      border-radius: 0 0 6px 6px;
+      width: 100%; border-collapse: collapse; margin-bottom: 30px;
+      display: table !important; border: 2px solid #1E293B; border-top: none;
     }
-    .hall-table th, .hall-table td {
-      padding: 12px 15px;
-      font-size: 11px;
-      text-align: left;
-    }
+    .hall-table th, .hall-table td { padding: 12px 15px; font-size: 12px; text-align: left; }
     .hall-table th {
-       background-color: #f8fafc;
-       color: #1E293B;
-       border-bottom: 2px solid #e2e8f0;
-       text-transform: uppercase;
-       font-weight: 700;
-       font-size: 10px;
+      background-color: #f1f5f9; color: #1E293B; border-bottom: 2px solid #1E293B;
+      text-transform: uppercase; font-weight: 700; font-size: 10px; letter-spacing: 0.5px;
     }
-    .hall-table td {
-       border-bottom: 1px solid #e2e8f0;
-       color: #0f172a;
+    .hall-table td { border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 500; }
+    .hall-table tr:last-child td { border-bottom: none; }
+    .hall-table tr:nth-child(even) { background: #f8fafc; }
+
+    /* ── Instructions ── */
+    .hall-instructions {
+      margin-top: 20px; padding: 12px 16px; border: 1px solid #cbd5e1;
+      background: #fffbeb; font-size: 11px; color: #475569; line-height: 1.7;
     }
-    .hall-table tr:last-child td {
-       border-bottom: none;
-    }
-    
-    /* Footer Signatures */
+    .hall-instructions strong { color: #1E293B; }
+    .hall-instructions ol { padding-left: 18px; }
+
+    /* ── Footer Signatures ── */
     .hall-signatures {
-      display: flex !important;
-      flex-direction: row !important;
-      justify-content: space-between !important;
-      margin-top: 80px;
-      width: 100%;
+      display: flex !important; flex-direction: row !important;
+      justify-content: space-between !important; margin-top: 60px; width: 100%;
     }
     .hall-sig-line {
-      border-top: 1px solid #1a1a1a;
-      width: 200px;
-      text-align: center;
-      padding-top: 8px;
-      font-size: 11px;
-      color: #555;
+      border-top: 2px solid #1a1a1a; width: 200px; text-align: center;
+      padding-top: 8px; font-size: 11px; color: #334155; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
     }
-    
+
     @media print {
       @page { size: A4 portrait; margin: 0; }
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
-      .hall-page {
-        box-shadow: none;
-        margin: 0;
-      }
+      .hall-page { box-shadow: none; margin: 0; }
     }
   `;
 
@@ -538,18 +443,22 @@ const HallTicket = () => {
 
                 return (
                   <div key={studentId} className="hall-page">
-                    {/* Header */}
+                    {/* Centered Header */}
                     <div className="hall-header">
-                      <div className="hall-logo-wrapper">
-                        <div className="hall-logo">{(school?.name || 'GHS').substring(0, 3).toUpperCase()}</div>
-                        <div className="hall-school-info">
-                          <h1>{school?.name || 'Greenwood Public High School'}</h1>
-                          <p>{school?.address || '12 Lakeview Road, Hyderabad, Telangana'} • {school?.affiliation_no ? `Affiliation No. ${school.affiliation_no}` : 'Affiliation No. 2201456'}</p>
-                        </div>
+                      <div className="hall-header-row">
+                        {(school?.logo_url || school?.logo) ? (
+                          <img src={getImageUrl(school.logo_url || school.logo)} alt="Logo" className="hall-logo" style={{ objectFit: 'contain', backgroundColor: '#fff', padding: '4px' }} />
+                        ) : (
+                          <div className="hall-logo">{(school?.name || 'GHS').substring(0, 3).toUpperCase()}</div>
+                        )}
+                        <div className="hall-school-name">{school?.name || 'School Name'}</div>
                       </div>
-                      <div className="hall-title-wrapper">
-                        <h2>HALL TICKET</h2>
-                        <p>{getAssessmentTitle()} — {currentAcYear}</p>
+                      <div className="hall-school-address">
+                        {school?.address || 'School Address'}{school?.phone ? ` • Phone: ${school.phone}` : ''}
+                      </div>
+                      <div className="hall-title-bar">Hall Ticket</div>
+                      <div className="hall-assessment-info">
+                        {getAssessmentTitle()} &nbsp;|&nbsp; Academic Year: {school?.academic_year || currentAcYear}
                       </div>
                     </div>
 
@@ -558,23 +467,23 @@ const HallTicket = () => {
                       <div className="hall-details-grid">
                         <div className="hall-label">Student Name</div>
                         <div className="hall-value">{currentStudent.name}</div>
-                        <div className="hall-label"></div>
-                        <div className="hall-value"></div>
-
-                        <div className="hall-label">Roll Number</div>
-                        <div className="hall-value">{currentStudent.roll_no || currentStudent.admission_no || '—'}</div>
-                        <div className="hall-label">Class / Section</div>
-                        <div className="hall-value">{currentStudent.grade} — {currentStudent.section || 'A'}</div>
+                        <div className="hall-label">Admission No</div>
+                        <div className="hall-value">{currentStudent.admission_no || '—'}</div>
 
                         <div className="hall-label">Father's Name</div>
                         <div className="hall-value">{currentStudent.parent_name || currentStudent.parentName || '—'}</div>
+                        <div className="hall-label">Class / Section</div>
+                        <div className="hall-value">{currentStudent.grade} — {currentStudent.section || 'A'}</div>
+
+                        <div className="hall-label">Roll Number</div>
+                        <div className="hall-value">{currentStudent.roll_no || '—'}</div>
                         <div className="hall-label">Date of Birth</div>
                         <div className="hall-value">{dobDisplay}</div>
 
                         {anTiming && (
                           <>
                             <div className="hall-label">Exam Centre</div>
-                            <div className="hall-value" style={{ gridColumn: 'span 3', textAlign: 'left' }}>{anTiming}</div>
+                            <div className="hall-value" style={{ gridColumn: 'span 3' }}>{anTiming}</div>
                           </>
                         )}
                       </div>
@@ -588,10 +497,11 @@ const HallTicket = () => {
                     </div>
 
                     {/* Schedule Table */}
-                    <div className="hall-section-title">EXAMINATION SCHEDULE</div>
+                    <div className="hall-section-title">Examination Schedule</div>
                     <table className="hall-table">
                       <thead>
                         <tr>
+                          <th style={{width:'5%'}}>#</th>
                           <th>Date</th>
                           <th>Day</th>
                           <th>Subject</th>
@@ -601,19 +511,32 @@ const HallTicket = () => {
                       <tbody>
                         {subjects.filter(s => s.name.trim() && s.date).map((subject, idx) => (
                           <tr key={idx}>
+                            <td style={{fontWeight:600}}>{idx + 1}</td>
                             <td>{formatDateForDisplay(subject.date)}</td>
                             <td>{getDayFromDate(subject.date)}</td>
-                            <td>{subject.name}</td>
+                            <td style={{fontWeight:600}}>{subject.name}</td>
                             <td>{subject.timing || fnTiming}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
 
+                    {/* Instructions */}
+                    <div className="hall-instructions">
+                      <strong>Instructions to Students:</strong>
+                      <ol>
+                        <li>Students must carry this hall ticket to the examination hall on all exam days.</li>
+                        <li>Students should be present at the exam centre 15 minutes before the scheduled time.</li>
+                        <li>Use of mobile phones and electronic gadgets is strictly prohibited.</li>
+                        <li>Any malpractice will lead to cancellation of the exam.</li>
+                      </ol>
+                    </div>
+
                     {/* Footer Signatures */}
                     <div className="hall-signatures">
-                      <div className="hall-sig-line">Class Teacher's Signature</div>
-                      <div className="hall-sig-line">Principal's Signature & Seal</div>
+                      <div className="hall-sig-line">Class Teacher</div>
+                      <div className="hall-sig-line">Parent / Guardian</div>
+                      <div className="hall-sig-line">Principal</div>
                     </div>
                   </div>
                 );

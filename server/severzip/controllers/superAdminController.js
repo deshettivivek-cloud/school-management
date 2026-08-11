@@ -581,3 +581,45 @@ exports.respondToBugReport = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Get all audit logs
+// @route   GET /api/super-admin/audit-logs
+// @access  Super Admin
+exports.getAuditLogs = async (req, res) => {
+  try {
+    const { action } = req.query;
+    const masterPool = await getMasterPool();
+    
+    let query = `
+      SELECT al.*, p.name as profile_name, p.email as profile_email 
+      FROM audit_logs al
+      LEFT JOIN super_admin_profiles p ON al.user_id = p.id
+    `;
+    const params = [];
+    
+    if (action) {
+      query += ' WHERE al.action = ?';
+      params.push(action);
+    }
+    
+    query += ' ORDER BY al.created_at DESC LIMIT 100';
+    
+    const [rows] = await masterPool.execute(query, params);
+    
+    // Map to the frontend format expected
+    const formattedLogs = rows.map(log => ({
+      ...log,
+      profiles: {
+        name: log.profile_name || 'System / Unknown',
+        email: log.profile_email || ''
+      }
+    }));
+    
+    res.json({
+      success: true,
+      data: formattedLogs
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

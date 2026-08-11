@@ -30,9 +30,10 @@ const Layout = ({ title }) => {
         setCollapsed={setCollapsed}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
+        schoolData={schoolData}
       />
 
-      <div className={`main-content ${collapsed ? 'sidebar-collapsed' : ''}`} style={{ position: 'relative', zIndex: 1 }}>
+      <div className={`main-content ${collapsed ? 'sidebar-collapsed' : ''}`}>
         <Header
           title={title}
           collapsed={collapsed}

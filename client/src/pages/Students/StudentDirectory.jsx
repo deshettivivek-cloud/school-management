@@ -218,83 +218,85 @@ const StudentDirectory = () => {
                   </p>
                 </div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', background: 'var(--bg-muted, #f9fafb)' }}>
-                      <th style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>Admission No</th>
-                      <th style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>Student Name</th>
-                      <th style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>Parent Name</th>
-                      <th style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>Contact</th>
-                      <th style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>Section</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredStudents.map((student) => (
-                      <tr 
-                        key={student.id} 
-                        onClick={() => navigate(`/students/${student.id}`)}
-                        style={{ cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                      >
-                        <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--primary-600, #4f46e5)' }}>
-                          {student.admission_no || student.admissionNo}
-                        </td>
-                        <td style={{ padding: '0.75rem 1rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            {student.photo_url || student.photo ? (
-                              <img
-                                src={getImageUrl(student.photo_url || student.photo)}
-                                alt=""
-                                style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
-                              />
-                            ) : (
-                              <div style={{
-                                width: 36, height: 36, borderRadius: '50%',
-                                background: 'var(--gradient-accent, linear-gradient(135deg, #6366f1, #a855f7))',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '0.875rem', fontWeight: 700, color: 'white'
-                              }}>
-                                {student.name?.charAt(0)}
-                              </div>
-                            )}
-                            <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-                              {student.name}
-                            </span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '0.75rem 1rem' }}>{student.parent_name || student.parentName || '-'}</td>
-                        <td style={{ padding: '0.75rem 1rem' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                            {student.parent_phone || student.parentPhone ? (
-                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                <Phone size={14} /> {student.parent_phone || student.parentPhone}
-                              </span>
-                            ) : null}
-                            {student.parent_email || student.parentEmail ? (
-                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                <Mail size={14} /> {student.parent_email || student.parentEmail}
-                              </span>
-                            ) : null}
-                          </div>
-                        </td>
-                        <td style={{ padding: '0.75rem 1rem' }}>
-                          {student.section ? (
-                            <span style={{
-                              background: 'var(--surface-hover)',
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              fontSize: '0.875rem',
-                              fontWeight: 500,
-                              color: 'var(--text-secondary)'
-                            }}>
-                              {student.section}
-                            </span>
-                          ) : '-'}
-                        </td>
+                <div className="table-responsive">
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', background: 'var(--bg-muted, #f9fafb)' }}>
+                        <th style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>Admission No</th>
+                        <th style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>Student Name</th>
+                        <th style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>Parent Name</th>
+                        <th style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>Contact</th>
+                        <th style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>Section</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filteredStudents.map((student) => (
+                        <tr 
+                          key={student.id} 
+                          onClick={() => navigate(`/students/${student.id}`)}
+                          style={{ cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
+                          className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                        >
+                          <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--primary-600, #4f46e5)' }}>
+                            {student.admission_no || student.admissionNo}
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              {student.photo_url || student.photo ? (
+                                <img
+                                  src={getImageUrl(student.photo_url || student.photo)}
+                                  alt=""
+                                  style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                <div style={{
+                                  width: 36, height: 36, borderRadius: '50%',
+                                  background: 'var(--gradient-accent, linear-gradient(135deg, #6366f1, #a855f7))',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: '0.875rem', fontWeight: 700, color: 'white'
+                                }}>
+                                  {student.name?.charAt(0)}
+                                </div>
+                              )}
+                              <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+                                {student.name}
+                              </span>
+                            </div>
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem' }}>{student.parent_name || student.parentName || '-'}</td>
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              {student.parent_phone || student.parentPhone ? (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                  <Phone size={14} /> {student.parent_phone || student.parentPhone}
+                                </span>
+                              ) : null}
+                              {student.parent_email || student.parentEmail ? (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                  <Mail size={14} /> {student.parent_email || student.parentEmail}
+                                </span>
+                              ) : null}
+                            </div>
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            {student.section ? (
+                              <span style={{
+                                background: 'var(--surface-hover)',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontSize: '0.875rem',
+                                fontWeight: 500,
+                                color: 'var(--text-secondary)'
+                              }}>
+                                {student.section}
+                              </span>
+                            ) : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>

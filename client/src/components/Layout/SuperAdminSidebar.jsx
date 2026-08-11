@@ -25,7 +25,6 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
     { path: '/super-admin/users', icon: Users, label: 'Users' },
     { section: 'System' },
     { path: '/super-admin/bug-reports', icon: Bug, label: 'Bug Reports' },
-    { path: '/super-admin/reports', icon: BarChart3, label: 'Reports' },
     { path: '/super-admin/audit-logs', icon: ClipboardList, label: 'Audit Logs' },
   ];
 
@@ -43,10 +42,10 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
         />
       )}
 
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+      <aside className={`sidebar sidebar-admin ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo" style={{ background: 'var(--warning-500)', boxShadow: 'var(--shadow-sm)' }}>
-            <ShieldCheck size={20} />
+            <ShieldCheck size={20} color="#111827" />
           </div>
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -94,11 +93,11 @@ const SuperAdminSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen 
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
                 )}
-                <span className="nav-item-icon" style={{ zIndex: 1, color: active ? '#111827' : undefined }}>
+                <span className="nav-item-icon" style={{ zIndex: 1 }}>
                   <Icon size={18} strokeWidth={active ? 2.5 : 2} />
                 </span>
                 {!collapsed && (
-                  <span style={{ zIndex: 1, color: active ? '#111827' : undefined, fontWeight: active ? 700 : 500 }}>
+                  <span style={{ zIndex: 1 }}>
                     {item.label}
                   </span>
                 )}

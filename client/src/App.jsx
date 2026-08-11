@@ -260,10 +260,6 @@ function App() {
         <Route path="/super-admin/users" element={<ManageUsers />} />
         <Route path="/super-admin/audit-logs" element={<AuditLogs />} />
         <Route path="/super-admin/bug-reports" element={<SuperAdminBugReports />} />
-        
-        {/* Reports */}
-        <Route path="/super-admin/reports" element={<ReportsDashboard />} />
-        <Route path="/super-admin/reports/:module" element={<ReportViewer />} />
       </Route>
 
       {/* ──── School User Routes ──── */}

@@ -271,7 +271,7 @@ const TcView = () => {
             {/* Header — same style as admission form */}
             <div className="form-header">
               {(school?.logo_url || school?.logo) && (
-                <img src={school.logo_url || school.logo} alt="Logo" style={{ width: 70, height: 70, objectFit: 'contain' }} />
+                <img src={getImageUrl(school.logo_url || school.logo)} alt="Logo" style={{ width: 70, height: 70, objectFit: 'contain' }} />
               )}
               <div>
                 <div className="school-name-print">{school?.name || 'School'}</div>

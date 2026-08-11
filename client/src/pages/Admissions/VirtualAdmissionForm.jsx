@@ -267,7 +267,7 @@ const VirtualAdmissionForm = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #000' }}>
               <div style={{ width: '100px', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {(school?.logo_url || school?.logo) ? (
-                  <img src={school.logo_url || school.logo} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  <img src={getImageUrl(school.logo_url || school.logo)} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                 ) : (
                   <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#eee', border: '1px solid #ccc' }} />
                 )}

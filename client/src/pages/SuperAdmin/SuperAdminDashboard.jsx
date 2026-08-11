@@ -77,102 +77,107 @@ const SuperAdminDashboard = () => {
       transition={{ duration: 0.5 }}
     >
       {/* Hero */}
-      <div style={{
+      <div className="glass-panel" style={{
         position: 'relative',
-        padding: '2rem 2.5rem',
+        padding: '3rem 3.5rem',
         borderRadius: 'var(--radius-xl)',
-        marginBottom: '2rem',
+        marginBottom: '2.5rem',
         overflow: 'hidden',
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border-color)',
-        boxShadow: 'var(--shadow-xs)',
       }}>
-        <div style={{
-          position: 'absolute', top: -60, right: -60, width: 200, height: 200,
-          background: 'radial-gradient(circle, rgba(245, 158, 11, 0.06), transparent 70%)',
+        <div className="animate-float" style={{
+          position: 'absolute', top: -80, right: -40, width: 250, height: 250,
+          background: 'radial-gradient(circle, rgba(91, 63, 216, 0.15), transparent 70%)',
           borderRadius: '50%', pointerEvents: 'none',
         }} />
-        <motion.div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}
+        <div className="animate-float" style={{
+          position: 'absolute', bottom: -50, left: 200, width: 200, height: 200,
+          background: 'radial-gradient(circle, rgba(251, 191, 36, 0.1), transparent 70%)',
+          borderRadius: '50%', pointerEvents: 'none', animationDelay: '1s'
+        }} />
+        
+        <motion.div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem', position: 'relative', zIndex: 1 }}
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
         >
-          <HiOutlineShieldCheck size={28} style={{ color: '#f59e0b' }} />
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            Super Admin Dashboard
+          <div style={{ padding: '12px', background: 'rgba(251, 191, 36, 0.15)', borderRadius: '14px', border: '1px solid rgba(251, 191, 36, 0.3)' }}>
+            <HiOutlineShieldCheck size={32} style={{ color: '#d97706' }} />
+          </div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#102A56', letterSpacing: '-0.03em' }}>
+            Super Admin Portal
           </h1>
         </motion.div>
-        <motion.p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}
+        <motion.p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', position: 'relative', zIndex: 1, marginLeft: '4.5rem' }}
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
         >
-          Platform-wide overview across all schools and users
+          Command center for all schools, users, and platform analytics
         </motion.p>
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        <motion.div className="card" style={{ cursor: 'pointer', border: '1px solid var(--border-color)' }}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', marginBottom: '2.5rem' }}>
+        <motion.div className="glass-panel" style={{ cursor: 'pointer', padding: '1.5rem', borderRadius: 'var(--radius-xl)' }}
           onClick={() => navigate('/super-admin/schools')}
-          whileHover={{ scale: 1.02, y: -2 }} transition={{ type: 'spring', stiffness: 400 }}
+          whileHover={{ scale: 1.03, y: -5, boxShadow: 'var(--shadow-premium-hover)' }} transition={{ type: 'spring', stiffness: 400 }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
             <div style={{
-              width: 48, height: 48, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#d97706',
+              width: 56, height: 56, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)', boxShadow: '0 8px 16px rgba(217, 119, 6, 0.2)'
             }}>
-              <HiOutlineOfficeBuilding size={22} color="#fff" />
+              <HiOutlineOfficeBuilding size={26} color="#fff" />
             </div>
             <div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
+              <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#102A56', lineHeight: 1, marginBottom: '0.25rem' }}>
                 {stats?.totalSchools || 0}
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Total Schools</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Total Schools</div>
             </div>
           </div>
         </motion.div>
 
-        <motion.div className="card" style={{ cursor: 'pointer', border: '1px solid var(--border-color)' }}
+        <motion.div className="glass-panel" style={{ cursor: 'pointer', padding: '1.5rem', borderRadius: 'var(--radius-xl)' }}
           onClick={() => navigate('/super-admin/users')}
-          whileHover={{ scale: 1.02, y: -2 }} transition={{ type: 'spring', stiffness: 400 }}
+          whileHover={{ scale: 1.03, y: -5, boxShadow: 'var(--shadow-premium-hover)' }} transition={{ type: 'spring', stiffness: 400 }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
             <div style={{
-              width: 48, height: 48, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--accent-500)',
+              width: 56, height: 56, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--gradient-indigo)', boxShadow: '0 8px 16px rgba(91, 63, 216, 0.2)'
             }}>
-              <HiOutlineUserGroup size={22} color="var(--text-inverse)" />
+              <HiOutlineUserGroup size={26} color="var(--text-inverse)" />
             </div>
             <div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
+              <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#102A56', lineHeight: 1, marginBottom: '0.25rem' }}>
                 {stats?.totalUsers || 0}
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Total Users</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Total Users</div>
             </div>
           </div>
         </motion.div>
 
-        <motion.div className="card" style={{ border: '1px solid var(--border-color)' }}
-          whileHover={{ scale: 1.02, y: -2 }} transition={{ type: 'spring', stiffness: 400 }}
+        <motion.div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-xl)' }}
+          whileHover={{ scale: 1.03, y: -5, boxShadow: 'var(--shadow-premium-hover)' }} transition={{ type: 'spring', stiffness: 400 }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
             <div style={{
-              width: 48, height: 48, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--success-500)',
+              width: 56, height: 56, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--gradient-success)', boxShadow: '0 8px 16px rgba(16, 185, 129, 0.2)'
             }}>
-              <HiOutlineAcademicCap size={22} color="var(--text-inverse)" />
+              <HiOutlineAcademicCap size={26} color="var(--text-inverse)" />
             </div>
             <div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
+              <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#102A56', lineHeight: 1, marginBottom: '0.25rem' }}>
                 {stats?.totalStudents || 0}
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Total Students</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Total Students</div>
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Users by Role */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-        <div className="card">
-          <h3 className="card-title" style={{ marginBottom: '1.25rem' }}>Users by Role</h3>
+      {/* Users by Role & Recent */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+        <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: 'var(--radius-xl)' }}>
+          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem', color: '#102A56', fontWeight: 700 }}>Users by Role</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {Object.entries(stats?.roleCounts || {}).map(([role, count]) => (
               <div key={role} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)' }}>
@@ -191,8 +196,8 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
 
-        <div className="card">
-          <h3 className="card-title" style={{ marginBottom: '1.25rem' }}>Recent Schools</h3>
+        <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: 'var(--radius-xl)' }}>
+          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem', color: '#102A56', fontWeight: 700 }}>Recent Schools</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {(stats?.recentSchools || []).map((school) => (
               <div

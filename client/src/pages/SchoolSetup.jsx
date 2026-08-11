@@ -3,6 +3,7 @@ import api from '../api/axios';
 
 import toast from 'react-hot-toast';
 import { UploadCloud, Save } from 'lucide-react';
+import { getImageUrl } from '../utils/helpers';
 
 const SchoolSetup = () => {
   const [form, setForm] = useState({
@@ -146,7 +147,7 @@ const SchoolSetup = () => {
               onClick={() => document.getElementById('logo-upload').click()}
             >
               {logoPreview ? (
-                <img src={logoPreview} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={logoPreview.startsWith('blob:') ? logoPreview : getImageUrl(logoPreview)} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               ) : (
                 <UploadCloud size={32} style={{ color: 'var(--primary-600)' }} />
               )}
