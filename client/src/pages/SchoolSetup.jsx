@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { UploadCloud, Save } from 'lucide-react';
 import { getImageUrl } from '../utils/helpers';
 
+import { sanitizeDigitInput } from '../utils/inputHelpers';
+
 const SchoolSetup = () => {
   const [form, setForm] = useState({
     name: '',
@@ -48,7 +50,11 @@ const SchoolSetup = () => {
   };
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    let { name, value } = e.target;
+    if (name === 'phone') {
+      value = sanitizeDigitInput(value, 10);
+    }
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleLogoChange = (e) => {
@@ -195,11 +201,12 @@ const SchoolSetup = () => {
               <input
                 id="school-phone"
                 type="text"
+                maxLength={10}
                 className="form-input"
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
-                placeholder="+91 9876543210"
+                placeholder="10-digit phone number"
               />
             </div>
             <div className="form-group">

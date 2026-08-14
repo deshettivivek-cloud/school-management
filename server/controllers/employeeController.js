@@ -81,6 +81,19 @@ exports.createEmployee = async (req, res) => {
     const finalEmployeeId = employee_id || emp_id || `EMP-${Math.floor(Math.random() * 1000000)}`;
     const finalPhone = phone || mobile || '';
 
+    if (finalPhone && !/^\d{10}$/.test(String(finalPhone).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Phone number must be exactly 10 digits' });
+    }
+    if (alt_mobile && !/^\d{10}$/.test(String(alt_mobile).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Alternate mobile number must be exactly 10 digits' });
+    }
+    if (aadhaar_no && !/^\d{12}$/.test(String(aadhaar_no).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Aadhaar number must be exactly 12 digits' });
+    }
+    if (pincode && !/^\d{6}$/.test(String(pincode).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Pincode must be exactly 6 digits' });
+    }
+
     await req.db.query(`
         INSERT INTO employees (
           id, employee_id, name, designation, department, phone, email, 
@@ -165,6 +178,20 @@ exports.updateEmployee = async (req, res) => {
     }
     if (req.body.mobile !== undefined && req.body.phone === undefined) {
       req.body.phone = req.body.mobile;
+    }
+
+    const checkPhone = req.body.phone || req.body.mobile;
+    if (checkPhone !== undefined && checkPhone !== '' && !/^\d{10}$/.test(String(checkPhone).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Phone number must be exactly 10 digits' });
+    }
+    if (req.body.alt_mobile && !/^\d{10}$/.test(String(req.body.alt_mobile).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Alternate mobile number must be exactly 10 digits' });
+    }
+    if (req.body.aadhaar_no && !/^\d{12}$/.test(String(req.body.aadhaar_no).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Aadhaar number must be exactly 12 digits' });
+    }
+    if (req.body.pincode && !/^\d{6}$/.test(String(req.body.pincode).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Pincode must be exactly 6 digits' });
     }
 
     const fields = [

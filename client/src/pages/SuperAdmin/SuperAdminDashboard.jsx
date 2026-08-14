@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { sanitizeDigitInput } from '../../utils/inputHelpers';
 import {
   HiOutlineOfficeBuilding,
   HiOutlineUserGroup,
@@ -259,9 +260,10 @@ const SuperAdminDashboard = () => {
             <input 
               type="text" 
               className="form-input" 
+              maxLength={12}
               placeholder="e.g. 919876543210" 
               value={testPhone} 
-              onChange={(e) => setTestPhone(e.target.value)}
+              onChange={(e) => setTestPhone(sanitizeDigitInput(e.target.value, 12))}
             />
           </div>
           

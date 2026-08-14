@@ -28,6 +28,10 @@ exports.updateSchool = async (req, res) => {
   try {
     if (!req.user.tenantDb) return res.status(400).json({ success: false, message: 'No school configured' });
 
+    if (req.body.phone && !/^\d{10}$/.test(String(req.body.phone).trim())) {
+      return res.status(400).json({ success: false, message: '❌ School phone number must be exactly 10 digits' });
+    }
+
     const fields = ['name', 'address', 'phone', 'email', 'academic_year', 'academic_year_start', 'academic_year_end'];
     const dbFields = { academicYear: 'academic_year', academicYearStart: 'academic_year_start', academicYearEnd: 'academic_year_end' };
     

@@ -4,6 +4,7 @@ import {
   HiOutlineDownload, 
   HiOutlinePrinter 
 } from 'react-icons/hi';
+import { sanitizeDigitInput } from '../../utils/inputHelpers';
 
 const ReportFilters = ({ 
   module, 
@@ -60,8 +61,8 @@ const ReportFilters = ({
 
             <div className="form-group">
               <label className="form-label">Mobile Number</label>
-              <input type="text" className="form-input" placeholder="Search phone" 
-                value={filters.mobileNumber || ''} onChange={e => handleChange('mobileNumber', e.target.value)} />
+              <input type="text" maxLength={10} className="form-input" placeholder="Search phone" 
+                value={filters.mobileNumber || ''} onChange={e => handleChange('mobileNumber', sanitizeDigitInput(e.target.value, 10))} />
             </div>
 
             <div className="form-group">

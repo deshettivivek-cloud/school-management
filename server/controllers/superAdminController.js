@@ -200,6 +200,10 @@ exports.createSchool = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing required fields. Database name (pre-created in cPanel) is required.' });
     }
 
+    if (phone && !/^\d{10}$/.test(String(phone).trim())) {
+      return res.status(400).json({ success: false, message: '❌ School phone number must be exactly 10 digits' });
+    }
+
     const school = await createSchoolDatabase(
       schoolName,
       schoolCode || Math.random().toString(36).substring(2, 8).toUpperCase(),

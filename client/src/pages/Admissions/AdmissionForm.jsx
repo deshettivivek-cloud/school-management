@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlineSave, HiOutlineArrowLeft, HiOutlineUpload } from 'react-icons/hi';
+import { sanitizeDigitInput } from '../../utils/inputHelpers';
 
 const AdmissionForm = () => {
   const { id } = useParams();
@@ -69,7 +70,13 @@ const AdmissionForm = () => {
   };
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    let { name, value } = e.target;
+    if (['parentPhone', 'motherPhone', 'guardianPhone'].includes(name)) {
+      value = sanitizeDigitInput(value, 10);
+    } else if (name === 'aadharNo') {
+      value = sanitizeDigitInput(value, 12);
+    }
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handlePhotoChange = (e) => {
@@ -216,7 +223,7 @@ const AdmissionForm = () => {
             </div>
             <div className="form-group">
               <label className="form-label">Aadhar Number</label>
-              <input id="student-aadhar" type="text" className="form-input" name="aadharNo" value={form.aadharNo} onChange={handleChange} placeholder="12-digit Aadhar number" />
+              <input id="student-aadhar" type="text" maxLength={12} className="form-input" name="aadharNo" value={form.aadharNo} onChange={handleChange} placeholder="12-digit Aadhar number" />
             </div>
             <div className="form-group">
               <label className="form-label">PEN Number</label>
@@ -281,18 +288,18 @@ const AdmissionForm = () => {
             </div>
             <div className="form-group">
               <label className="form-label">Father Phone *</label>
-              <input id="parent-phone" type="text" className="form-input" name="parentPhone" value={form.parentPhone} onChange={handleChange} placeholder="+91 9876543210" />
+              <input id="parent-phone" type="text" maxLength={10} className="form-input" name="parentPhone" value={form.parentPhone} onChange={handleChange} placeholder="10-digit phone number" />
             </div>
           </div>
 
           <div className="form-row-3">
             <div className="form-group">
               <label className="form-label">Mother Phone</label>
-              <input id="mother-phone" type="text" className="form-input" name="motherPhone" value={form.motherPhone} onChange={handleChange} placeholder="+91 9876543210" />
+              <input id="mother-phone" type="text" maxLength={10} className="form-input" name="motherPhone" value={form.motherPhone} onChange={handleChange} placeholder="10-digit phone number" />
             </div>
             <div className="form-group">
               <label className="form-label">Guardian Phone</label>
-              <input id="guardian-phone" type="text" className="form-input" name="guardianPhone" value={form.guardianPhone} onChange={handleChange} placeholder="+91 9876543210" />
+              <input id="guardian-phone" type="text" maxLength={10} className="form-input" name="guardianPhone" value={form.guardianPhone} onChange={handleChange} placeholder="10-digit phone number" />
             </div>
             <div className="form-group">
               <label className="form-label">Parent Email</label>

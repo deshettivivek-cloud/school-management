@@ -12,19 +12,25 @@ const studentRowSchema = z.object({
   }),
   grade: z.coerce.string().trim().min(1, 'Grade is required').max(20),
   parent_name: z.string().trim().min(1, 'Parent name is required').max(255),
-  parent_phone: z.coerce.string().trim().min(1, 'Parent phone number is required').max(20),
+  parent_phone: z.coerce.string().trim().regex(/^\d{10}$/, 'Parent phone number must be exactly 10 digits'),
   academic_year: z.coerce.string().trim().min(4, 'Academic year is required').max(20),
 
   // Optional fields
   section: z.coerce.string().trim().max(10).optional().default(''),
-  aadhar_no: z.coerce.string().trim().max(20).optional().default(''),
+  aadhar_no: z.coerce.string().trim().refine((val) => !val || /^\d{12}$/.test(val), {
+    message: 'Aadhar number must be exactly 12 digits',
+  }).optional().default(''),
   pen_number: z.coerce.string().trim().max(50).optional().default(''),
   caste: z.string().trim().max(100).optional().default(''),
   sub_caste: z.string().trim().max(100).optional().default(''),
   mother_name: z.string().trim().max(255).optional().default(''),
   mother_tongue: z.string().trim().max(50).optional().default(''),
-  mother_phone: z.coerce.string().trim().max(20).optional().default(''),
-  guardian_phone: z.coerce.string().trim().max(20).optional().default(''),
+  mother_phone: z.coerce.string().trim().refine((val) => !val || /^\d{10}$/.test(val), {
+    message: 'Mother phone number must be exactly 10 digits',
+  }).optional().default(''),
+  guardian_phone: z.coerce.string().trim().refine((val) => !val || /^\d{10}$/.test(val), {
+    message: 'Guardian phone number must be exactly 10 digits',
+  }).optional().default(''),
   parent_email: z.string().trim().max(255).optional().default(''),
   address: z.string().trim().max(500).optional().default(''),
   permanent_address: z.string().trim().max(500).optional().default(''),

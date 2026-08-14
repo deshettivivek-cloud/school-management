@@ -18,12 +18,8 @@ const { hashPassword } = require('../config/auth');
 async function createSchoolDatabase(schoolName, joinCode, academicYear, principalEmail, principalPassword, options = {}) {
   const masterPool = await getMasterPool();
 
-  // On shared hosting (BigRock/HostGator), databases must be pre-created via cPanel.
-  // The dbName must be provided by the admin and must already exist with user access granted.
-  const dbName = options.dbName;
-  if (!dbName) {
-    throw new Error('Database name is required. Please create the database in cPanel first and provide its name.');
-  }
+  // Generate a dbName if not provided
+  const dbName = options.dbName || `school_${Date.now()}`;
 
   console.log(`\n📗 Creating school database: ${dbName}`);
   console.log(`   School: ${schoolName}`);
@@ -32,29 +28,26 @@ async function createSchoolDatabase(schoolName, joinCode, academicYear, principa
 
   try {
     // Step 1: Check if database already exists
-    // COMMENTED OUT: HostGator shared hosting doesn't allow SHOW DATABASES
-    // const [existsResult] = await masterPool.query(
-    //   `SHOW DATABASES LIKE '${dbName}'`
-    // );
-    //
-    // if (existsResult.length > 0) {
-    //   console.error(`❌ Database '${dbName}' already exists!`);
-    //   return null;
-    // }
+    const [existsResult] = await masterPool.query(
+      `SHOW DATABASES LIKE '${dbName}'`
+    );
+
+    if (existsResult.length > 0) {
+      console.error(`❌ Database '${dbName}' already exists!`);
+      return null;
+    }
 
     // Step 2: Create the database
-    // COMMENTED OUT: HostGator shared hosting doesn't allow CREATE DATABASE
-    // Database must be pre-created via phpMyAdmin
-    // console.log('   Creating database...');
-    // await masterPool.query(`CREATE DATABASE \`${dbName}\``);
-    // console.log(`   ✅ Database \`${dbName}\` created`);
+    console.log('   Creating database...');
+    await masterPool.query(`CREATE DATABASE \`${dbName}\``);
+    console.log(`   ✅ Database \`${dbName}\` created`);
 
     // Step 3: Wait briefly for the database to be fully available
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Step 4: Apply school template schema
     console.log('   Applying schema template...');
-    const templatePath = path.join(__dirname, '..', 'migrations', '002_school_template.sql');
+    const templatePath = path.join(__dirname, '..', 'migrations', '20260102_school_template.sql');
     const templateSQL = fs.readFileSync(templatePath, 'utf8');
 
     const schoolPool = await getSchoolPool(dbName);
@@ -62,53 +55,82 @@ async function createSchoolDatabase(schoolName, joinCode, academicYear, principa
     // Execute the whole template file
     try {
       await schoolPool.query(templateSQL);
+      console.log('   ✅ Schema template applied');
     } catch (batchErr) {
-      console.warn(`   ⚠️ Template warning: ${batchErr.message.substring(0, 100)}`);
+      throw new Error(`Schema template execution failed: ${batchErr.message}`);
     }
-    console.log('   ✅ Schema template applied');
 
-    // Step 5: Register in master database
+    // Step 5: Register in master database using Transaction
     console.log('   Registering in master database...');
     const schoolId = crypto.randomUUID();
+    const principalId = crypto.randomUUID();
+    let masterConn = null;
 
-    await masterPool.execute(
-      `INSERT INTO schools (id, name, join_code, db_name, academic_year, address, phone, email, logo_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        schoolId,
-        schoolName,
-        joinCode,
-        dbName,
-        academicYear,
-        options.address || '',
-        options.phone || '',
-        options.email || '',
-        options.logoUrl || ''
-      ]
-    );
+    try {
+      masterConn = await masterPool.getConnection();
+      await masterConn.beginTransaction();
 
-    console.log(`   ✅ School registered with ID: ${schoolId}`);
-
-    // Step 6: Create Principal user
-    if (principalEmail && principalPassword) {
-      console.log('   Creating Principal account...');
-      const passwordHash = await hashPassword(principalPassword);
-      const principalId = crypto.randomUUID();
-
-      await schoolPool.execute(
-        `INSERT INTO profiles (id, email, password_hash, name, role, must_change_password)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [principalId, principalEmail, passwordHash, options.principalName || 'Principal', 'principal', 1]
+      await masterConn.execute(
+        `INSERT INTO schools (id, name, join_code, db_name, academic_year, address, phone, email, logo_url)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          schoolId,
+          schoolName,
+          joinCode,
+          dbName,
+          academicYear,
+          options.address || '',
+          options.phone || '',
+          options.email || '',
+          options.logoUrl || ''
+        ]
       );
 
-      // Add to global_users
-      await masterPool.execute(
-        `INSERT INTO global_users (id, email, school_id) VALUES (?, ?, ?)`,
-        [crypto.randomUUID(), principalEmail, schoolId]
-      );
+      // Step 6: Create Principal user
+      if (principalEmail && principalPassword) {
+        console.log('   Creating Principal account...');
+        const passwordHash = await hashPassword(principalPassword);
 
-      console.log(`   ✅ Principal account created: ${principalEmail}`);
+        // Insert into tenant database
+        await schoolPool.execute(
+          `INSERT INTO profiles (id, email, password_hash, name, role, must_change_password)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [principalId, principalEmail, passwordHash, options.principalName || 'Principal', 'principal', 1]
+        );
+
+        // Add to global_users in master database transaction
+        await masterConn.execute(
+          `INSERT INTO global_users (id, email, school_id) VALUES (?, ?, ?)`,
+          [crypto.randomUUID(), principalEmail, schoolId]
+        );
+      }
+
+      await masterConn.commit();
+      console.log(`   ✅ School registered with ID: ${schoolId}`);
+      if (principalEmail) console.log(`   ✅ Principal account created: ${principalEmail}`);
+    } catch (txErr) {
+      if (masterConn) await masterConn.rollback();
+      throw new Error(`Master DB transaction failed: ${txErr.message}`);
+    } finally {
+      if (masterConn) masterConn.release();
     }
+
+    // Step 7: Final Verification
+    console.log('   Verifying provisioning success...');
+    const [dbCheck] = await masterPool.query(`SHOW DATABASES LIKE '${dbName}'`);
+    if (dbCheck.length === 0) throw new Error('Verification failed: Database does not exist.');
+
+    const [tablesCheck] = await schoolPool.query('SHOW TABLES');
+    if (tablesCheck.length === 0) throw new Error('Verification failed: Tables were not created.');
+
+    if (principalEmail) {
+       const [principalCheck] = await schoolPool.query('SELECT id FROM profiles WHERE email = ?', [principalEmail]);
+       if (principalCheck.length === 0) throw new Error('Verification failed: Principal account not found in tenant database.');
+
+       const [globalCheck] = await masterPool.query('SELECT id FROM global_users WHERE email = ? AND school_id = ?', [principalEmail, schoolId]);
+       if (globalCheck.length === 0) throw new Error('Verification failed: Principal account not found in global_users.');
+    }
+    console.log('   ✅ Verification successful.');
 
     console.log(`\n🎉 School '${schoolName}' created successfully!`);
     console.log(`   Database: ${dbName}`);
@@ -121,9 +143,8 @@ async function createSchoolDatabase(schoolName, joinCode, academicYear, principa
 
     // Cleanup: try to drop the database if it was partially created
     try {
-      // COMMENTED OUT: HostGator shared hosting doesn't allow DROP DATABASE
-      // await masterPool.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
-      // console.log(`   🧹 Cleaned up partial database: ${dbName}`);
+      await masterPool.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
+      console.log(`   🧹 Cleaned up partial database: ${dbName}`);
 
       await masterPool.execute('DELETE FROM schools WHERE db_name = ?', [dbName]);
       console.log(`   🧹 Cleaned up master database records for: ${dbName}`);

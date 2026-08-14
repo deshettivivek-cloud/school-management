@@ -6,6 +6,7 @@ import {
   ArrowLeft, Save, User, Briefcase, Lock, UserPlus, FileText, IndianRupee 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { sanitizeDigitInput } from '../../utils/inputHelpers';
 
 const AddEmployee = () => {
   const navigate = useNavigate();
@@ -31,7 +32,15 @@ const AddEmployee = () => {
   });
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    let { name, value } = e.target;
+    if (['mobile', 'alt_mobile'].includes(name)) {
+      value = sanitizeDigitInput(value, 10);
+    } else if (name === 'aadhaar_no') {
+      value = sanitizeDigitInput(value, 12);
+    } else if (name === 'pincode') {
+      value = sanitizeDigitInput(value, 6);
+    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleLoginChange = (e) => {
@@ -170,9 +179,10 @@ const AddEmployee = () => {
             <div className="form-group"><label className="form-label">Full Name *</label><input type="text" name="name" className="form-input" value={formData.name} onChange={handleChange} required /></div>
             <div className="form-group"><label className="form-label">Gender</label><select name="gender" className="form-input" value={formData.gender} onChange={handleChange}><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
             <div className="form-group"><label className="form-label">Date of Birth</label><input type="date" name="dob" className="form-input" value={formData.dob} onChange={handleChange} /></div>
-            <div className="form-group"><label className="form-label">Mobile Number</label><input type="text" name="mobile" className="form-input" value={formData.mobile} onChange={handleChange} /></div>
+            <div className="form-group"><label className="form-label">Mobile Number</label><input type="text" name="mobile" maxLength={10} className="form-input" value={formData.mobile} onChange={handleChange} placeholder="10-digit mobile number" /></div>
             <div className="form-group"><label className="form-label">Personal Email</label><input type="email" name="email" className="form-input" value={formData.email} onChange={handleChange} /></div>
-            <div className="form-group"><label className="form-label">Aadhaar Number</label><input type="text" name="aadhaar_no" className="form-input" value={formData.aadhaar_no} onChange={handleChange} /></div>
+            <div className="form-group"><label className="form-label">Aadhaar Number</label><input type="text" name="aadhaar_no" maxLength={12} className="form-input" value={formData.aadhaar_no} onChange={handleChange} placeholder="12-digit Aadhaar number" /></div>
+            <div className="form-group"><label className="form-label">Pincode</label><input type="text" name="pincode" maxLength={6} className="form-input" value={formData.pincode} onChange={handleChange} placeholder="6-digit pincode" /></div>
             <div className="form-group"><label className="form-label">PAN Number</label><input type="text" name="pan_no" className="form-input" value={formData.pan_no} onChange={handleChange} /></div>
             <div className="form-group"><label className="form-label">Blood Group</label><input type="text" name="blood_group" className="form-input" value={formData.blood_group} onChange={handleChange} /></div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Address</label><textarea name="address" className="form-input" value={formData.address} onChange={handleChange} rows="2" /></div>

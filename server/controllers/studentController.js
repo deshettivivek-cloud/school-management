@@ -96,6 +96,31 @@ exports.createStudent = async (req, res) => {
       fatherOccupationDesc, motherOccupationDesc, penNumber, caste, subCaste
     } = req.body;
 
+    let normalizedName = (name || '').trim().replace(/\s+/g, ' ');
+    if (!normalizedName) {
+      return res.status(400).json({ success: false, message: '❌ Name is required' });
+    }
+    if (normalizedName.length > 100) {
+      return res.status(400).json({ success: false, message: '❌ Maximum length exceeded' });
+    }
+    if (!/^[a-zA-Z\s'-]+$/.test(normalizedName)) {
+      return res.status(400).json({ success: false, message: '❌ Student name can contain only letters, spaces, apostrophes (\') and hyphens (-).' });
+    }
+    req.body.name = normalizedName; // Update body so it gets saved properly
+
+    if (!parentPhone || !/^\d{10}$/.test(String(parentPhone).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Parent phone number must be exactly 10 digits' });
+    }
+    if (motherPhone && !/^\d{10}$/.test(String(motherPhone).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Mother phone number must be exactly 10 digits' });
+    }
+    if (guardianPhone && !/^\d{10}$/.test(String(guardianPhone).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Guardian phone number must be exactly 10 digits' });
+    }
+    if (aadharNo && !/^\d{12}$/.test(String(aadharNo).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Aadhar number must be exactly 12 digits' });
+    }
+
     const finalAdmissionNo = admissionNo || await generateAdmissionNo(connection, academicYear);
 
     await connection.execute(`
@@ -114,7 +139,7 @@ exports.createStudent = async (req, res) => {
           ?, ?
         )
       `, [
-        finalAdmissionNo, name, dob, gender, grade, section || '', parentName, parentPhone,
+        finalAdmissionNo, normalizedName, dob, gender, grade, section || '', parentName, parentPhone,
         parentEmail || '', address || '', academicYear, admissionDate || new Date().toISOString().split('T')[0], photoUrl || '', aadharNo || null,
         penNumber || null, caste || '', subCaste || '', motherName || '', motherTongue || '', motherPhone || '',
         guardianPhone || '', permanentAddress || '', fatherOccupation || '', motherOccupation || '',
@@ -164,11 +189,38 @@ exports.createStudent = async (req, res) => {
   }
 };
 
-// @desc    Update student
+// @desc    Update student details
 // @route   PUT /api/students/:id
 // @access  Auth
 exports.updateStudent = async (req, res) => {
   try {
+    if (req.body.name !== undefined) {
+      let normalizedName = (req.body.name || '').trim().replace(/\s+/g, ' ');
+      if (!normalizedName) {
+        return res.status(400).json({ success: false, message: '❌ Name is required' });
+      }
+      if (normalizedName.length > 100) {
+        return res.status(400).json({ success: false, message: '❌ Maximum length exceeded' });
+      }
+      if (!/^[a-zA-Z\s'-]+$/.test(normalizedName)) {
+        return res.status(400).json({ success: false, message: '❌ Student name can contain only letters, spaces, apostrophes (\') and hyphens (-).' });
+      }
+      req.body.name = normalizedName;
+    }
+
+    if (req.body.parentPhone !== undefined && !/^\d{10}$/.test(String(req.body.parentPhone).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Parent phone number must be exactly 10 digits' });
+    }
+    if (req.body.motherPhone && !/^\d{10}$/.test(String(req.body.motherPhone).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Mother phone number must be exactly 10 digits' });
+    }
+    if (req.body.guardianPhone && !/^\d{10}$/.test(String(req.body.guardianPhone).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Guardian phone number must be exactly 10 digits' });
+    }
+    if (req.body.aadharNo && !/^\d{12}$/.test(String(req.body.aadharNo).trim())) {
+      return res.status(400).json({ success: false, message: '❌ Aadhar number must be exactly 12 digits' });
+    }
+
     const fields = [
       'name', 'dob', 'gender', 'grade', 'section', 'parentName', 'parentPhone',
       'parentEmail', 'address', 'academicYear', 'admissionDate', 'photoUrl',

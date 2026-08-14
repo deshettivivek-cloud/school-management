@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { sanitizeDigitInput } from '../../utils/inputHelpers';
 import {
   HiOutlineOfficeBuilding,
   HiOutlineUserGroup,
@@ -219,7 +220,7 @@ const ManageSchools = () => {
                     </div>
                     <div className="form-group">
                       <label className="form-label">School Phone</label>
-                      <input className="form-input" type="text" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+                      <input className="form-input" type="text" maxLength={10} placeholder="10-digit phone number" value={form.phone} onChange={e => setForm({...form, phone: sanitizeDigitInput(e.target.value, 10)})} />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Address</label>
@@ -340,7 +341,7 @@ const ManageSchools = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Phone</label>
-                  <input className="form-input" type="text" value={editSchool.phone || ''} onChange={e => setEditSchool({...editSchool, phone: e.target.value})} />
+                  <input className="form-input" type="text" maxLength={10} placeholder="10-digit phone number" value={editSchool.phone || ''} onChange={e => setEditSchool({...editSchool, phone: sanitizeDigitInput(e.target.value, 10)})} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Address</label>
