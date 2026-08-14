@@ -189,59 +189,61 @@ const EmployeeDashboard = () => {
               </p>
             </div>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Employee Info</th>
-                  <th>ID</th>
-                  <th>Department</th>
-                  <th>Designation</th>
-                  <th>Contact</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEmployees.map((emp) => (
-                  <tr key={emp.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/employees/${emp.id}`)}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        {emp.photo_url ? (
-                          <img src={getImageUrl(emp.photo_url)} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--primary-100)', color: 'var(--primary-700)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
-                            {emp.name.charAt(0)}
-                          </div>
-                        )}
-                        <div>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{emp.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Joined: {emp.joining_date ? new Date(emp.joining_date).toLocaleDateString() : '-'}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ fontWeight: 500, color: 'var(--primary-600)' }}>{emp.emp_id || '-'}</td>
-                    <td>{emp.department || '-'}</td>
-                    <td>{emp.designation || '-'}</td>
-                    <td>
-                      <div style={{ fontSize: '0.875rem' }}>{emp.mobile || '-'}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{emp.email || '-'}</div>
-                    </td>
-                    <td>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        backgroundColor: emp.status === 'Active' ? 'var(--success-50)' : 'var(--danger-50)',
-                        color: emp.status === 'Active' ? 'var(--success-700)' : 'var(--danger-700)'
-                      }}>
-                        {emp.status || 'Unknown'}
-                      </span>
-                    </td>
+            <div className="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Employee Info</th>
+                    <th>ID</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th>Contact</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredEmployees.map((emp) => (
+                    <tr key={emp.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/employees/${emp.id}`)}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          {emp.photo_url ? (
+                            <img src={getImageUrl(emp.photo_url)} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--primary-100)', color: 'var(--primary-700)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
+                              {emp.name.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{emp.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Joined: {emp.joining_date ? new Date(emp.joining_date).toLocaleDateString() : '-'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ fontWeight: 500, color: 'var(--primary-600)' }}>{emp.emp_id || '-'}</td>
+                      <td>{emp.department || '-'}</td>
+                      <td>{emp.designation || '-'}</td>
+                      <td>
+                        <div style={{ fontSize: '0.875rem' }}>{emp.mobile || '-'}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{emp.email || '-'}</div>
+                      </td>
+                      <td>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          backgroundColor: emp.status === 'Active' ? 'var(--success-50)' : 'var(--danger-50)',
+                          color: emp.status === 'Active' ? 'var(--success-700)' : 'var(--danger-700)'
+                        }}>
+                          {emp.status || 'Unknown'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

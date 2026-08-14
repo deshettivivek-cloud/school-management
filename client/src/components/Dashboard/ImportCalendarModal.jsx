@@ -42,7 +42,6 @@ const ImportCalendarModal = ({ isOpen, onClose, onSuccess }) => {
       setLoading(false);
     }
   };
-
   if (!isOpen) return null;
 
   return (
@@ -53,8 +52,8 @@ const ImportCalendarModal = ({ isOpen, onClose, onSuccess }) => {
     }}>
       <div className="modal-content" style={{
         background: 'var(--bg-card)', padding: '2rem', borderRadius: '12px',
-        width: '100%', maxWidth: '500px', boxShadow: 'var(--shadow-xl)',
-        position: 'relative'
+        width: '95%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto',
+        boxShadow: 'var(--shadow-xl)', position: 'relative'
       }}>
         <button 
           onClick={onClose}

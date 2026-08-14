@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Menu, Search, Bell, Settings, ChevronDown, Building2, LogOut, User, Lock, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CommandPalette from './CommandPalette';
+import { getImageUrl } from '../../utils/helpers';
 
 const Header = ({ title, collapsed, setMobileOpen, schoolData }) => {
   const { user, logout } = useAuth();
@@ -78,11 +79,18 @@ const Header = ({ title, collapsed, setMobileOpen, schoolData }) => {
             <Menu size={22} />
           </button>
 
-          {title !== 'Dashboard' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {logo && (
+              <img src={getImageUrl(logo)} alt="School Logo" style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'contain', backgroundColor: 'var(--bg-primary)', padding: '2px' }} />
+            )}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <h1 className="page-title" style={{ margin: 0, fontSize: '1.25rem' }}>{title}</h1>
+              {title !== 'Dashboard' ? (
+                <h1 className="page-title" style={{ margin: 0, fontSize: '1.25rem' }}>{title}</h1>
+              ) : (
+                <h1 className="page-title" style={{ margin: 0, fontSize: '1.25rem' }}>{schoolName}</h1>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         <div className="header-right">

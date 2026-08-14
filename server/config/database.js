@@ -16,6 +16,10 @@ function buildDbConfig(database) {
     multipleStatements: true,
   };
 
+  if (process.env.DB_SSL === 'true' || process.env.DB_SSL === '1') {
+    config.ssl = { rejectUnauthorized: false };
+  }
+
   return config;
 }
 
@@ -54,7 +58,8 @@ async function getMasterPool() {
     console.log('✅ Connected to master database');
     return masterPool;
   } catch (err) {
-    console.error('❌ Failed to connect to master database:', err.message);
+    const errorDetails = err.message || err.code || String(err);
+    console.error('❌ Failed to connect to master database:', errorDetails);
     throw err;
   }
 }

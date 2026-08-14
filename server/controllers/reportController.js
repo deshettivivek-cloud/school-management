@@ -193,14 +193,44 @@ exports.generateReport = async (req, res) => {
 const getDashboardMetrics = async (req, res) => {
   try {
     if (req.user && req.user.role === 'super_admin') {
+      const { getMasterPool } = require('../config/database');
+      const { getSchoolPool } = require('../config/tenantPool');
+      const masterPool = await getMasterPool();
+      
+      const [schools] = await masterPool.query('SELECT db_name FROM schools');
+      
+      let globalStudentCount = 0;
+      let globalTeacherCount = 0;
+      let globalFeesCommitted = 0;
+      let globalFeesPaid = 0;
+      
+      const tasks = schools.map(async (school) => {
+        try {
+          const pool = await getSchoolPool(school.db_name);
+          const [[sRes], [tRes], [fRes]] = await Promise.all([
+            pool.query("SELECT COUNT(*) as count FROM students WHERE is_active = 1"),
+            pool.query("SELECT COUNT(*) as count FROM employees WHERE is_active = 1"),
+            pool.query("SELECT SUM(committed_fee) as committed, SUM(total_paid) as paid FROM fee_collections")
+          ]);
+          globalStudentCount += (sRes[0]?.count || 0);
+          globalTeacherCount += (tRes[0]?.count || 0);
+          globalFeesCommitted += Number(fRes[0]?.committed || 0);
+          globalFeesPaid += Number(fRes[0]?.paid || 0);
+        } catch (e) {
+          // Ignore if a tenant DB has an error
+        }
+      });
+      
+      await Promise.all(tasks);
+      
       return res.json({
         success: true,
         data: {
-          studentCount: 0,
-          teacherCount: 0,
-          totalFeesCommitted: 0,
-          totalFeesPaid: 0,
-          pendingFees: 0,
+          studentCount: globalStudentCount,
+          teacherCount: globalTeacherCount,
+          totalFeesCommitted: globalFeesCommitted,
+          totalFeesPaid: globalFeesPaid,
+          pendingFees: globalFeesCommitted - globalFeesPaid,
           isSuperAdmin: true
         }
       });

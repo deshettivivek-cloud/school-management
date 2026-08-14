@@ -107,8 +107,10 @@ const CommandPalette = ({ isOpen, onClose }) => {
   };
 
   const handleSelect = (path) => {
-    navigate(path);
     onClose();
+    setTimeout(() => {
+      navigate(path);
+    }, 50);
   };
 
   return (
