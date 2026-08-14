@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ═══════════════════════════════════════════════════════════════
    SCHOOL MANAGEMENT SYSTEM — Design System
    Enterprise Light Theme — Modern, Minimal, Professional
@@ -10,6 +14,16 @@
   --bg-surface: #FFFFFF;
   --bg-elevated: #FFFFFF;
   --bg-sidebar: #FFFFFF;
+
+  /* Shadcn Sidebar HSL Color Tokens */
+  --sidebar-background: 224 58% 22%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 253 66% 55%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 224 45% 30%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 224 40% 30%;
+  --sidebar-ring: 253 66% 55%;
 
   --border-color: #E8EAF0;
 
@@ -247,52 +261,13 @@ textarea {
 }
 
 /* ── Layout ────────────────────────────────────────────────── */
-.app-layout {
-  display: flex;
-  min-height: 100vh;
-  background: var(--bg-primary);
-}
-
-.main-content {
-  flex: 1;
-  margin-left: 0;
-  min-height: 100vh;
-  background: var(--bg-page);
-}
-
-.main-content.sidebar-collapsed {
-  margin-left: 0;
-}
 
 .page-content {
   padding: 1.75rem 2rem;
-  padding-top: calc(var(--header-height) + 50px + 1.75rem); /* Account for Header + TopNav */
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
-/* ── Sidebar ───────────────────────────────────────────────── */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: var(--sidebar-width);
-  height: 100vh;
-  height: 100dvh;
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  transition: width var(--transition-base), transform 300ms ease-in-out;
-  overflow: hidden;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04);
-  border: none;
-}
-
-.sidebar.collapsed {
-  width: var(--sidebar-collapsed);
-}
+/* ── Sidebar (Handled by shadcn Sidebar primitive) ── */
 
 /* Mobile overlay behind sidebar */
 .sidebar-mobile-overlay {
@@ -393,10 +368,9 @@ textarea {
 
 /* ── Header ────────────────────────────────────────────────── */
 .header {
-  position: fixed;
+  position: sticky;
   top: 0;
-  right: 0;
-  left: 0;
+  width: 100%;
   height: var(--header-height);
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
@@ -3333,29 +3307,7 @@ tbody tr:last-child td {
 @media (max-width: 768px) { .hidden-on-mobile { display: none !important; } }
 @media (min-width: 769px) { .show-on-mobile { display: none !important; } }
 
-/* LAYOUT FIXES FOR DESKTOP SIDEBAR */
-@media (min-width: 769px) {
-  .main-content {
-    margin-left: var(--sidebar-width) !important;
-  }
-  .main-content.sidebar-collapsed {
-    margin-left: var(--sidebar-collapsed) !important;
-  }
-  .header {
-    left: var(--sidebar-width) !important;
-  }
-  .header.sidebar-collapsed {
-    left: var(--sidebar-collapsed) !important;
-  }
-}
-@media (max-width: 768px) {
-  .main-content, .main-content.sidebar-collapsed {
-    margin-left: 0 !important;
-  }
-  .header, .header.sidebar-collapsed {
-    left: 0 !important;
-  }
-}
+/* LAYOUT FIXES REMOVED FOR SHADCN SIDEBAR */
 
 /* FIX FOR SIDEBAR LOGO OVERLAP */
 .sidebar-logo {
@@ -3420,4 +3372,27 @@ tbody tr:last-child td {
 
 .table-responsive table {
   min-width: 600px;
+}
+
+@layer base {
+  :root {
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+  .dark {
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
 }

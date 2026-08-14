@@ -1,22 +1,6 @@
 
 /* SIDEBAR REDESIGN */
-.sidebar {
-  width: var(--sidebar-width);
-  background: #FFFFFF;
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  transition: all 0.3s ease;
-  z-index: 50;
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-}
 
-.sidebar.collapsed {
-  width: var(--sidebar-collapsed);
-}
 
 .sidebar-header {
   padding: 1.5rem 1rem;

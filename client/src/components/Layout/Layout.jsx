@@ -4,10 +4,9 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
+import { SidebarProvider, SidebarInset } from '../ui/sidebar';
 
 const Layout = ({ title }) => {
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
   const [schoolData, setSchoolData] = useState(null);
 
@@ -24,27 +23,19 @@ const Layout = ({ title }) => {
   }, [user]);
 
   return (
-    <div className="app-layout">
-      <Sidebar
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
-        mobileOpen={mobileOpen}
-        setMobileOpen={setMobileOpen}
-        schoolData={schoolData}
-      />
+    <SidebarProvider defaultOpen={true}>
+      <Sidebar schoolData={schoolData} />
 
-      <div className={`main-content ${collapsed ? 'sidebar-collapsed' : ''}`}>
+      <SidebarInset className="flex-1 min-w-0">
         <Header
           title={title}
-          collapsed={collapsed}
-          setMobileOpen={setMobileOpen}
           schoolData={schoolData}
         />
         <main className="page-content animate-fade-in">
           <Outlet context={{ schoolData }} />
         </main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
 
