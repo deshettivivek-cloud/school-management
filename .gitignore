@@ -8,8 +8,23 @@ build/
 coverage/
 *.log
 *.sqlite
+
+# Backups & uploads
 backups/
 server/backups/
-server/test*.js
 server/public/uploads/
+
+# Scratch/debug/one-off scripts
 server/scratch/
+server/test*.js
+fix_*.js
+fix*.cjs
+test_dashboard_error.cjs
+test-dom/
+severzip/
+severzip.zip
+*.zip
+
+# Build artifacts
+client/dist/
+dist.zip
