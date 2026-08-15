@@ -13,6 +13,15 @@ const PendingFees = () => {
   const [academicYear, setAcademicYear] = useState('');
   const [inputYear, setInputYear] = useState('');
   const [sending, setSending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredRecords = records.filter(r => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const name = r.student?.name?.toLowerCase() || '';
+    const admNo = r.student?.admission_no?.toLowerCase() || r.student?.admissionNo?.toLowerCase() || '';
+    return name.includes(q) || admNo.includes(q);
+  });
 
   useEffect(() => {
     fetchSchoolYear();
@@ -21,6 +30,14 @@ const PendingFees = () => {
   useEffect(() => {
     if (academicYear) fetchPending();
   }, [academicYear, gradeFilter]);
+
+  const handleApplyYear = (year) => {
+    if (year && !/^\d{4}-\d{2}(\d{2})?$/.test(year)) {
+      toast.error('Please enter a valid academic year (e.g., 2024-25)');
+      return;
+    }
+    setAcademicYear(year);
+  };
 
   const fetchSchoolYear = async () => {
     try {
@@ -84,23 +101,39 @@ const PendingFees = () => {
 
       {/* Summary Card */}
       <div className="stat-grid" style={{ marginBottom: '1.5rem' }}>
-        <StatCard className="" title="Total Pending Amount" value={totalPending} formatValue={formatCurrency} icon={HiOutlineExclamationCircle} color="red" periodLabel={`${records.length} students`} hideDelta={true} />
+        <StatCard className="" title={gradeFilter ? `Total Pending Amount (Class ${gradeFilter})` : "Total Pending Amount"} value={totalPending} formatValue={formatCurrency} icon={HiOutlineExclamationCircle} color="red" periodLabel={`${filteredRecords.length} students`} hideDelta={true} loading={loading} />
       </div>
 
       {/* Filter */}
-      <div className="filter-bar" style={{ display: 'flex', gap: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+          <div className="search-bar" style={{ borderRight: 'none', borderTopRightRadius: 0, borderBottomRightRadius: 0, margin: 0 }}>
+            <HiOutlineSearch className="search-bar-icon" />
+            <input
+              type="text"
+              placeholder="Search by name or admission no..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ width: '250px' }}
+            />
+          </div>
+          <button className="btn btn-primary" style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, marginRight: '1rem' }}>
+            Search
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
           <input
             type="text"
             className="form-input"
-            style={{ width: '130px' }}
+            style={{ width: '130px', borderTopRightRadius: 0, borderBottomRightRadius: 0, margin: 0 }}
             value={inputYear}
             onChange={(e) => setInputYear(e.target.value)}
-            onBlur={() => setAcademicYear(inputYear)}
-            onKeyDown={(e) => e.key === 'Enter' && setAcademicYear(inputYear)}
+            onBlur={() => handleApplyYear(inputYear)}
+            onKeyDown={(e) => e.key === 'Enter' && handleApplyYear(inputYear)}
             placeholder="Academic Year"
           />
-          <button className="btn btn-secondary" onClick={() => setAcademicYear(inputYear)} title="Apply Filter">
+          <button className="btn btn-secondary" onClick={() => handleApplyYear(inputYear)} title="Apply Filter" style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, margin: 0, marginLeft: '-1px', zIndex: 0 }}>
             <HiOutlineSearch />
           </button>
         </div>
@@ -132,11 +165,11 @@ const PendingFees = () => {
       <div className="table-container">
         {loading ? (
           <div className="spinner-container"><div className="spinner" /></div>
-        ) : records.length === 0 ? (
+        ) : filteredRecords.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">🎉</div>
             <h3 className="empty-state-title">All Clear!</h3>
-            <p className="empty-state-text">No pending fees found</p>
+            <p className="empty-state-text">No data in that year</p>
           </div>
         ) : (
           <div className="table-wrapper">
@@ -155,7 +188,7 @@ const PendingFees = () => {
                 </tr>
               </thead>
               <tbody>
-                {records.map((r) => (
+                {filteredRecords.map((r) => (
                   <tr key={r.id || r._id}>
                     <td style={{ fontWeight: 600, color: 'var(--primary-400)' }}>{r.student?.admission_no || r.student?.admissionNo}</td>
                     <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{r.student?.name}</td>

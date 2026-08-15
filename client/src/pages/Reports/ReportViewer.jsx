@@ -264,7 +264,10 @@ const ReportViewer = () => {
               <p>Generate, view, and export records</p>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div className="page-header-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <button className="btn btn-secondary" onClick={() => navigate('/reports')}>
+              ← Back to Reports
+            </button>
             <button className="btn btn-primary" onClick={() => setIsFilterModalOpen(true)}>
               <HiOutlineFilter size={18} /> Filter & Customize
             </button>

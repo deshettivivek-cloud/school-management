@@ -393,75 +393,7 @@ const VirtualAdmissionForm = () => {
               </div>
             </div>
 
-            {/* Fee Summary */}
-            {feeRecord && (
-              <>
-                <div className="section-title-print">Fee Details</div>
-                <table className="fee-table-print">
-                  <thead>
-                    <tr>
-                      <th>Description</th>
-                      <th style={{ textAlign: 'right' }}>Amount (₹)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Committed Fee</td>
-                      <td style={{ textAlign: 'right' }}>
-                        {(feeRecord.committed_fee || feeRecord.committedFee || 0).toLocaleString('en-IN')}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Total Paid</td>
-                      <td style={{ textAlign: 'right', color: '#16a34a', fontWeight: 600 }}>
-                        {(feeRecord.total_paid || feeRecord.totalPaid || 0).toLocaleString('en-IN')}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Balance</td>
-                      <td style={{ textAlign: 'right', color: (feeRecord.balance || 0) > 0 ? '#dc2626' : '#16a34a', fontWeight: 700 }}>
-                        {(feeRecord.balance || 0).toLocaleString('en-IN')}
-                      </td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr className="fee-total-row">
-                      <td style={{ fontWeight: 700, background: '#f8fafc' }}>Status</td>
-                      <td style={{ fontWeight: 700, textAlign: 'right', background: '#f8fafc', textTransform: 'uppercase' }}>
-                        {feeRecord.status}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
 
-                {/* Payment History */}
-                {feeRecord.payments && feeRecord.payments.length > 0 && (
-                  <>
-                    <div className="section-title-print" style={{ marginTop: '1rem' }}>Payment History</div>
-                    <table className="fee-table-print">
-                      <thead>
-                        <tr>
-                          <th>Receipt No</th>
-                          <th>Date</th>
-                          <th>Mode</th>
-                          <th style={{ textAlign: 'right' }}>Amount (₹)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {feeRecord.payments.map((p, i) => (
-                          <tr key={i}>
-                            <td>{p.receiptNo}</td>
-                            <td>{p.date ? format(new Date(p.date), 'dd MMM yyyy') : '-'}</td>
-                            <td style={{ textTransform: 'capitalize' }}>{p.mode?.replace('_', ' ')}</td>
-                            <td style={{ textAlign: 'right', fontWeight: 600 }}>{(p.amount || 0).toLocaleString('en-IN')}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </>
-                )}
-              </>
-            )}
 
             {/* Declaration */}
             <div className="declaration-print">
@@ -495,7 +427,7 @@ const VirtualAdmissionForm = () => {
       <div className="print-section-footer">
         <button className="btn btn-print" onClick={handlePrint}>
           <HiOutlinePrinter size={18} />
-          Print Admission Form & Fee Receipt
+          Print Admission Form
         </button>
       </div>
     </div>

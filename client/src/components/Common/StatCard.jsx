@@ -1,6 +1,6 @@
 import React from 'react';
 
-const StatCard = ({ title, value, icon: Icon, color = 'blue', previousValue, periodLabel = 'Compared to last period', formatValue, className = '', hideDelta = false }) => {
+const StatCard = ({ title, value, icon: Icon, color = 'blue', previousValue, periodLabel = 'Compared to last period', formatValue, className = '', hideDelta = false, loading = false }) => {
   let isNew = false;
   let deltaStr = '';
   let trend = 'neutral';
@@ -39,25 +39,38 @@ const StatCard = ({ title, value, icon: Icon, color = 'blue', previousValue, per
   const displayValue = formatValue ? formatValue(value) : value;
 
   return (
-    <div className={`kpi-card ${className}`}>
-      <div className="kpi-header">
-        <div className="kpi-value-container">
-          <span className="kpi-label">{title}</span>
-          <span className="kpi-value" style={{ 
-            color: 'var(--text-primary)' 
-          }}>
-            {displayValue}
+    <div className={`card ${className}`} style={{ padding: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{title}</span>
+          <span style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+            {loading ? (
+              <span style={{ opacity: 0.5, fontSize: '1.25rem' }}>Loading...</span>
+            ) : (
+              displayValue
+            )}
           </span>
         </div>
         {Icon && (
-          <div className={`kpi-icon ${color}`}>
+          <div style={{ 
+            background: `var(--${color}-50, #EFF6FF)`, 
+            color: `var(--${color}-600, #2563EB)`, 
+            padding: '0.75rem', 
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
             <Icon size={24} strokeWidth={2} />
           </div>
         )}
       </div>
       {!hideDelta && deltaStr && (
-        <div className={`kpi-trend ${trend}`} style={{ padding: 0, background: 'transparent' }}>
-          {trend === 'positive' ? '↗' : trend === 'negative' ? '↘' : '→'} {deltaStr} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{periodLabel}</span>
+        <div style={{ marginTop: '1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ color: trend === 'positive' ? 'var(--success-600)' : trend === 'negative' ? 'var(--danger-600)' : 'var(--text-secondary)', fontWeight: 600 }}>
+            {trend === 'positive' ? '↗' : trend === 'negative' ? '↘' : '→'} {deltaStr}
+          </span>
+          <span style={{ color: 'var(--text-muted)' }}>{periodLabel}</span>
         </div>
       )}
     </div>

@@ -64,11 +64,13 @@ const IssueTc = () => {
       <div className="page-header">
         <div className="page-header-info">
           <h1>Issue Transfer Certificate</h1>
-          <p>Issue TC for a leaving student</p>
+          <p>Process a new TC request and generate the certificate</p>
         </div>
-        <button className="btn btn-secondary" onClick={() => navigate('/tc/register')}>
-          View TC Register
-        </button>
+        <div className="page-header-actions">
+          <button className="btn btn-secondary" onClick={() => navigate('/tc/register')}>
+            ← Back to Register
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ maxWidth: 850 }}>

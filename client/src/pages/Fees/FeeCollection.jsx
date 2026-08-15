@@ -35,6 +35,14 @@ const FeeCollection = () => {
     if (academicYear) fetchPendingStudents();
   }, [academicYear, gradeFilter]);
 
+  const handleApplyYear = (year) => {
+    if (year && !/^\d{4}-\d{2}(\d{2})?$/.test(year)) {
+      toast.error('Please enter a valid academic year (e.g., 2024-25)');
+      return;
+    }
+    setAcademicYear(year);
+  };
+
   const fetchPendingStudents = async () => {
     setLoading(true);
     try {
@@ -340,18 +348,18 @@ const FeeCollection = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Students with Pending Fees</h3>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'stretch' }}>
                   <input
                     type="text"
                     className="form-input"
-                    style={{ width: '110px' }}
+                    style={{ width: '110px', borderTopRightRadius: 0, borderBottomRightRadius: 0, margin: 0 }}
                     value={inputYear}
                     onChange={(e) => setInputYear(e.target.value)}
-                    onBlur={() => setAcademicYear(inputYear)}
-                    onKeyDown={(e) => e.key === 'Enter' && setAcademicYear(inputYear)}
+                    onBlur={() => handleApplyYear(inputYear)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleApplyYear(inputYear)}
                     placeholder="Year"
                   />
-                  <button className="btn btn-secondary" onClick={() => setAcademicYear(inputYear)} title="Apply Filter">
+                  <button className="btn btn-secondary" onClick={() => handleApplyYear(inputYear)} title="Apply Filter" style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, margin: 0, marginLeft: '-1px', zIndex: 0 }}>
                     <HiOutlineSearch />
                   </button>
                 </div>
@@ -375,7 +383,7 @@ const FeeCollection = () => {
               <div className="empty-state">
                 <div className="empty-state-icon">🎉</div>
                 <h3 className="empty-state-title">All Clear!</h3>
-                <p className="empty-state-text">No pending fees found</p>
+                <p className="empty-state-text">No data in that year</p>
               </div>
             ) : (
               <div className="table-container">

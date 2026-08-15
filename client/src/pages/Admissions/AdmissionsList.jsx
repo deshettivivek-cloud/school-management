@@ -82,16 +82,21 @@ const AdmissionsList = () => {
 
       {/* Filters */}
       <div className="filter-bar">
-        <div className="search-bar">
-          <HiOutlineSearch className="search-bar-icon" />
-          <input
-            id="student-search"
-            type="text"
-            placeholder="Search by name or admission no..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          />
+        <div style={{ display: 'flex' }}>
+          <div className="search-bar" style={{ borderRight: 'none', borderTopRightRadius: 0, borderBottomRightRadius: 0, margin: 0 }}>
+            <HiOutlineSearch className="search-bar-icon" />
+            <input
+              id="student-search"
+              type="text"
+              placeholder="Search by name or admission no..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <button className="btn btn-primary" onClick={handleSearch} style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
+            Search
+          </button>
         </div>
 
         <select
@@ -163,7 +168,7 @@ const AdmissionsList = () => {
                         ) : (
                           <div style={{
                             width: 32, height: 32, borderRadius: '50%',
-                            background: 'var(--gradient-accent)',
+                            background: 'var(--gradient-indigo)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '0.75rem', fontWeight: 700, color: 'white'
                           }}>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlinePrinter, HiOutlineDownload } from 'react-icons/hi';
@@ -8,6 +8,7 @@ import { getImageUrl } from '../../utils/helpers';
 
 const ReceiptView = () => {
   const { collectionId, paymentId } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [school, setSchool] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -89,6 +90,9 @@ const ReceiptView = () => {
           <p>Receipt #{payment.receiptNo}</p>
         </div>
         <div className="page-header-actions">
+          <button className="btn btn-secondary" onClick={() => navigate(-1)}>
+            ← Back
+          </button>
           <button className="btn btn-primary" onClick={handlePrint}>
             <HiOutlinePrinter /> Print Receipt
           </button>

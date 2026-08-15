@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Settings, Users, UserPlus, GraduationCap, ClipboardList,
@@ -97,14 +97,23 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, schoolDat
   // ── Helpers ──
   const isLinkActive = (path) => {
     if (path === '/') return location.pathname === '/' || location.pathname === '/dashboard';
-    return location.pathname.startsWith(path);
+    
+    let bestMatch = '';
+    navSections.forEach(sec => {
+      sec.links.forEach(link => {
+        if (link.path !== '/' && (location.pathname === link.path || location.pathname.startsWith(link.path + '/'))) {
+          if (link.path.length > bestMatch.length) {
+            bestMatch = link.path;
+          }
+        }
+      });
+    });
+    
+    return path === bestMatch;
   };
 
   const isSectionActive = (section) => {
-    return section.links.some(link => {
-      if (link.path === '/') return location.pathname === '/' || location.pathname === '/dashboard';
-      return location.pathname.startsWith(link.path);
-    });
+    return section.links.some(link => isLinkActive(link.path));
   };
 
   useEffect(() => {
@@ -186,7 +195,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, schoolDat
                   const linkActive = isLinkActive(link.path);
                   const Icon = link.icon;
                   return (
-                    <NavLink
+                    <Link
                       key={link.path}
                       to={link.path}
                       className={`sidebar-link ${linkActive ? 'active' : ''}`}
@@ -215,7 +224,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, schoolDat
                       {!isCollapsed && (
                         <span>{link.label}</span>
                       )}
-                    </NavLink>
+                    </Link>
                   );
                 })}
               </div>

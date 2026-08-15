@@ -28,42 +28,184 @@ const OverviewTab = ({ employee }) => (
   </div>
 );
 
-const PersonalTab = ({ employee }) => (
-  <div>
-    <h3 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', color: 'var(--text-primary)' }}>Personal Information</h3>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-      <InfoItem label="Full Name" value={employee.name} />
-      <InfoItem label="Gender" value={employee.gender} />
-      <InfoItem label="Date of Birth" value={employee.dob} />
-      <InfoItem label="Blood Group" value={employee.blood_group} />
-      <InfoItem label="Mobile Number" value={employee.mobile} />
-      <InfoItem label="Alternate Mobile" value={employee.alt_mobile} />
-      <InfoItem label="Email Address" value={employee.email} />
-      <InfoItem label="Aadhaar Number" value={employee.aadhaar_no} />
-      <InfoItem label="PAN Number" value={employee.pan_no} />
-      <div style={{ gridColumn: '1 / -1' }}>
-        <InfoItem label="Address" value={`${employee.address || ''}, ${employee.city || ''}, ${employee.state || ''} ${employee.pincode || ''}`} />
+const PersonalTab = ({ employee, onUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({});
+
+  const startEditing = () => {
+    setFormData({
+      mobile: employee.mobile || '',
+      alt_mobile: employee.alt_mobile || '',
+      email: employee.email || '',
+      aadhaar_no: employee.aadhaar_no || '',
+      pan_no: employee.pan_no || '',
+      blood_group: employee.blood_group || '',
+      address: employee.address || '',
+      city: employee.city || '',
+      state: employee.state || '',
+      pincode: employee.pincode || '',
+    });
+    setIsEditing(true);
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if ((name === 'mobile' || name === 'alt_mobile' || name === 'aadhaar_no') && value && !/^\d*$/.test(value)) {
+      toast.error('Only numbers are allowed');
+      return;
+    }
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSave = async () => {
+    try {
+      await api.put(`/employees/${employee.id}`, formData);
+      toast.success('Personal info updated');
+      setIsEditing(false);
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      toast.error('Failed to update personal info');
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Edit Personal Information</h3>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-outline btn-sm" onClick={() => setIsEditing(false)}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={handleSave}>Save Changes</button>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+          <div className="form-group"><label className="form-label">Mobile Number</label><input type="text" name="mobile" className="form-input" value={formData.mobile} onChange={handleChange} maxLength="10" /></div>
+          <div className="form-group"><label className="form-label">Alternate Mobile</label><input type="text" name="alt_mobile" className="form-input" value={formData.alt_mobile} onChange={handleChange} maxLength="10" /></div>
+          <div className="form-group"><label className="form-label">Email Address</label><input type="email" name="email" className="form-input" value={formData.email} onChange={handleChange} /></div>
+          <div className="form-group"><label className="form-label">Aadhaar Number</label><input type="text" name="aadhaar_no" className="form-input" value={formData.aadhaar_no} onChange={handleChange} maxLength="12" /></div>
+          <div className="form-group"><label className="form-label">PAN Number</label><input type="text" name="pan_no" className="form-input" value={formData.pan_no} onChange={handleChange} /></div>
+          <div className="form-group"><label className="form-label">Blood Group</label><input type="text" name="blood_group" className="form-input" value={formData.blood_group} onChange={handleChange} /></div>
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Address</label><textarea name="address" className="form-input" value={formData.address} onChange={handleChange} rows="2" /></div>
+          <div className="form-group"><label className="form-label">City</label><input type="text" name="city" className="form-input" value={formData.city} onChange={handleChange} /></div>
+          <div className="form-group"><label className="form-label">State</label><input type="text" name="state" className="form-input" value={formData.state} onChange={handleChange} /></div>
+          <div className="form-group"><label className="form-label">Pincode</label><input type="text" name="pincode" className="form-input" value={formData.pincode} onChange={handleChange} /></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Personal Information</h3>
+        <button className="btn btn-outline btn-sm" onClick={startEditing}>Edit Info</button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+        <InfoItem label="Full Name" value={employee.name} />
+        <InfoItem label="Gender" value={employee.gender} />
+        <InfoItem label="Date of Birth" value={employee.dob} />
+        <InfoItem label="Blood Group" value={employee.blood_group} />
+        <InfoItem label="Mobile Number" value={employee.mobile} />
+        <InfoItem label="Alternate Mobile" value={employee.alt_mobile} />
+        <InfoItem label="Email Address" value={employee.email} />
+        <InfoItem label="Aadhaar Number" value={employee.aadhaar_no} />
+        <InfoItem label="PAN Number" value={employee.pan_no} />
+        <div style={{ gridColumn: '1 / -1' }}>
+          <InfoItem label="Address" value={`${employee.address || ''}, ${employee.city || ''}, ${employee.state || ''} ${employee.pincode || ''}`.replace(/, ,/g, ',').replace(/^, | , $/g, '') || '-'} />
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-const ProfessionalTab = ({ employee }) => (
-  <div>
-    <h3 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', color: 'var(--text-primary)' }}>Professional Information</h3>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-      <InfoItem label="Employee ID" value={employee.emp_id} />
-      <InfoItem label="Designation" value={employee.designation} />
-      <InfoItem label="Department" value={employee.department} />
-      <InfoItem label="Employment Type" value={employee.employment_type} />
-      <InfoItem label="Date of Joining" value={employee.joining_date} />
-      <InfoItem label="Qualification" value={employee.qualification} />
-      <InfoItem label="Experience" value={employee.experience} />
-      <InfoItem label="Subjects Taught" value={employee.subject?.join(', ')} />
-      <InfoItem label="Class Teacher Of" value={employee.class_teacher_of} />
+const ProfessionalTab = ({ employee, onUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({});
+
+  const startEditing = () => {
+    setFormData({
+      emp_id: employee.emp_id || '',
+      designation: employee.designation || '',
+      department: employee.department || '',
+      employment_type: employee.employment_type || '',
+      joining_date: employee.joining_date ? new Date(employee.joining_date).toISOString().split('T')[0] : '',
+      qualification: employee.qualification || '',
+      experience: employee.experience || '',
+      class_teacher_of: employee.class_teacher_of || '',
+      subject: employee.subject ? employee.subject.join(', ') : ''
+    });
+    setIsEditing(true);
+  };
+
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleSave = async () => {
+    try {
+      const payload = {
+        ...formData,
+        subject: formData.subject ? formData.subject.split(',').map(s => s.trim()).filter(Boolean) : []
+      };
+      await api.put(`/employees/${employee.id}`, payload);
+      toast.success('Professional info updated');
+      setIsEditing(false);
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      toast.error('Failed to update professional info');
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Edit Professional Information</h3>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-outline btn-sm" onClick={() => setIsEditing(false)}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={handleSave}>Save Changes</button>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+          <div className="form-group"><label className="form-label">Employee ID</label><input type="text" name="emp_id" className="form-input" value={formData.emp_id} onChange={handleChange} /></div>
+          <div className="form-group"><label className="form-label">Designation</label><input type="text" name="designation" className="form-input" value={formData.designation} onChange={handleChange} /></div>
+          <div className="form-group"><label className="form-label">Department</label><input type="text" name="department" className="form-input" value={formData.department} onChange={handleChange} /></div>
+          <div className="form-group"><label className="form-label">Employment Type</label>
+            <select name="employment_type" className="form-input" value={formData.employment_type} onChange={handleChange}>
+              <option value="">Select Type</option>
+              <option value="Full Time">Full Time</option>
+              <option value="Part Time">Part Time</option>
+              <option value="Contract">Contract</option>
+            </select>
+          </div>
+          <div className="form-group"><label className="form-label">Date of Joining</label><input type="date" name="joining_date" className="form-input" value={formData.joining_date} onChange={handleChange} /></div>
+          <div className="form-group"><label className="form-label">Qualification</label><input type="text" name="qualification" className="form-input" value={formData.qualification} onChange={handleChange} /></div>
+          <div className="form-group"><label className="form-label">Experience</label><input type="text" name="experience" className="form-input" value={formData.experience} onChange={handleChange} /></div>
+          <div className="form-group"><label className="form-label">Class Teacher Of</label><input type="text" name="class_teacher_of" className="form-input" value={formData.class_teacher_of} onChange={handleChange} /></div>
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Subjects Taught (comma separated)</label><input type="text" name="subject" className="form-input" value={formData.subject} onChange={handleChange} /></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Professional Information</h3>
+        <button className="btn btn-outline btn-sm" onClick={startEditing}>Edit Info</button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+        <InfoItem label="Employee ID" value={employee.emp_id} />
+        <InfoItem label="Designation" value={employee.designation} />
+        <InfoItem label="Department" value={employee.department} />
+        <InfoItem label="Employment Type" value={employee.employment_type} />
+        <InfoItem label="Date of Joining" value={employee.joining_date} />
+        <InfoItem label="Qualification" value={employee.qualification} />
+        <InfoItem label="Experience" value={employee.experience} />
+        <InfoItem label="Subjects Taught" value={employee.subject?.join(', ')} />
+        <InfoItem label="Class Teacher Of" value={employee.class_teacher_of} />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const SalaryTab = ({ employee, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -333,8 +475,8 @@ const EmployeeProfile = () => {
 
   const tabsConfig = [
     { id: 'overview', label: 'Overview', icon: Activity, component: <OverviewTab employee={employee} /> },
-    { id: 'personal', label: 'Personal', icon: User, component: <PersonalTab employee={employee} /> },
-    { id: 'professional', label: 'Professional', icon: Briefcase, component: <ProfessionalTab employee={employee} /> },
+    { id: 'personal', label: 'Personal', icon: User, component: <PersonalTab employee={employee} onUpdate={fetchEmployee} /> },
+    { id: 'professional', label: 'Professional', icon: Briefcase, component: <ProfessionalTab employee={employee} onUpdate={fetchEmployee} /> },
     { id: 'salary', label: 'Salary', icon: IndianRupee, component: <SalaryTab employee={employee} onUpdate={fetchEmployee} /> },
     { id: 'payslips', label: 'Payslips', icon: FileCheck, component: <PayslipsTab employeeId={employee.id} /> },
     { id: 'attendance', label: 'Attendance', icon: Clock, component: <div className="empty-state">Attendance tracking coming soon.</div> },
@@ -345,6 +487,11 @@ const EmployeeProfile = () => {
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '2rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
+        <button className="btn btn-secondary btn-sm" onClick={() => navigate('/employees')}>
+          ← Back to Employees
+        </button>
+      </div>
       <ProfileShell header={headerConfig} tabs={tabsConfig} />
     </div>
   );

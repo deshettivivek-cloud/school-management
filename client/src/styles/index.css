@@ -3421,3 +3421,32 @@ tbody tr:last-child td {
 .table-responsive table {
   min-width: 600px;
 }
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn-outline-success {
+  background: transparent;
+  color: var(--success-600);
+  border: 1px solid var(--success-500);
+}
+
+.btn-outline-success:hover {
+  background: var(--success-50);
+  color: var(--success-700);
+  border-color: var(--success-600);
+}
+
+.btn-outline-danger {
+  background: transparent;
+  color: var(--danger-600);
+  border: 1px solid var(--danger-500);
+}
+
+.btn-outline-danger:hover {
+  background: var(--danger-50);
+  color: var(--danger-700);
+  border-color: var(--danger-600);
+}
+

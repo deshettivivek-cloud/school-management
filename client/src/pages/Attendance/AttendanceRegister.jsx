@@ -79,6 +79,11 @@ const AttendanceRegister = () => {
   };
 
   const markAll = (status) => {
+    const isAllAlready = students.every(s => s.status === status);
+    if (isAllAlready) {
+      toast.error(`All students are already marked ${status}`);
+      return;
+    }
     setStudents(prev => prev.map(s => ({ ...s, status })));
   };
 
@@ -180,13 +185,13 @@ const AttendanceRegister = () => {
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
-          <h3 style={{ margin: 0 }}>Student Roster</h3>
+          <h3 style={{ margin: 0 }}>Student Attendance</h3>
           {students.length > 0 && (
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <button type="button" className="btn btn-outline" onClick={() => markAll('present')} style={{ borderColor: 'var(--success-500)', color: 'var(--success-600)' }}>
+              <button type="button" className="btn btn-outline-success" onClick={() => markAll('present')}>
                 <HiOutlineCheck /> Mark All Present
               </button>
-              <button type="button" className="btn btn-outline" onClick={() => markAll('absent')} style={{ borderColor: 'var(--danger-500)', color: 'var(--danger-600)' }}>
+              <button type="button" className="btn btn-outline-danger" onClick={() => markAll('absent')}>
                 <HiOutlineX /> Mark All Absent
               </button>
             </div>

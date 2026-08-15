@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import ProfileShell from '../../components/Profile/ProfileShell';
 import Timeline from '../../components/Profile/Timeline';
@@ -167,6 +167,7 @@ const TimelineTab = ({ studentId }) => {
 
 const StudentProfile = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -202,14 +203,17 @@ const StudentProfile = () => {
     { id: 'attendance', label: 'Attendance', icon: HiOutlineCalendar, component: <AttendanceTab studentId={student.id} /> },
     { id: 'fees', label: 'Fees', icon: HiOutlineCurrencyRupee, component: <FeesTab studentId={student.id} />, allowedRoles: ['super_admin', 'principal', 'clerk'] },
     { id: 'marks', label: 'Marks', icon: HiOutlineAcademicCap, component: <MarksTab studentId={student.id} /> },
-    { id: 'homework', label: 'Homework', icon: HiOutlineBookOpen, component: <div className="empty-state">Homework module coming soon.</div> },
-    { id: 'certificates', label: 'Certificates', icon: HiOutlineBadgeCheck, component: <div className="empty-state">No certificates issued yet.</div> },
-    { id: 'documents', label: 'Documents', icon: HiOutlineDocumentText, component: <div className="empty-state">No documents uploaded.</div> },
+
     { id: 'timeline', label: 'Timeline', icon: HiOutlineClock, component: <TimelineTab studentId={student.id} /> }
   ];
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ marginBottom: '1rem' }}>
+        <button className="btn btn-secondary btn-sm" onClick={() => navigate('/students/directory')}>
+          ← Back to Directory
+        </button>
+      </div>
       <ProfileShell header={headerConfig} tabs={tabsConfig} />
     </div>
   );
